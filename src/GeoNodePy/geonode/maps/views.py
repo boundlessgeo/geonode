@@ -1677,3 +1677,33 @@ def batch_delete(request):
     nmaps = len(spec.get('maps', []))
 
     return HttpResponse("Deleted %d layers and %d maps" % (nlayers, nmaps))
+
+@login_required
+def create_pg_layer(request):
+    if request.method == 'POST':
+        cat = Layer.objects.gs_catalog 
+        ws = cat.get_workspace(request.POST.get('workspace'))
+        if ws is None:
+            msg = 'Specified workspace [%s] not found' % request.POST.get('workspace')
+            return HttpResponse(msg, status='400')
+        store = cat.get_store(request.POST.get('store'))
+        if store is None:
+            msg = 'Specified store [%s] not found' % request.POST.get('store')
+            return HttpResponse(msg, status='400')
+        
+        attributes = request.POST.get('attributes')
+        attribute_dict = {}
+        for attribute in attributes.split(','):
+            key, value = attribute.split(':')
+            attribute_dict[key] = value
+        print attribute_dict
+        layer = cat.create_postgres_layer(request.POST.get('workspace'), 
+                                          request.POST.get('store'), 
+                                          request.POST.get('name'), 
+                                          request.POST.get('nativeName'), 
+                                          request.POST.get('title'),
+                                          request.POST.get('srs'), 
+                                          attribute_dict) 
+        return HttpResponse('Patience')
+    else:
+        return HttpResponse('Only POST requests supported', status='405')
