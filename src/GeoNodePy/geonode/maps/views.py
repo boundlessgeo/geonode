@@ -1696,7 +1696,7 @@ def create_pg_layer(request):
         for attribute in attributes.split(','):
             key, value = attribute.split(':')
             attribute_dict[key] = value
-        print attribute_dict
+        
         layer = cat.create_postgres_layer(request.POST.get('workspace'), 
                                           request.POST.get('store'), 
                                           request.POST.get('name'), 
@@ -1704,6 +1704,16 @@ def create_pg_layer(request):
                                           request.POST.get('title'),
                                           request.POST.get('srs'), 
                                           attribute_dict) 
-        return HttpResponse('Patience')
+        msg = "Layer [%] created successfully" % request.POST.get('name')
+
+        # This should pick up at step 10 (7 or 8 actually) in geonode.maps.utils.save()
+        # But this code is currently monolithic, and could do for some refactoring
+        # to make each of the steps reusable.
+
+        return_dict = {'status': 'ok', 'msg': msg, 
+                        'name': request.POST.get('name'), 
+                        'geonode_layer_id': -1,
+                        'typename': ''}
+        return HttpResponse(json.dumps(return_dict))
     else:
         return HttpResponse('Only POST requests supported', status='405')
