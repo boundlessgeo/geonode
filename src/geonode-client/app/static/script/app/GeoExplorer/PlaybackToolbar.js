@@ -7,11 +7,18 @@ Ext.ns("GeoExplorer");
 
 GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     playbackMode: 'ranged',
+    /* i18n */
+    prevTooltip: 'Reverse One Frame',
+    fullSizeTooltip: 'Fullscreen',
+    smallSizeTooltip: 'Back to Smaller Size',
+    legendTooltip: 'Show Map Legend',
     initComponent: function() {
         if(!this.playbackActions){
-            this.playbackActions = ["play","slider","loop","fastforward","prev","next"," ","legend","->","settings","|","togglesize"]; 
+            this.playbackActions = [
+                "play","slider","loop","fastforward","prev","next",
+                {xtype: "tbspacer"},"legend",{xtype:"tbfill"},
+                "settings",{xtype: "tbspacer"},"togglesize"]; 
         }
-        
         this.defaults = Ext.applyIf(this.defaults || {},{
             scale: 'large'
         });
@@ -41,14 +48,20 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             },
             'togglesize' : {
                 iconCls:'gxp-icon-fullScreen',
-                handler: this.toggleMapSize
+                handler: this.toggleMapSize,
+                disabled: true
             },
             'legend' : {
                 iconCls:'gxp-icon-legend',
-                handler: this.toggleLegend
+                handler: this.toggleLegend,
+                tooltip: this.legendTooltip,
+                disabled: true
             },
             'prev' : {
-                iconCls: 'gxp-icon-prev'
+                iconCls: 'gxp-icon-prev',
+                handler: this.reverseStep,
+                scope: this,
+                tooltip: this.prevTooltip
             }
         });
 
@@ -57,6 +70,19 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     buildPlaybackItems:function(){
         var items = GeoExplorer.PlaybackToolbar.superclass.buildPlaybackItems.call(this);
         return items;
+    },
+    toggleMapSize: function(btn,pressed){
+        
+    },
+    toggleLegend:function(btn,pressed){
+        
+    },
+    reverseStep:function(btn,pressed){
+        var timeManager = this.control;
+        timeManager.stop();
+        timeManager.step *= -1;
+        timeManager.tick();
+        timeManager.step *= -1;
     }
 });
 
