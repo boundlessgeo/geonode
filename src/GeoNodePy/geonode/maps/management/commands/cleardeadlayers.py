@@ -22,8 +22,12 @@ class Command(BaseCommand):
                 help="Delete geonetwork layers, too"),
             make_option('--maps', dest="maps", default=False, action="store_true",
                 help="Delete maps with missing layers, too"),
+            make_option('--annotations', dest="annotations", default=False, action="store_true",
+                help="Delete unused annotations layers"),
             make_option('--styles', dest="styles", default=False, action="store_true",
                 help="Delete unused styles"),
+            make_option('--all', dest="all", default=False, action="store_true",
+                help="Run all checks"),
             make_option('--execute', dest="execute", default=False, action="store_true",
                 help="If not provided, only print what would be done")
         )
@@ -32,12 +36,14 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         self.dryrun = not opts['execute']
         if self.dryrun:
-            print "THIS IS A DRY RUN - use --execute"
-        geonetwork = opts['geonetwork']
-        maps = opts['maps']
-        styles = opts['styles']
+            print "*** THIS IS A DRY RUN - use --execute ***"
+        run_all = opts['all']
+        geonetwork = opts['geonetwork'] or run_all
+        maps = opts['maps'] or run_all
+        styles = opts['styles'] or run_all
+        annotations = opts['annotations'] or run_all
         try:
-            print 'checking layers not present in geoserver'
+            self.msg('checking layers not present in geoserver')
             pre_delete.disconnect(delete_layer, sender=Layer)
             cat = Layer.objects.gs_catalog
             storenames = [s.name for s in cat.get_stores()]
@@ -50,11 +56,11 @@ class Command(BaseCommand):
         finally:
             pre_delete.connect(delete_layer, sender=Layer)
         if args:
-            print 'deleting specified layers'
+            self.msg('deleting specified layers')
             map(self.delete_by_uuid,args)
         if geonetwork:
             from xml.etree.ElementTree import XML
-            print 'checking layers only found in geonetwork'
+            self.msg('checking layers only found in geonetwork')
             uuids = set(Layer.objects.gn_catalog.get_all_layer_uuids())
             layers = [ v[0] for v in Layer.objects.values_list('uuid') ]
             uuids = uuids - set(layers)
@@ -70,7 +76,7 @@ class Command(BaseCommand):
                 else:
                     print '\t', 'unknown layer with uuid %s' % u
         if maps:
-            print 'checking for maps with missing layers'
+            self.msg('checking for maps with missing layers')
             for m in list(Map.objects.all()):
                 missing = []
                 for l in m.layers:
@@ -82,8 +88,16 @@ class Command(BaseCommand):
                     if not self.dryrun:
                         m.delete()
                     print '\t', m, '(missing):', ' '.join(missing)
+        if annotations:
+            self.msg('checking orphaned annotations layers')
+            for l in Layer.objects.filter(typename__regex='_map_\d+_annotations'):
+                try:
+                    Map.objects.get(id=l.name.split('_')[2])
+                except Map.DoesNotExist:
+                    self.delete_layer(l)
+        # do styles last 
         if styles:
-            print 'looking for unused styles'
+            self.msg('looking for unused styles')
             layers = cat.get_layers()
             styles = dict( (s.name,s) for s in cat.get_styles() )
             used = set( l.default_style.name for l in layers if l.default_style )
@@ -98,6 +112,11 @@ class Command(BaseCommand):
                         cat.delete(styles[u], purge=True)
                     except Exception,ex:
                         print ex
+                        
+    def msg(self, msg):
+        print
+        print msg
+        print '-' * 40
 
     def delete_by_uuid(self,uuid):
         import traceback
