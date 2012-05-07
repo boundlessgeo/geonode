@@ -912,8 +912,8 @@ def upload_layer(request, step=None):
     try:
         if request.method == 'GET':
             if step is None:
-                import os
-                s = os.statvfs('/')
+                import os, tempfile
+                s = os.statvfs(settings.FILE_UPLOAD_TEMP_DIR or tempfile.gettempdir())
                 mb = s.f_bsize * s.f_bavail / (1024. * 1024)
                 display_storage_stats = hasattr(settings, 'DISPLAY_UPLOAD_STORAGE_STATS') and \
                     settings.DISPLAY_UPLOAD_STORAGE_STATS or False
