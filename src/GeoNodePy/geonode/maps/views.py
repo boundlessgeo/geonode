@@ -915,10 +915,13 @@ def upload_layer(request, step=None):
                 import os
                 s = os.statvfs('/')
                 mb = s.f_bsize * s.f_bavail / (1024. * 1024)
+                display_storage_stats = hasattr(settings, 'DISPLAY_UPLOAD_STORAGE_STATS') and \
+                    settings.DISPLAY_UPLOAD_STORAGE_STATS or False
                 return render_to_response('maps/layer_upload.html',
                                         RequestContext(request, {
                                         'storage_remaining' : "%d MB" % mb,
-                                        'enough_storage' : mb > 64
+                                        'enough_storage' : mb > 64,
+                                        'display_storage_stats': display_storage_stats
                                         }))
             else:
                 return view(request, step)
