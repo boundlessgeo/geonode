@@ -5,6 +5,12 @@ from geonode.simplesearch.models import index_object
 import logging
 from optparse import make_option
 import traceback
+import signal
+import sys
+
+def _handler(s,f):
+    sys.exit(0)
+signal.signal(signal.SIGINT,_handler)
 
 class Command(BaseCommand):
     help = 'Update simplesearch indices'
@@ -19,7 +25,7 @@ class Command(BaseCommand):
         def index(o):
             try:
                 index_object(o,update=update)
-            except:
+            except Exception:
                 print 'error indexing', o
                 traceback.print_exc()
                 
