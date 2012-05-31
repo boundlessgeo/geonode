@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
 from django.conf import settings
-from staticfiles.urls import staticfiles_urlpatterns
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from geonode.sitemap import LayerSitemap, MapSitemap
 import geonode.proxy.urls
 import geonode.maps.urls
@@ -36,8 +36,6 @@ urlpatterns = patterns('',
     (r'^jsi18n/$', 'django.views.i18n.javascript_catalog', js_info_dict),
     (r'^accounts/ajax_login$', 'geonode.views.ajax_login'),
     (r'^accounts/ajax_lookup$', 'geonode.views.ajax_lookup'),
-    (r'^accounts/login', 'django.contrib.auth.views.login'),
-    (r'^accounts/logout', 'django.contrib.auth.views.logout'),
     (r'^avatar/', include('avatar.urls')),
     (r'^accounts/', include('registration.urls')),
     (r'^profiles/', include('profiles.urls')),

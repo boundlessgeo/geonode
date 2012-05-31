@@ -9,6 +9,7 @@ from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.geonetwork import Catalog as GeoNetwork
 from gsuploader.uploader import Uploader
 from django.db.models import signals
+from django.dispatch import Signal
 from django.utils.html import escape
 import httplib2
 import simplejson
@@ -21,7 +22,7 @@ from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from string import lower
 from StringIO import StringIO
-from xml.etree.ElementTree import parse, XML
+from lxml import etree
 from gs_helpers import cascading_delete
 import logging
 from django.contrib.contenttypes.models import ContentType
@@ -606,16 +607,20 @@ class LayerManager(models.Manager):
         user, password = settings.GEOSERVER_CREDENTIALS
         self.gs_catalog = Catalog(url, _user, _password)
         self.gs_uploader = Uploader(url, _user, _password)
-        self.geonetwork = GeoNetwork(settings.GEONETWORK_BASE_URL, settings.GEONETWORK_CREDENTIALS[0], settings.GEONETWORK_CREDENTIALS[1])
+        if settings.USE_GEONETWORK:
+            self.geonetwork = GeoNetwork(settings.GEONETWORK_BASE_URL, settings.GEONETWORK_CREDENTIALS[0], settings.GEONETWORK_CREDENTIALS[1])
         self._wms = None
 
     @property
     def gn_catalog(self):
-        # check if geonetwork is logged in
-        if not self.geonetwork.connected:
-            self.geonetwork.login()
-        # Make sure to logout after you have finished using it.
-        return self.geonetwork
+        if settings.USE_GEONETWORK:
+            # check if geonetwork is logged in
+            if not self.geonetwork.connected:
+                self.geonetwork.login()
+            # Make sure to logout after you have finished using it.
+            return self.geonetwork
+        else:
+            raise Exception("GEONETWORK not enabled")
 
     def admin_contact(self):
         # this assumes there is at least one superuser
@@ -680,7 +685,7 @@ class LayerManager(models.Manager):
                 else:
                     status = 'updated'
 
-            msg = "[%s] Layer %s (%d/%d)" % (status, name, i, number)
+            msg = "[%s] Layer %s (%d/%d)" % (status, name, i+1, number)
             info = {'name': name, 'status': status}
             if status == 'failed':
                 info['traceback'] = traceback
@@ -816,7 +821,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                         "coverage": self.typename
                     })
                 response, content = client.request(description_url)
-                doc = parse(StringIO(content))
+                doc = etree.fromstring(content)
                 extent = doc.find("//%(gml)slimits/%(gml)sGridEnvelope" % {"gml": "{http://www.opengis.net/gml}"})
                 low = extent.find("{http://www.opengis.net/gml}low").text.split()
                 high = extent.find("{http://www.opengis.net/gml}high").text.split()
@@ -905,17 +910,18 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         #    raise GeoNodeException(msg)
  
         # Check the layer is in the GeoNetwork catalog and points back to get_absolute_url
-        if(_csw is None): # Might need to re-cache, nothing equivalent to _wms.contents?
-            get_csw()
-        try:
-            _csw.getrecordbyid([self.uuid])
-            csw_layer = _csw.records.get(self.uuid)
-        except:
-            msg = "CSW Record Missing for layer [%s]" % self.typename
-            raise GeoNodeException(msg)
+        if settings.USE_GEONETWORK:
+            if(_csw is None): # Might need to re-cache, nothing equivalent to _wms.contents?
+                get_csw()
+            try:
+                _csw.getrecordbyid([self.uuid])
+                csw_layer = _csw.records.get(self.uuid)
+            except:
+                msg = "CSW Record Missing for layer [%s]" % self.typename
+                raise GeoNodeException(msg)
 
-        if(csw_layer.uri != self.get_absolute_url()):
-            msg = "CSW Layer URL does not match layer URL for layer [%s]" % self.typename
+            if(csw_layer.uri != self.get_absolute_url()):
+                msg = "CSW Layer URL does not match layer URL for layer [%s]" % self.typename
             
         # Visit get_absolute_url and make sure it does not give a 404
         #logger.info(self.get_absolute_url())
@@ -934,7 +940,12 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name__endswith=self.name).select_related()])
 
     def metadata(self):
-        return _get_wms(self.typename)[self.typename]
+        wms = _get_wms(self.typename)
+        # using virtual services, allow for check using missing namespace
+        try:
+            return wms[self.typename]
+        except:
+            return wms[self.name]
 
     def metadata_csw(self):
         global _csw
@@ -956,7 +967,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 http = httplib2.Http()
                 http.add_credentials(_user, _password)
                 response, body = http.request(dft_url)
-                doc = XML(body)
+                doc = etree.fromstring(body)
                 path = ".//{xsd}extension/{xsd}sequence/{xsd}element".format(xsd="{http://www.w3.org/2001/XMLSchema}")
                 atts = [n.attrib["name"] for n in doc.findall(path)]
             except Exception, e:
@@ -973,7 +984,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 http = httplib2.Http()
                 http.add_credentials(_user, _password)
                 response, body = http.request(dc_url)
-                doc = XML(body)
+                doc = etree.fromstring(body)
                 path = ".//{wcs}Axis/{wcs}AvailableKeys/{wcs}Key".format(wcs="{http://www.opengis.net/wcs/1.1.1}")
                 atts = [n.text for n in doc.findall(path)]
             except Exception, e:
@@ -997,11 +1008,15 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
             logger.exception("Error deleting layer from geoserver - possible layer did not exist")
             
     def delete_from_geonetwork(self):
+        if not settings.USE_GEONETWORK:
+            return
         gn = Layer.objects.gn_catalog
         gn.delete_layer(self)
         gn.logout()
 
     def save_to_geonetwork(self):
+        if not settings.USE_GEONETWORK:
+            return
         gn = Layer.objects.gn_catalog
         record = gn.get_by_uuid(self.uuid)
         if record is None:
@@ -1112,14 +1127,15 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         if self.resource is None:
             return
         if hasattr(self, "_resource_cache"):
-            gn = Layer.objects.gn_catalog
             self.resource.title = self.title
             self.resource.abstract = self.abstract
-            self.resource.name= self.name
-            self.resource.metadata_links = [('text/xml', 'TC211', gn.url_for_uuid(self.uuid))]
+            if settings.USE_GEONETWORK:
+                gn = Layer.objects.gn_catalog
+                self.resource.metadata_links = [('text/xml', 'TC211', gn.url_for_uuid(self.uuid))]
+                gn.logout()
+            self.resource.name= self.name            
             self.resource.keywords = self.keyword_list()
             Layer.objects.gs_catalog.save(self._resource_cache)
-            gn.logout()
         if self.poc and self.poc.user:
             self.publishing.attribution = str(self.poc.user)
             profile = Contact.objects.get(user=self.poc.user)
@@ -1145,6 +1161,8 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
             self.title = self.name
 
     def _populate_from_gn(self):
+        if not settings.USE_GEONETWORK:
+            return
         meta = self.metadata_csw()
         if meta is None:
             return
@@ -1181,7 +1199,10 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         """Return tuple of min/max string datetime or None if not available."""
         wms = _get_wms(self.typename)
         # times is a list of time specs already split by comma
-        times = wms[self.typename].timepositions
+        try:
+            times = wms[self.typename].timepositions
+        except:
+            times = wms[self.name].timepositions
         result = None
         # from the spec - possible encodings:
         # 1 value A single value.
@@ -1240,6 +1261,8 @@ def describe_layer(typename):
     if response['status'] != '200':
         raise Exception('Non OK response from describeLayer',body)
     return body
+
+map_changed_signal = Signal(providing_args=['what_changed'])
 
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
@@ -1320,9 +1343,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         return  [layer for layer in layers]
 
     @property
-    def local_layers(self): 
-        names = [layer.name for layer in self.layers]
-        return Layer.objects.filter(typename__in=names)
+    def local_layers(self):
+        return Layer.objects.filter(typename__in=MapLayer.objects.filter(map__id=self.id).values('name'))
 
     def json(self, layer_filter):
         map_layers = MapLayer.objects.filter(map=self.id)
@@ -1472,6 +1494,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
         layers = [l for l in conf["map"]["layers"]]
         
+        layer_names = set([l.typename for l in self.local_layers])
+        
         for layer in self.layer_set.all():
             layer.delete()
 
@@ -1480,6 +1504,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 self.layer_set.from_viewer_config(
                     self, layer, source_for(layer), ordering
             ))
+            
+        if layer_names != set([l.typename for l in self.local_layers]):
+            map_changed_signal.send_robust(sender=self,what_changed='layers')
 
         if 'tools' in conf:
             self.tools_params = simplejson.dumps(conf['tools'])
@@ -1655,7 +1682,7 @@ class MapLayer(models.Model):
         but we try to err on the side of false negatives.
         """
         url = self.ows_url or  ' '
-        if url[0] == '/' or url == (settings.GEOSERVER_BASE_URL + "wms"):
+        if url[0] == '/' or url.startswith(settings.GEOSERVER_BASE_URL):
             return Layer.objects.filter(typename=self.name).count() != 0
         else: 
             return False
@@ -1764,7 +1791,8 @@ def delete_layer(instance, sender, **kwargs):
     Removes the layer from GeoServer and GeoNetwork
     """
     instance.delete_from_geoserver()
-    instance.delete_from_geonetwork()
+    if settings.USE_GEONETWORK:
+        instance.delete_from_geonetwork()
 
 def post_save_layer(instance, sender, **kwargs):
     instance._autopopulate()

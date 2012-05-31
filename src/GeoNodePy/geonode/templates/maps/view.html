@@ -51,6 +51,18 @@ var app = new GeoExplorer();
         },
         scope: {}
     });
+    
+    var headers = {
+        'X-CSRFToken' : Ext.util.Cookies.get('csrftoken')
+    };
+    Ext.Ajax.defaultHeaders = headers;
+    {# MONKEY PATCH #}
+    OpenLayers.Request._monkey_issue = OpenLayers.Request.issue;
+    OpenLayers.Request.issue = function(config) {
+        config.headers = config.headers || {};
+        config.headers['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
+        return this._monkey_issue(config);
+    };
 })()
 
 {% endautoescape %}
@@ -68,6 +80,6 @@ var app = new GeoExplorer();
 </div>
 <div id="templates">
   <div id="more-info-tpl"><a class='link' href='{permalink}'>{% trans "View info" %}</a></div>
-  <div id="title-tpl"><a class='maplist' href='/maps/search'>{% trans "Maps" %}</a> / <strong>{title}</strong></div>
+  <div id="title-tpl"><a class='maplist' href='{% url maps_search %}'>{% trans "Maps" %}</a> / <strong>{title}</strong></div>
 </div>
 {% endblock %}

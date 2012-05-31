@@ -11,7 +11,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
@@ -20,6 +19,7 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 from django.core.cache import cache
 import json
+import simplejson
 import math
 import httplib2 
 from owslib.csw import CswRecord, namespaces
@@ -29,7 +29,6 @@ from urllib import urlencode
 from urlparse import urlparse
 import uuid
 import unicodedata
-from django.views.decorators.csrf import csrf_exempt, csrf_response_exempt
 from django.forms.models import inlineformset_factory
 from django.db.models import Q
 import logging
@@ -66,7 +65,8 @@ def default_map_config(request):
         )
 
     DEFAULT_BASE_LAYERS = [_baselayer(lyr, ord) for ord, lyr in enumerate(settings.MAP_BASELAYERS)]
-    DEFAULT_MAP_CONFIG = _default_map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=request.user.is_authenticated())
+    auth = request and request.user.is_authenticated() or False
+    DEFAULT_MAP_CONFIG = _default_map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=auth)
 
     return DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS
 
@@ -131,7 +131,6 @@ LAYER_LEV_NAMES = {
     Layer.LEVEL_ADMIN : _('Administrative')
 }
 
-@transaction.commit_manually
 def maps(request, mapid=None):
     if request.method == 'GET':
         return render_to_response('maps.html', RequestContext(request))
@@ -142,23 +141,17 @@ def maps(request, mapid=None):
                 mimetype="text/plain",
                 status=401
             )
-        try: 
-            map = Map(owner=request.user, zoom=0, center_x=0, center_y=0)
-            map.save()
-            map.set_default_permissions()
-            map.update_from_viewer(request.raw_post_data)
-            response = HttpResponse('', status=201)
-            response['Location'] = map.id
-            transaction.commit()
-            return response
-        except Exception, e:
-            logger.exception('error saving map')
-            transaction.rollback()
-            return HttpResponse(
-                "The server could not understand your request." + str(e),
-                status=400, 
-                mimetype="text/plain"
-            )
+        else:
+            try:
+                map = Map(owner=request.user, zoom=0, center_x=0, center_y=0)
+                map.save()
+                map.set_default_permissions()
+                map.update_from_viewer(request.raw_post_data)
+                response = HttpResponse('', status=201)
+                response['Location'] = map.id
+                return response
+            except simplejson.JSONDecodeError:
+                return HttpResponse(status=400)
 
 def mapJSON(request, mapid):
     if request.method == 'GET':
@@ -242,7 +235,7 @@ def newmap_config(request):
                     
                 layer_bbox = layer.resource.latlon_bbox
                 # assert False, str(layer_bbox)
-                if bbox is None:
+                if bbox is None and layer_bbox:
                     bbox = list(layer_bbox[0:4])
                 else:
                     bbox[0] = min(bbox[0], layer_bbox[0])
@@ -286,17 +279,15 @@ def newmap_config(request):
             config = DEFAULT_MAP_CONFIG
     return json.dumps(config)
 
-@csrf_exempt            
 def newmap(request):
-    config = newmap_config(request);
+    config = newmap_config(request)
     if isinstance(config, HttpResponse):
-        return config;
+        return config
     else:
         return render_to_response('maps/view.html', RequestContext(request))
 
-@csrf_exempt
 def newmapJSON(request):
-    config = newmap_config(request);
+    config = newmap_config(request)
     if isinstance(config, HttpResponse):
         return config
     else:
@@ -400,7 +391,6 @@ def check_download(request):
     return HttpResponse(content=content,status=status)
 
 
-@csrf_exempt
 def batch_layer_download(request):
     """
     batch download a set of layers
@@ -610,7 +600,6 @@ def mapdetail(request,mapid):
         'permissions_json': json.dumps(_perms_info(map, MAP_LEV_NAMES))
     }))
 
-@csrf_exempt
 @login_required
 def describemap(request, mapid):
     '''
@@ -666,8 +655,9 @@ def view(request, mapid):
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)    
     
-    config = map.viewer_json(authenticated=request.user.is_authenticated())
-    return render_to_response('maps/view.html', RequestContext(request))
+    return render_to_response('maps/view.html', RequestContext(request,{
+        'map' : map
+    }))
 
 def embed(request, mapid=None):
     if mapid is None:
@@ -680,7 +670,8 @@ def embed(request, mapid=None):
         
         config = map.viewer_json(authenticated=request.user.is_authenticated())
     return render_to_response('maps/embed.html', RequestContext(request, {
-        'config': json.dumps(config)
+        'config': json.dumps(config),
+        'map' : map
     }))
 
 
@@ -704,7 +695,6 @@ class LayerDescriptionForm(forms.Form):
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
     keywords = forms.CharField(500, required=False)
 
-@csrf_exempt
 @login_required
 def layer_metadata(request, layername):
     layer = get_object_or_404(Layer, typename=layername)
@@ -768,7 +758,6 @@ def layer_metadata(request, layername):
     else: 
         return HttpResponse("Not allowed", status=403)
 
-@csrf_exempt
 def layer_remove(request, layername):
     layer = get_object_or_404(Layer, typename=layername)
     if request.user.is_authenticated():
@@ -789,7 +778,6 @@ def layer_remove(request, layername):
     else:  
         return HttpResponse("Not allowed",status=403)
 
-@csrf_exempt
 def layer_style(request, layername):
     layer = get_object_or_404(Layer, typename=layername)
     if request.user.is_authenticated():
@@ -845,13 +833,15 @@ def layer_detail(request, layername):
             RequestContext(request, {'error_message': 
                 _("You are not permitted to view this layer")})), status=401)
     
-    metadata = layer.metadata_csw()
+    metadata = None
+    if settings.USE_GEONETWORK:
+        metadata = layer.metadata_csw()
     
     map_config = layer.map_config
     
     if not map_config:
         vs_url = settings.GEOSERVER_BASE_URL + '%s/%s/wms' % tuple(layer.typename.split(':'))
-        maplayer = MapLayer(name = layer.typename, ows_url=vs_url)
+        maplayer = MapLayer(name = layer.typename.split(':')[1], ows_url=vs_url)
 
         # center/zoom don't matter; the viewer will center on the layer bounds
         map = Map(projection="EPSG:900913")
@@ -899,7 +889,6 @@ GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your dat
 Please try again, or contact and administrator if the problem continues.")
 
 @login_required
-@csrf_exempt
 def upload_layer(request, step=None):
     """Allow use of the old uploader and the new one. This is done by the
     USE_UPLOADER setting. The optional step will be ignored by the old uploader.
@@ -970,7 +959,6 @@ def _old_upload(request):
         return HttpResponse(json.dumps({ "success": False, "errors": errors}))
 
 @login_required
-@csrf_exempt
 def layer_replace(request, layername):
     layer = get_object_or_404(Layer, typename=layername)
     if not request.user.has_perm('maps.change_layer', obj=layer):
@@ -988,7 +976,7 @@ def layer_replace(request, layername):
     elif request.method == 'POST':
         from geonode.maps.forms import LayerUploadForm
         from geonode.maps.utils import save
-        from django.template import escape
+        from django.utils.html import escape
         import os, shutil
 
         form = LayerUploadForm(request.POST, request.FILES)
@@ -1272,7 +1260,6 @@ def _split_query(query):
 
 DEFAULT_SEARCH_BATCH_SIZE = 10
 MAX_SEARCH_BATCH_SIZE = 25
-@csrf_exempt
 def metadata_search(request):
     """
     handles a basic search for data using the 
@@ -1544,7 +1531,6 @@ def _build_search_result(doc):
 def browse_data(request):
     return render_to_response('data.html', RequestContext(request, {}))
 
-@csrf_exempt    
 def search_page(request):
     DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
     # for non-ajax requests, render a generic search page
@@ -1586,7 +1572,6 @@ def change_poc(request, ids, template = 'maps/change_poc.html'):
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
 MAX_MAPS_SEARCH_BATCH_SIZE = 25
-@csrf_exempt
 def maps_search(request):
     """
     handles a basic search for maps using the 
@@ -1705,7 +1690,6 @@ def _maps_search(query, start, limit, sort_field, sort_dir):
     
     return result
 
-@csrf_exempt    
 def maps_search_page(request):
     # for non-ajax requests, render a generic search page
 

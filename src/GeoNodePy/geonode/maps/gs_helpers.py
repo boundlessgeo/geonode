@@ -134,6 +134,12 @@ def fixup_style(cat, resource, style):
             logger.info("Successfully updated %s", lyr)
 
 def cascading_delete(cat, resource):
+    if resource is None:
+        # If there is no associated resource,
+        # this method can not delete anything.
+        # Let's return and make a note in the log.
+        logger.debug('cascading_delete was called with a non existant resource')
+        return
     resource_name = resource.name
     lyr = cat.get_layer(resource_name)
     if(lyr is not None): #Already deleted
@@ -142,7 +148,10 @@ def cascading_delete(cat, resource):
         cat.delete(lyr)
         for s in styles:
             if s is not None:
-                cat.delete(s, purge=True)
+                try:
+                    cat.delete(s, purge=True)
+                except Exception:
+                    pass
         cat.delete(resource)
         if store.resource_type == 'dataStore' and 'dbtype' in store.connection_parameters and store.connection_parameters['dbtype'] == 'postgis':
             # cant delete the store, since it is a database

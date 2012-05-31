@@ -40,6 +40,9 @@ function updateThumbnail(interactive) {
       url : thumbURL,
       method : "POST",
       xmlData: html,
+      defaultHeaders : {
+          "X-CSRFToken" : Ext.util.Cookies.get('csrftoken')
+      },
       success: function() {
           if (interactive) {
             Ext.MessageBox.show({

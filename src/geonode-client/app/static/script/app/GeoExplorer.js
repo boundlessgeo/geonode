@@ -108,7 +108,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     layerSelectionLabel: "UT:View available data from:",
     layersContainerText: "UT:Data",
     layersPanelText: "UT:Layers",
-    legendPanelText: "UT:Legend",
     mapSizeLabel: 'UT: Map Size', 
     metadataFormCancelText : "UT:Cancel",
     metadataFormSaveAsCopyText : "UT:Save as Copy",
@@ -610,12 +609,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 var layer;
                 for (var i=records.length-1; i>= 0; i--) {
                     layer = records[i].getLayer();
-                    if(this.tests.forceTiles && !layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        layer.addOptions({
-                            singleTile: false,
-                            transitionEffect: 'resize'
-                        });
-                        if(layer.params){layer.params.TILED=true;}
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                        if(this.tests.forceTiles){
+                            layer.addOptions({
+                                singleTile: false,
+                                transitionEffect: 'resize'
+                            });
+                            if(layer.params){layer.params.TILED = true;}
+                        }
+                        else if(layer.params){
+                            layer.params.TILED = false;
+                        }
                     }
                     if(this.tests.delayTiles && !layer.isBaseLayer){
                         layer.events.on({
@@ -704,6 +708,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     var source = this.layerSources[startSourceId];
                     if(source.lazy){
                         lyrParts = fromLayer.split(':');
+                        //fix layer name since Geoserver 2.2+ returns only local names when using virtual services
+                        fromLayer = lyrParts[1];
                         source.store.url = 
                             source.store.url.replace(/(geoserver)(\/.*?)(wms)/,
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
@@ -737,6 +743,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         var westPanel = new Ext.Panel({
             id: "westpanel",
             layout: "fit",
+            id: "westpanel",
+            border: false,
             collapseMode: "mini",
             border: false,
             collapsed:true,

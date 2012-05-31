@@ -224,7 +224,6 @@ def setup_webapps(options):
 @needs([
     'install_deps',
     'setup_webapps',
-    'generate_geoserver_token',
     'sync_django_db',
     'package_client'
 ])
@@ -238,35 +237,20 @@ def setup_geonode_client(options):
     """
     Build geonode-client
     """
-    with pushd('src/geonode-client'):
-        sh("mvn clean install")
+    static = path("./src/GeoNodePy/geonode/static/geonode")
+
+    with pushd("src/geonode-client/"):
+        sh("mvn clean compile")
     
-    static = path("./src/GeoNodePy/geonode/media/static")
-    if not static.exists():
-        static.mkdir()
-
-    src_zip = path("./src/geonode-client/build/geonode-client.zip")
-
+    src_zip = "src/geonode-client/build/geonode-client.zip"
     zip_extractall(zipfile.ZipFile(src_zip), static)
+
 
 @task
 def sync_django_db(options):
     sh("django-admin.py syncdb --settings=geonode.settings --noinput")
     sh("django-admin.py migrate --settings=geonode.settings --noinput")
 
-@task
-def generate_geoserver_token(options):
-    gs_token_file = 'geoserver_token'
-    if not os.path.exists(gs_token_file):
-        from random import choice
-        import string
-        chars = string.letters + string.digits + "-_!@#$*"
-        token = ''
-        for i in range(32):
-            token += choice(chars)
-        tf = open('geoserver_token', 'w')
-        tf.write(token)
-        tf.close()
 
 @task
 def package_dir(options):
@@ -282,12 +266,8 @@ def package_dir(options):
 def package_client(options):
     """Package compressed client resources (JavaScript, CSS, images)."""
 
-    # Extract static files to static_location 
-    src_zip = path("./src/geonode-client/build/geonode-client.zip")
-    geonode_media_dir = path("./src/GeoNodePy/geonode/media")
-    static_location = geonode_media_dir / "static" 
-
-    zip_extractall(zipfile.ZipFile(src_zip), static_location)
+    if(hasattr(options, 'use_war')): 
+    	geonode_client_target_war.copy(options.deploy.out_dir)
 
 @task
 @needs('package_dir', 'setup_geoserver')

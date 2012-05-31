@@ -232,12 +232,17 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 var layer;
                 for (var i=records.length-1; i>= 0; i--) {
                     layer = records[i].getLayer();
-                    if(this.tests.forceTiles && !layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        layer.addOptions({
-                            singleTile: false,
-                            transitionEffect: 'resize'
-                        });
-                        if(layer.params){layer.params.TILED=true;}
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                        if(this.tests.forceTiles){
+                            layer.addOptions({
+                                singleTile: false,
+                                transitionEffect: 'resize'
+                            });
+                            if(layer.params){layer.params.TILED = true;}
+                        }
+                        else if(layer.params){
+                            layer.params.TILED = false;
+                        }
                     }
                     if(this.tests.delayTiles && !layer.isBaseLayer){
                         layer.events.on({
@@ -546,6 +551,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                     var source = this.layerSources[startSourceId];
                     if(source.lazy){
                         lyrParts = fromLayer.split(':');
+                        //fix layer name since Geoserver 2.2+ returns only local names when using virtual services
+                        fromLayer = lyrParts[1];
                         source.store.url = 
                             source.store.url.replace(/(geoserver)(\/.*?)(wms)/,
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}

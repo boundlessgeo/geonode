@@ -29,6 +29,7 @@ man
 /src/nosexcover/
 /webapps/
 /src/GeoNodePy/capra/development.db
+/src/django-hitcount/
 
 
 # OSX specific

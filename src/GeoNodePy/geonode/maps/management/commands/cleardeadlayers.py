@@ -50,7 +50,9 @@ class Command(BaseCommand):
             layernames = [l.name for l in cat.get_resources()]
             for l in Layer.objects.all():
                 if l.store not in storenames or l.name not in layernames:
-                    self.delete_layer(l)
+                    l.delete_from_geonetwork()
+                    l.delete()
+                    print l
         except URLError:
             print "Couldn't connect to GeoServer; is it running? Make sure the GEOSERVER_BASE_URL setting is set correctly."
         finally:
@@ -58,7 +60,7 @@ class Command(BaseCommand):
         if args:
             self.msg('deleting specified layers')
             map(self.delete_by_uuid,args)
-        if geonetwork:
+        if geonetwork and settings.USE_GEONETWORK:
             from xml.etree.ElementTree import XML
             self.msg('checking layers only found in geonetwork')
             uuids = set(Layer.objects.gn_catalog.get_all_layer_uuids())
