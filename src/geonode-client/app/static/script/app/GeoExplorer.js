@@ -508,8 +508,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         fieldConfig: {
                             'title': {fieldLabel: "Title", allowBlank: false, width: '100%', anchor: '99%'},
                             'content': {fieldLabel: "Description", xtype: "textarea", width: '100%', anchor: '99%', grow: true},
-                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false},
-                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
+                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false, msgTarget: 'qtip'},
+                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>", msgTarget: 'qtip'},
                             'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
                             'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
                             'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
