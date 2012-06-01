@@ -155,7 +155,7 @@ def _get_owner_results(results, query, kw):
     # make sure all contacts have a user attached
     q = ContactDetail.objects.select_related().filter(user__isnull=False)
     
-    if 'bykw' in kw or 'bysection' in kw:
+    if kw['bykw'] or kw['bysection']:
         # hard to handle - not supporting at the moment
         return
     
