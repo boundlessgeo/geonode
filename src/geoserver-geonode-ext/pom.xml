@@ -298,7 +298,16 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- tests excluded because they generate a jvm crash -->
+            <exclude>**/ProcessRestletTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
-
