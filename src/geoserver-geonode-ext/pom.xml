@@ -287,7 +287,7 @@
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
           <warName>geoserver</warName> 
-          <webappDirectory>${project.build.directory}/geoserver</webappDirectory> -->
+          <webappDirectory>${project.build.directory}/geoserver</webappDirectory>
         </configuration>
         <executions>
           <execution>
