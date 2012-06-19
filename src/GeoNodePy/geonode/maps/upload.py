@@ -467,8 +467,8 @@ def time_step_view(request, upload_session):
     upload_session.set_target(target)
     
     if async:
-        return json_response(redirect_to= reverse('data_upload',args=['final']))
-    
+        return json_response(redirect_to=reverse('data_upload',args=['final']))
+
     return HttpResponseRedirect(upload_session.layer.get_absolute_url() + "?describe")
 
     
@@ -555,7 +555,6 @@ def final_step_view(req, upload_session):
 
 def final_step(upload_session, user):
     target = upload_session.import_target
-    if target is None: raise 'shitbag'
     import_session = upload_session.import_session
     
     _log('Reloading session %s to check validity',import_session.id)

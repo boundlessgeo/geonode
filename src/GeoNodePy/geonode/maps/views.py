@@ -1051,7 +1051,7 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None):
 
     if not isinstance(body, basestring):
         body = json.dumps(body)
-    return HttpResponse(body, mimetype = "application/json")
+    return HttpResponse(body, content_type = "application/json")
         
 @login_required
 def view_layer_permissions(request, layername):
