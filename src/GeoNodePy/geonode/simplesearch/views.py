@@ -7,14 +7,21 @@ from django.core.cache import cache
 from geonode.maps.views import default_map_config
 from geonode.maps.models import *
 from geonode.simplesearch.search import combined_search_results
-
-# @hack - fix dependency by allowing injection
-from mapstory.models import Section
+from geonode.simplesearch.util import resolve_extension
 
 import json
 import cPickle as pickle
 import operator
 import logging
+import zlib
+
+_SEARCH_PARAMS = ['bytype','bykw','byowner','byextent','byadded','byperiod']
+
+# settings API
+_search_config = getattr(settings,'SIMPLE_SEARCH_SETTINGS', {})
+_SEARCH_PARAMS.extend(_search_config.get('extra_query',[]))
+_extra_context = resolve_extension('extra_context')
+# end settings API
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
 MAX_MAPS_SEARCH_BATCH_SIZE = 25
@@ -65,9 +72,10 @@ def _get_search_context():
         'counts' : counts,
         'users' : User.objects.all(),
         'topics' : topic_cnts,
-        'sections' : Section.objects.all(),
         'keywords' : _get_all_keywords()
     }
+    if _extra_context:
+        _extra_context(context)
     cache.set(cache_key, context, 60)
         
     return context
@@ -158,15 +166,9 @@ def _search_params(request):
 
         }[params.get('sort','newest')]
 
-    filters = {}
-    for k in ('bytype','bytopic','bykw','bysection','byowner','byextent','byadded','byperiod'):
-        if k in params:
-            if params[k]:
-                filters[k] = params[k]
-        else:
-            filters[k] = None
+    filters = dict([(k,params.get(k,None) or None) for k in _SEARCH_PARAMS])
                 
-    if filters['byperiod']:
+    if filters.get('byperiod'):
         filters['byperiod'] = tuple(filters['byperiod'].split(','))
 
     return query, start, limit, sort_field, sort_asc, filters
@@ -207,10 +209,11 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     if not results:
         results = combined_search_results(query,filters)
         if use_cache:
-            dumped = pickle.dumps(results)
+            dumped = zlib.compress(pickle.dumps(results))
             cache.set(key, dumped, cache_time)
+
     else:
-        results = pickle.loads(results)
+        results = pickle.loads(zlib.decompress(results))
 
     filter_fun = []
     # careful when creating lambda or function filters inline like this

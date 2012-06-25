@@ -1,4 +1,14 @@
 import math
+from django.conf import settings
+
+_search_config = getattr(settings,'SIMPLE_SEARCH_SETTINGS', {})
+_extension = _search_config.get('extension', None)
+if _extension:
+    _extension = __import__(_extension,level=0,fromlist=['*'])
+
+def resolve_extension(name):
+    if _extension is None: return None
+    return getattr(_extension,name,None)
 
 '''taken from http://oneau.wordpress.com/2010/06/20/julian-date-calculator/'''
 

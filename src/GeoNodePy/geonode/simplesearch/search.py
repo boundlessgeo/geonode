@@ -2,7 +2,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.db.models import F
 from django.template import defaultfilters
 from django.contrib.gis.gdal import Envelope
 
@@ -10,17 +9,11 @@ from geonode.maps.models import *
 from geonode.maps.views import _metadata_search
 from geonode.maps.views import _split_query
 
-# @hack - fix dependency by allowing injection
-from mapstory.models import Topic
-from mapstory.models import ContactDetail
-from mapstory.models import get_view_cnts
-from mapstory.models import get_ratings
-
+from geonode.simplesearch.util import resolve_extension
 from geonode.simplesearch.models import LayerIndex
 from geonode.simplesearch.models import MapIndex
 from geonode.simplesearch.models import filter_by_period
 
-# and another
 from avatar.util import get_default_avatar_url
 
 import re
@@ -29,13 +22,43 @@ from datetime import date
 from datetime import timedelta
 
 _date_fmt = lambda dt: dt.strftime('%b %d %Y')
+_USER_DISPLAY = 'User'
+_MAP_DISPLAY = 'Map'
+_LAYER_DISPLAY = 'Layer'
 
-_exclude_patterns = []
-_exclude_regex = []
-'''Settings API - allow regular expressions to filter our layer name results'''
-if hasattr(settings,'SIMPLE_SEARCH_EXCLUSIONS'):
-    _exclude_patterns = settings.SIMPLE_SEARCH_EXCLUSIONS
-    _exclude_regex = [ re.compile(e) for e in _exclude_patterns ]
+# settings API
+_search_config = getattr(settings,'SIMPLE_SEARCH_SETTINGS', {})
+
+_exclude_patterns = _search_config.get('layer_exclusions',[])
+
+_exclude_regex = [ re.compile(e) for e in _exclude_patterns ]
+
+_process_results = resolve_extension('process_search_results')
+if _process_results is None:
+    _process_results = lambda r: r
+    
+_owner_query = resolve_extension('owner_query')
+if not _owner_query:
+    _owner_query = lambda q,k: Contact.objects.filter()
+    
+_owner_query_fields = resolve_extension('owner_query_fields') or []
+    
+_layer_query = resolve_extension('layer_query')
+if not _layer_query:
+    _layer_query = lambda q,k: Layer.objects.filter()
+    
+_map_query = resolve_extension('map_query')
+if not _map_query:
+    _map_query = lambda q,k: Map.objects.filter()
+
+_display_names = resolve_extension('display_names')
+if _display_names:
+    _USER_DISPLAY = _display_names.get('user')
+    _MAP_DISPLAY = _display_names.get('map')
+    _LAYER_DISPLAY = _display_names.get('layer')
+
+# end settings API
+
     
 def _filter_results(l):
     '''If the layer name doesn't match any of the patterns, it shows in the results'''
@@ -59,6 +82,8 @@ class Normalizer:
         abstract
     def as_dict(self):
         if self.dict is None:
+            if self.o._deferred:
+                self.o = getattr(type(self.o),'objects').get(pk = self.o.pk)
             self.dict = self.populate(self.data or {})
             self.dict['iid'] = self.iid
             self.dict['rating'] = self.rating
@@ -86,7 +111,7 @@ class MapNormalizer(Normalizer):
             'owner_detail' : reverse('about_storyteller', args=(map.owner.username,)),
             'last_modified' : _date_fmt(map.last_modified),
             '_type' : 'map',
-            '_display_type' : 'MapStory',
+            '_display_type' : _MAP_DISPLAY,
             'thumb' : map.get_thumbnail_url(),
             'keywords' : keywords,
         }
@@ -104,7 +129,7 @@ class LayerNormalizer(Normalizer):
         doc['topic'] = layer.topic_category
         doc['abstract'] = defaultfilters.linebreaks(layer.abstract)
         doc['storeType'] = layer.storeType
-        doc['_display_type'] = 'StoryLayer'
+        doc['_display_type'] = _LAYER_DISPLAY
         if not settings.USE_GEONETWORK:
             doc['keywords'] = layer.keyword_list()
             doc['title'] = layer.title
@@ -114,18 +139,8 @@ class LayerNormalizer(Normalizer):
         if owner:
             doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
         return doc
-    
-def _annotate_results(normalizers):
-    '''Generic content types are _much_ faster to deal with in bulk'''
-    if not normalizers: return normalizers
-    model = type(normalizers[0].o)
-    cnts = get_view_cnts(model)
-    ratings = get_ratings(model)
-    for n in normalizers:
-        n.views = cnts.get(n.o.id, 0)
-        n.rating = float(ratings.get(n.o.id, 0))
-    return normalizers
-    
+
+
 _default_avatar_url = get_default_avatar_url()
 class OwnerNormalizer(Normalizer):
     def title(self):
@@ -148,14 +163,16 @@ class OwnerNormalizer(Normalizer):
         doc['layer_cnt'] = Layer.objects.filter(owner = user).count()
         doc['map_cnt'] = Map.objects.filter(owner = user).count()
         doc['_type'] = 'owner'
-        doc['_display_type'] = 'StoryTeller'
+        doc['_display_type'] = _USER_DISPLAY
         return doc
     
 def _get_owner_results(results, query, kw):
     # make sure all contacts have a user attached
-    q = ContactDetail.objects.select_related().filter(user__isnull=False)
+    q = _owner_query(query, kw)
     
-    if kw['bykw'] or kw['bysection']:
+    if q is None: return None
+    
+    if kw['bykw']:
         # hard to handle - not supporting at the moment
         return
     
@@ -178,22 +195,17 @@ def _get_owner_results(results, query, kw):
         q = q.filter(user__date_joined__gt = byadded)
     
     if query:
-        q = q.filter(Q(user__username__icontains=query) |
-            Q(user__first_name__icontains=query) |
-            Q(user__last_name__icontains=query) |
-            Q(blurb__icontains=query) |
-            Q(organization__icontains=query) |
-            Q(biography__icontains=query)
-        )
+        qs = Q(user__username__icontains=query) | \
+             Q(user__first_name__icontains=query) | \
+             Q(user__last_name__icontains=query)
+        for field in _owner_query_fields:
+            qs = qs | Q(**{'%s__icontains' % field: query})
+        q = q.filter(qs)
     
-    results.extend( _annotate_results(map(OwnerNormalizer,q)))
+    results.extend( _process_results(map(OwnerNormalizer,q)))
         
 def _get_map_results(results, query, kw):
-    q = Map.objects.filter(publish__status='Public')
-    
-    bysection = kw.get('bysection')
-    if bysection:
-        q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
+    q = _map_query(query,kw)
         
     byowner = kw.get('byowner')
     if byowner:
@@ -222,7 +234,7 @@ def _get_map_results(results, query, kw):
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             q = q.filter(id__in=map_layers_with)
     
-    results.extend( _annotate_results( map(MapNormalizer,q) ))
+    results.extend( _process_results( map(MapNormalizer,q) ))
     
     
 def _build_kw_query(query, query_keywords=False):
@@ -287,8 +299,10 @@ def _get_layer_results(results, query, kw):
             cache.set(cache_key, layer_results, timeout=300)
         q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
     else:
-        name_filter = reduce(operator.or_,[ Q(name__regex=f) for f in _exclude_patterns])
-        q = Layer.objects.exclude(name_filter).filter(publish__status='Public')
+        q = _layer_query(query,kw)
+        if _exclude_patterns:
+            name_filter = reduce(operator.or_,[ Q(name__regex=f) for f in _exclude_patterns])
+            q = q.exclude(name_filter)
         if query:
             q = q.filter(_build_kw_query(query,True)) | q.filter(name__icontains = query)
         # we can optimize kw search here
@@ -302,18 +316,9 @@ def _get_layer_results(results, query, kw):
     if byowner:
         q = q.filter(owner__username=byowner)
             
-    bysection = kw.get('bysection')
-    if bysection:
-        q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
-    
     bytype = kw.get('bytype')
     if bytype and bytype != 'layer':
         q = q.filter(storeType = bytype)
-        
-    # @todo once supported via UI - this should be an OR with the section filter
-    bytopic = kw.get('bytopic')
-    if bytopic:
-        q = q.filter(topic_category = bytopic)
         
     byextent = kw.get('byextent')
     if byextent:
@@ -338,7 +343,7 @@ def _get_layer_results(results, query, kw):
             normalizers.append(LayerNormalizer(layer,doc))
     else:
         normalizers = map(LayerNormalizer, q)
-    _annotate_results(normalizers)
+    _process_results(normalizers)
     results.extend(normalizers)
                 
 
