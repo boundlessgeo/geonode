@@ -292,6 +292,7 @@ class TimeForm(forms.Form):
         self._build_choice('end_text_attribute',text_names)
         if text_names:
             self.fields['text_attribute_format'] = forms.CharField(required=False)
+            self.fields['end_text_attribute_format'] = forms.CharField(required=False)
         self._build_choice('year_attribute',year_names)
         self._build_choice('end_year_attribute',year_names)
             
