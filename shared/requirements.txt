@@ -17,4 +17,3 @@ agon-ratings==0.2
 South==0.7.3
 lxml
 
--e file:///home/en/work/opengeo/geonode/src/gsuploader/
