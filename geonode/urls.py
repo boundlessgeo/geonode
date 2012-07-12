@@ -50,6 +50,9 @@ urlpatterns = patterns('',
     (r'^people/', include('geonode.people.urls')),
     (r'^avatar/', include('avatar.urls')),
 
+    # Printing
+    (r'^printing/', include('geonode.printing.urls')),
+
     # Meta
     url(r'^lang\.js$', 'django.views.generic.simple.direct_to_template',
          {'template': 'lang.js', 'mimetype': 'text/javascript'}, name='lang'),

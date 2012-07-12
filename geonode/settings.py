@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     'geonode.maps',
     'geonode.layers',
     'geonode.people',
+    'geonode.printing',
     'geonode.proxy',
     'geonode.security',
 )
