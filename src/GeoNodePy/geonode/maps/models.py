@@ -1454,6 +1454,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         }
         if self.tools_params:
             config['tools'] = simplejson.loads(self.tools_params)
+        else:
+            config['tools'] = settings.DEFAULT_VIEWER_TOOLS
         if self.portal_params:
             config['portalConfig'] = simplejson.loads(self.portal_params)
         if authenticated == True:
