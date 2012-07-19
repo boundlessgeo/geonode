@@ -33,9 +33,11 @@ from django.template import RequestContext
 import shutil
 import json
 import os.path
+import re
+import logging
 from zipfile import ZipFile
 
-
+logger = logging.getLogger(__name__)
 
 _SESSION_KEY = 'geonode_upload_session'
 
@@ -90,6 +92,7 @@ class UploaderSession(object):
                 setattr(self,k,v)
             else:
                 raise Exception('not handled : %s' % k)
+            
     def cleanup(self):
         """do what we should at the given state of the upload"""
         pass
@@ -172,6 +175,14 @@ def _rename_and_prepare(base_file):
             
     return os.path.join(dirname,xml_unsafe.sub('_', os.path.basename(base_file)))
 
+
+def _find_sld(base_file):
+    '''work around assumption in get_files that sld will be named the same'''
+    for f in os.listdir(os.path.dirname(base_file)):
+        if f.lower().endswith('.sld'):
+            return f
+
+
 def save_step_view(req, session):
     assert session is None
     
@@ -184,7 +195,9 @@ def save_step_view(req, session):
         tempdir, base_file = form.write_files()
         base_file = _rename_and_prepare(base_file)
         name, __ = os.path.splitext(os.path.basename(base_file))
-        import_session = save_step(req.user, name, base_file, overwrite=False) 
+        import_session = save_step(req.user, name, base_file, overwrite=False)
+        sld = _find_sld(base_file)
+        _log('provided sld is %s' % sld)
         req.session[_SESSION_KEY] = UploaderSession(
             tempdir = tempdir,
             base_file = base_file,
@@ -192,7 +205,8 @@ def save_step_view(req, session):
             import_session = import_session,
             layer_abstract = form.cleaned_data["abstract"],
             layer_title = form.cleaned_data["layer_title"],
-            permissions = form.cleaned_data["permissions"]
+            permissions = form.cleaned_data["permissions"],
+            import_sld_file = sld
         )
         return _redirect('time', ext_compat=ext_compat)
     else:
@@ -717,7 +731,6 @@ def view(req, step):
     else:
         assert _SESSION_KEY in req.session, 'Expected uploader session for step %s' % step
         upload_session = req.session[_SESSION_KEY]
-        
     try:
         resp = _steps[step](req, upload_session)
         if upload_session:
