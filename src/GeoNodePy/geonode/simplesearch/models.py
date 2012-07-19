@@ -62,7 +62,10 @@ def index_object(obj, update=False):
     
     if not update or created:
         _logger.debug('indexing %s',obj)
-        func(index_obj, obj)
+        try:
+            func(index_obj, obj)
+        except:
+            _logger.exception('Error indexing object %s', obj)
     else:
         _logger.debug('skipping %s',obj)
         
