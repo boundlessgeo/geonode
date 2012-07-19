@@ -1015,14 +1015,19 @@ def layer_replace(request, layername):
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
         
-def json_response(body=None, errors=None, redirect_to=None, exception=None):
+def json_response(body=None, errors=None, redirect_to=None, exception=None,
+                  content_type=None):
     """Create a proper JSON response. If body is provided, this is the response.
     If errors is not None, the response is a success/errors json object.
     If redirect_to is not None, the response is a success=True, redirect_to object
     If the exception is provided, it will be logged. If body is a string, the
     exception message will be used as a format option to that string and the
     result will be a success=False, errors = body % exception
+    
+    content_type : for compatibility, optional content_type, default is json
     """
+    if content_type is None:
+        content_type = "application/json"
     if errors:
         body = {
             'success' : False,
@@ -1051,7 +1056,7 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None):
 
     if not isinstance(body, basestring):
         body = json.dumps(body)
-    return HttpResponse(body, content_type = "application/json")
+    return HttpResponse(body, content_type=content_type)
         
 @login_required
 def view_layer_permissions(request, layername):

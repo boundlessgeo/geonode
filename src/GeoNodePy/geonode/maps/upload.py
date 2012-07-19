@@ -129,8 +129,10 @@ def upload(name, base_file, user=None, time_attribute=None, time_transform_type=
 def _log(msg, *args):
     logger.info(msg, *args)
     
-def _redirect(step):
-    return json_response(redirect_to=reverse('data_upload', args=[step]))
+def _redirect(step, ext_compat=False):
+    content_type = 'text/html' if ext_compat else None
+    return json_response(redirect_to=reverse('data_upload', args=[step]), 
+                         content_type=content_type)
 
 def _rename_and_prepare(base_file):
     """ensure the file(s) have a proper name
@@ -175,6 +177,9 @@ def save_step_view(req, session):
     
     form = NewLayerUploadForm(req.POST, req.FILES)
     tempdir = None
+    # if this is a form submit using iframe, it will require text/html
+    # otherwise it is an ajax request and can/should reply in kind
+    ext_compat = not req.is_ajax()
     if form.is_valid():
         tempdir, base_file = form.write_files()
         base_file = _rename_and_prepare(base_file)
@@ -189,12 +194,12 @@ def save_step_view(req, session):
             layer_title = form.cleaned_data["layer_title"],
             permissions = form.cleaned_data["permissions"]
         )
-        return _redirect('time')
+        return _redirect('time', ext_compat=ext_compat)
     else:
         errors = []
         for e in form.errors.values():
             errors.extend([escape(v) for v in e])
-        return json_response(errors = errors)
+        return json_response(errors = errors, ext_compat=ext_compat)
 
 def save_step(user, layer, base_file, overwrite = True):
     
