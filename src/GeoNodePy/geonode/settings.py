@@ -219,6 +219,27 @@ MAP_BASELAYERS = [{
 
 }]
 
+DEFAULT_VIEWER_TOOLS = [{
+    "ptype": "gxp_wmsgetfeatureinfo",
+    "format": "grid",
+    "actionTarget": "main.tbar",
+    "toggleGroup": "map",
+    "layerParams": ["TIME"],
+    "controlOptions": {
+        "hover": True
+    },
+    "outputConfig": {"width": 400, "height": 300}
+}, {
+    "ptype": "gxp_playback",
+    "id": "playback-tool",
+    "outputTarget": "map-bbar",
+    "looped": True,
+    "outputConfig":{
+        "xtype": 'app_playbacktoolbar',
+        "defaults": {"scale": 'medium'}
+    }
+}]
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
