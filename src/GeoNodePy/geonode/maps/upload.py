@@ -159,6 +159,10 @@ def _rename_and_prepare(base_file):
             # @todo other files - need to unify extension handling somewhere
             if ext.lower() == '.shp':
                 main_file = f
+            
+            if ext.lower() == '.sld':
+                zf.extract(f, dirname)
+
         if not main_file: raise Exception('Could not locate a shapefile')
         if rename:
             # dang, have to unpack and rename
