@@ -1935,6 +1935,10 @@ class Upload(models.Model):
                     session.delete()
                 except:
                     logging.exception('error deleting upload session')
+
+
+# this is declared here to avoid potential circular dependencies
+upload_complete = Signal(providing_args=['layer'])
         
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)

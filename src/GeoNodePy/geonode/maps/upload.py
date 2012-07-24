@@ -711,6 +711,8 @@ def final_step(upload_session, user):
     
     if upload_session.tempdir and os.path.exists(upload_session.tempdir):
         shutil.rmtree(upload_session.tempdir)
+        
+    upload_complete.send(sender=final_step, layer=saved_layer)
     
     return saved_layer
 
