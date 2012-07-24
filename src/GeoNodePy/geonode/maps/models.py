@@ -1883,7 +1883,12 @@ class Thumbnail(models.Model):
             None,
             http
         ))
-        data = unicode(self.thumb_spec).encode('UTF-8')
+        # @todo annoying but not critical
+        # openlayers controls posted back contain a bad character. this seems
+        # to come from a &minus; entity in the html, but it gets converted
+        # to a unicode en-dash but is not uncoded properly during transmission
+        # 'ignore' the error for now as controls are not being rendered...
+        data = unicode(self.thumb_spec, errors='ignore').encode('UTF-8')
         resp, content = http.request(url,"POST",data,{
             'Content-type':'text/html'
         })
