@@ -39,13 +39,18 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
                 restUrl = src.restUrl;
             }
         }
-        var source = new gxp.plugins.WMSSource({
-            isLazy: function() { return false; },
-            hidden: true,
-            restUrl: restUrl,
-            version: "1.1.1",
-            id: Ext.id(),
-            url: url
+
+        var id = config.name + '-' + config.source
+        var source = this.target.layerSources[id] || this.target.addLayerSource({
+            "id": id,
+            config: {
+                isLazy: OpenLayers.Function.False,
+                ptype: 'gxp_wmscsource',
+                hidden: true,
+                restUrl: restUrl,
+                version: "1.1.1",
+                url: url
+            }
         });
         source.on({
             "ready": function() {
@@ -56,8 +61,6 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
             },
             scope: this
         });
-        source.init(this.target);
-        this.target.layerSources[source.id] = source;
     }
 
 });

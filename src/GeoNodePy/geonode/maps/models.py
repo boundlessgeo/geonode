@@ -507,7 +507,7 @@ class Contact(models.Model):
     zipcode = models.CharField(_('Postal Code'), max_length=255, blank=True, null=True)
     country = models.CharField(choices=COUNTRIES, max_length=3, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
-    
+
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
 
     def clean(self):
@@ -557,12 +557,12 @@ def _get_wms(typename=None):
     http.add_credentials(_user, _password)
     http.authorizations.append(
         httplib2.BasicAuthentication(
-            (_user, _password), 
+            (_user, _password),
                 netloc,
                 wms_url,
                 {},
                 None,
-                None, 
+                None,
                 http
             )
         )
@@ -604,7 +604,7 @@ class ThumbnailMixin:
         pass
 
 class LayerManager(models.Manager):
-    
+
     def __init__(self):
         models.Manager.__init__(self)
         url = "%srest" % settings.GEOSERVER_BASE_URL
@@ -631,8 +631,8 @@ class LayerManager(models.Manager):
         superusers = User.objects.filter(is_superuser=True).order_by('id')
         if superusers.count() == 0:
             raise RuntimeError('GeoNode needs at least one admin/superuser set')
-        
-        contact, created = Contact.objects.get_or_create(user=superusers[0], 
+
+        contact, created = Contact.objects.get_or_create(user=superusers[0],
                                                 defaults={"name": "Geonode Admin"})
         return contact
 
@@ -735,7 +735,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     # section 1
     title = models.CharField(_('title'), max_length=255)
     date = models.DateTimeField(_('date'), default = datetime.now) # passing the method itself, not the result
-    
+
     date_type = models.CharField(_('date type'), max_length=255, choices=VALID_DATE_TYPES, default='publication')
 
     edition = models.CharField(_('edition'), max_length=255, blank=True, null=True)
@@ -776,7 +776,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     def download_links(self):
         """Returns a list of (mimetype, URL) tuples for downloads of this data
         in various formats."""
- 
+
         bbox = self.resource.latlon_bbox
 
         dx = float(bbox[1]) - float(bbox[0])
@@ -792,7 +792,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         srs = 'EPSG:4326' # bbox[4] might be None
         bbox_string = ",".join([bbox[0], bbox[2], bbox[1], bbox[3]])
 
-        links = []        
+        links = []
 
         if self.resource.resource_type == "featureType":
             def wfs_link(mime, extra_params):
@@ -850,7 +850,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 # if something is wrong with WCS we probably don't want to link
                 # to it anyway
                 # TODO: This is a bad idea to eat errors like this.
-                pass 
+                pass
 
         def wms_link(mime):
             return settings.GEOSERVER_BASE_URL + "wms?" + urllib.urlencode({
@@ -890,15 +890,15 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     def verify(self):
         """Makes sure the state of the layer is consistent in GeoServer and GeoNetwork.
         """
-        
+
         try:
             body = describe_layer(self.typename)
             body.index(self.typename)
         except:
             logger.exception('Error finding layer "%s" using describeLayer' % self.typename)
-            msg = "WMS Record missing for layer [%s]" % self.typename 
+            msg = "WMS Record missing for layer [%s]" % self.typename
             raise GeoNodeException(msg)
-        
+
         # Check the layer is in GeoServer's REST API
         # It would be nice if we could ask for the definition of a layer by name
         # rather than searching for it
@@ -912,7 +912,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         #if(api_layer == None):
         #    msg = "API Record missing for layer [%s]" % self.typename
         #    raise GeoNodeException(msg)
- 
+
         # Check the layer is in the GeoNetwork catalog and points back to get_absolute_url
         if settings.USE_GEONETWORK:
             if(_csw is None): # Might need to re-cache, nothing equivalent to _wms.contents?
@@ -926,7 +926,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
             if(csw_layer.uri != self.get_absolute_url()):
                 msg = "CSW Layer URL does not match layer URL for layer [%s]" % self.typename
-            
+
         # Visit get_absolute_url and make sure it does not give a 404
         #logger.info(self.get_absolute_url())
         #response, body = http.request(self.get_absolute_url())
@@ -1015,7 +1015,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 cascading_delete(Layer.objects.gs_catalog, self.resource)
         except (FailedRequestError, RuntimeError):
             logger.exception("Error deleting layer from geoserver - possible layer did not exist")
-            
+
     def delete_from_geonetwork(self):
         if not settings.USE_GEONETWORK:
             return
@@ -1070,13 +1070,13 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     def _set_styles(self, styles):
         self.publishing.styles = styles
-        
+
     def _thumbnail_updated(self, thumb, created):
         if created:
             self.save_to_geonetwork()
 
     styles = property(_get_styles, _set_styles)
-    
+
     @property
     def service_type(self):
         if self.storeType == 'coverageStore':
@@ -1142,7 +1142,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 gn = Layer.objects.gn_catalog
                 self.resource.metadata_links = [('text/xml', 'TC211', gn.url_for_uuid(self.uuid))]
                 gn.logout()
-            self.resource.name= self.name            
+            self.resource.name= self.name
             self.resource.keywords = self.keyword_list()
             Layer.objects.gs_catalog.save(self._resource_cache)
         if self.poc and self.poc.user:
@@ -1204,7 +1204,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         else:
             srid = box[4]
         self.geographic_bounding_box = bbox_to_wkt(box[0], box[1], box[2], box[3], srid=srid )
-        
+
     def get_time_extent(self):
         """Return tuple of min/max string datetime or None if not available."""
         wms = _get_wms(self.typename)
@@ -1230,10 +1230,10 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 times.sort()
                 result = times[0], times[-1]
         return result
-    
+
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
-    
+
     def get_virtual_wms_url(self):
         return settings.GEOSERVER_BASE_URL + "%s/%s/wms" % tuple(self.typename.split(':'))
 
@@ -1243,7 +1243,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     class Meta:
         # custom permissions,
         # change and delete are standard in django
-        permissions = (('view_layer', 'Can view'), 
+        permissions = (('view_layer', 'Can view'),
                        ('change_layer_permissions', "Can change permissions"), )
 
     # Permission Level Constants
@@ -1251,10 +1251,10 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     LEVEL_READ  = 'layer_readonly'
     LEVEL_WRITE = 'layer_readwrite'
     LEVEL_ADMIN = 'layer_admin'
-                 
+
     def set_default_permissions(self):
         self.set_gen_level(ANONYMOUS_USERS, self.LEVEL_READ)
-        self.set_gen_level(AUTHENTICATED_USERS, self.LEVEL_READ) 
+        self.set_gen_level(AUTHENTICATED_USERS, self.LEVEL_READ)
 
         # remove specific user permissions
         current_perms =  self.get_all_level_info()
@@ -1327,7 +1327,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
     The last time the map was modified.
     """
-    
+
     tools_params = models.TextField(_('tools params'), null=True)
     """
     A JSON-encoded dictionary of arbitrary parameters for the GXP tools
@@ -1366,13 +1366,13 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     def json(self, layer_filter):
         map_layers = MapLayer.objects.filter(map=self.id)
-        layers = [] 
+        layers = []
         for map_layer in map_layers:
-            if map_layer.local():   
+            if map_layer.local():
                 layer =  Layer.objects.get(typename=map_layer.name)
                 layers.append(layer)
-            else: 
-                pass 
+            else:
+                pass
 
         if layer_filter:
             layers = filter(layer_filter, layers)
@@ -1409,13 +1409,12 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         should use ``.layer_set.create()``.
         """
         layers = list(self.layer_set.all()) + list(added_layers) #implicitly sorted by stack_order
-        server_lookup = {}
         sources = {'local': settings.DEFAULT_LAYER_SOURCE }
 
         def uniqify(seq):
             """
             get a list of unique items from the input sequence.
-            
+
             This relies only on equality tests, so you can use it on most
             things.  If you have a sequence of hashables, list(set(seq)) is
             better.
@@ -1429,9 +1428,11 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
         i = 0
         for source in uniqify(configs):
-            while str(i) in sources: i = i + 1
-            sources[str(i)] = source 
-            server_lookup[json.dumps(source)] = str(i)
+            key = source.get('id', None)
+            if not key:
+                key = str(i)
+                i += 1
+            sources[key] = source
 
         def source_lookup(source):
             for k, v in sources.iteritems():
@@ -1488,8 +1489,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     def update_from_viewer(self, conf):
         """
         Update this Map's details by parsing a JSON object as produced by
-        a GXP Viewer.  
-        
+        a GXP Viewer.
+
         This method automatically persists to the database!
         """
         if isinstance(conf, basestring):
@@ -1511,12 +1512,12 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             return conf["sources"][layer["source"]]
 
         layers = [l for l in conf["map"]["layers"]]
-        
+
         layer_names = set([l.typename for l in self.local_layers])
-        
+
         for layer in self.layer_set.all():
             layer.delete()
-            
+
         self.keywords.add(*conf['map'].get('keywords', []))
 
         for ordering, layer in enumerate(layers):
@@ -1524,7 +1525,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 self.layer_set.from_viewer_config(
                     self, layer, source_for(layer), ordering
             ))
-            
+
         if layer_names != set([l.typename for l in self.local_layers]):
             map_changed_signal.send_robust(sender=self,what_changed='layers')
 
@@ -1544,11 +1545,11 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     def get_absolute_url(self):
         return '/maps/%i' % self.id
-        
+
     class Meta:
-        # custom permissions, 
+        # custom permissions,
         # change and delete are standard in django
-        permissions = (('view_map', 'Can view'), 
+        permissions = (('view_map', 'Can view'),
                        ('change_map_permissions', "Can change permissions"), )
 
     # Permission Level Constants
@@ -1556,7 +1557,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     LEVEL_READ  = 'map_readonly'
     LEVEL_WRITE = 'map_readwrite'
     LEVEL_ADMIN = 'map_admin'
-    
+
     def set_default_permissions(self):
         self.set_gen_level(ANONYMOUS_USERS, self.LEVEL_READ)
         self.set_gen_level(AUTHENTICATED_USERS, self.LEVEL_READ)
@@ -1569,7 +1570,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
         # assign owner admin privs
         if self.owner:
-            self.set_user_level(self.owner, self.LEVEL_ADMIN)    
+            self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
 
 
@@ -1702,7 +1703,7 @@ class MapLayer(models.Model):
     (such as ows_url) then the fields override.
     """
 
-    def local(self): 
+    def local(self):
         """
         Tests whether this layer is served by the GeoServer instance that is
         paired with the GeoNode site.  Currently this is based on heuristics,
@@ -1712,9 +1713,9 @@ class MapLayer(models.Model):
         if url[0] == '/' or url.startswith(settings.GEOSERVER_BASE_URL):
             return (Layer.objects.filter(typename=self.name) | \
                     Layer.objects.filter(name=self.name)).count() != 0
-        else: 
+        else:
             return False
- 
+
     def source_config(self):
         """
         Generate a dict that can be serialized to a GXP layer source
@@ -1741,7 +1742,7 @@ class MapLayer(models.Model):
         """
         try:
             cfg = json.loads(self.layer_params)
-        except: 
+        except:
             cfg = dict()
 
         if self.format: cfg['format'] = self.format
@@ -1758,12 +1759,12 @@ class MapLayer(models.Model):
 
 
     @property
-    def local_link(self): 
+    def local_link(self):
         if self.local():
             q = models.Q(typename=self.name) | models.Q(name=self.name)
             layer = Layer.objects.get(q)
             link = "<a href=\"%s\">%s</a>" % (layer.get_absolute_url(),layer.title)
-        else: 
+        else:
             link = "<span>%s</span> " % self.name
         return link
 
@@ -1815,7 +1816,7 @@ class ContactRole(models.Model):
     class Meta:
         unique_together = (("contact", "layer", "role"),)
 
-def delete_layer(instance, sender, **kwargs): 
+def delete_layer(instance, sender, **kwargs):
     """
     Removes the layer from GeoServer and GeoNetwork
     """
@@ -1835,7 +1836,7 @@ def post_save_layer(instance, sender, **kwargs):
     if kwargs['created']:
         instance._populate_from_gn()
         instance.save(force_update=True)
-        
+
 
 class ThumbnailManager(models.Manager):
     def __init__(self):
@@ -1867,7 +1868,7 @@ class ThumbnailManager(models.Manager):
         ids = [ o.id for o in objs]
         thumbs = thumbs.filter(object_id__in=ids)
         return dict([ (t.content_object.id,t) for t in thumbs])
-    
+
 class Thumbnail(models.Model):
     objects = ThumbnailManager()
 
@@ -1935,15 +1936,15 @@ class Thumbnail(models.Model):
             raise Exception('Error generating thumbnail')
         with open(self.get_thumbnail_path(),"wb") as fp:
             fp.write(content)
-    
+
 def _remove_thumb(instance, sender, **kw):
     for t in Thumbnail.objects.filter(object_id=instance.id):
         t.delete()
-        
+
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)
 signals.pre_delete.connect(_remove_thumb, sender=Map)
-    
+
 
 signals.pre_delete.connect(delete_layer, sender=Layer)
 signals.post_save.connect(post_save_layer, sender=Layer)
