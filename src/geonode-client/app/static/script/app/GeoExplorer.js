@@ -1,7 +1,8 @@
+/*global Ext, gxp, GeoExt */
 /**
  * Copyright (c) 2009 The Open Planning Project
  */
-
+'use strict';
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
@@ -48,7 +49,7 @@ Ext.override(Ext.dd.DragTracker, {
  * title - {String} Optional title to display for layer.
  */
 var GeoExplorer = Ext.extend(gxp.Viewer, {
-    
+
     /**
      * api: config[localGeoServerBaseUrl]
      * ``String`` url of the local GeoServer instance
@@ -72,7 +73,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * ``String``
      */
     toggleGroup: "map",
-    
+
     /**
      * private: property[mapPanel]
      * the :class:`GeoExt.MapPanel` instance for the main viewport
@@ -85,12 +86,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      */
     toolbar: null,
 
+
+    searchForm: null,
+
     /**
      * Property: capGrid
      * {<Ext.Window>} A window which includes a CapabilitiesGrid panel.
      */
     capGrid: null,
-    
+
     /**
      * Property: modified
      * ``Number``
@@ -103,7 +107,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      *     we can insert responses from multiple requests.
      */
     popupCache: null,
-    
+
     /** private: property[urlPortRegEx]
      *  ``RegExp``
      */
@@ -120,7 +124,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     layerSelectionLabel: "UT:View available data from:",
     layersContainerText: "UT:Data",
     layersPanelText: "UT:Layers",
-    mapSizeLabel: 'UT: Map Size', 
+    mapSizeLabel: 'UT: Map Size',
     metadataFormCancelText : "UT:Cancel",
     metadataFormSaveAsCopyText : "UT:Save as Copy",
     metadataFormSaveText : "UT:Save",
@@ -145,7 +149,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     zoomSliderTipText: "UT: Zoom Level",
     zoomToLayerExtentText: "UT:Zoom to Layer Extent",
 
-    constructor: function(config) {
+    constructor: function (config) {
         config = config || {};
         this.popupCache = {};
         // add any custom application events
@@ -164,7 +168,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
              */
             "beforeunload"
         );
-        
+
         // Common tools for viewer and composer go here. Note that this
         // modifies the viewer's initialConfig.
         if (config.useToolbar !== false) {
@@ -183,7 +187,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 id: "playback-tool",
                 outputTarget: "map-bbar",
                 looped: true,
-                outputConfig:{
+                outputConfig: {
                     xtype: 'app_playbacktoolbar',
                     defaults: {scale: 'medium'}
                 }
@@ -194,16 +198,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         Ext.preg("gx_wmssource", gxp.plugins.WMSSource);
         Ext.preg("gx_olsource", gxp.plugins.OLSource);
         Ext.preg("gx_googlesource", gxp.plugins.GoogleSource);
-        
+
         // global request proxy and error handling
         Ext.util.Observable.observeClass(Ext.data.Connection);
         Ext.data.Connection.on({
-            "beforerequest": function(conn, options) {
+            "beforerequest": function (conn, options) {
                 // use django's /geoserver endpoint when talking to the local
                 // GeoServer's RESTconfig API
-                var urls = (options.url instanceof Array) ? options.url.slice() : [options.url];
+                var urls = (options.url instanceof Array) ? options.url.slice() : [options.url],
+                    i;
                 options.url = [];
-                for (var i = urls.length - 1; i >= 0; i--) {
+                for (i = urls.length - 1; i >= 0; i -= 1) {
                     var url = urls[i].replace(this.urlPortRegEx, "$1/");
                     if (this.localGeoServerBaseUrl) {
                         if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
@@ -255,7 +260,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             scope: this
         });
-        
+
         // register the color manager with every color field, for Styler
         Ext.util.Observable.observeClass(gxp.form.ColorField);
         gxp.form.ColorField.on({
@@ -271,21 +276,21 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 return "If you leave this page, unsaved changes will be lost.";
             }
         }).createDelegate(this);
-        
+
         // limit combo boxes to the window they belong to - fixes issues with
         // list shadow covering list items
         Ext.form.ComboBox.prototype.getListParent = function() {
             return this.el.up(".x-window") || document.body;
         };
-        
+
         // don't draw window shadows - allows us to use autoHeight: true
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
-        
+
         GeoExplorer.superclass.constructor.apply(this, [config]);
-        
+
     },
-    
+
     displayXHRTrouble: function(response) {
         response.status && Ext.Msg.show({
             title: this.connErrorTitleText,
@@ -315,7 +320,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }
         });
     },
-    
+
     loadConfig: function(config, callback) {
         config = Ext.apply(config || {}, {
             proxy: "/proxy/?url=",
@@ -357,13 +362,63 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "treecontent.contextMenu"
             }, {
                 ptype: "gxp_addlayers",
+                search: true,
                 actionTarget: "treetbar",
-                createExpander: function() {
+                createExpander: function () {
                     return new GeoExplorer.CapabilitiesRowExpander({
                         ows: config.localGeoServerBaseUrl + "ows"
                     });
+                },
+                listeners: {
+                    'sourceselected': function (widget, source) {
+                        // add a listener to the source select event
+                        // that appends the add layer widget with
+                        // search options
+                        var button,
+                            cap = widget.capGrid,
+                            id     = source.initialConfig.id,
+                            form = new Ext.form.FormPanel({
+                                items: [
+                                    {
+                                        xtype: 'label',
+                                        text: widget.searchText
+                                    },
+                                    {
+                                        xtype: 'textfield'
+                                    },
+                                    {
+                                        xtype: 'button',
+                                        text: 'Search',
+                                        handler: function (event) {
+                                            source.filter({
+                                                queryString: form.find('text')[0].getValue(),
+                                                limit: 10,
+                                                filters: ''
+                                            });
+                                        }
+                                    }
+                                ]
+                            });
+
+                        // filter out all servers that are not the
+                        // local mapstory one, based on the advice
+                        // from Ian.
+                        if (id === 'search') {
+                            // we need to reset this form when a user
+                            // selects this form twice
+                            if (!this.searchForm) {
+                                this.searchForm = form;
+                                widget.capGrid.get(0).get(0).add(this.searchForm);
+                                widget.capGrid.get(0).get(0).doLayout();
+                            }
+
+                        } else {
+                            // hide the search dialog
+                        }
+                    }
                 }
-            }, {
+            },
+            {
                 ptype: "gxp_removelayer",
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
@@ -519,7 +574,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         //ensure map has a bbar with our prefered id
         if (this.initialConfig.map && this.initialConfig.map.bbar) {
             this.initialConfig.map.bbar.id = 'map-bbar';
-            this.initialConfig.map.bbar.height = 55;
+            this.initialConfig.map.bbar.height = 55; 
         }
         else {
             this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
@@ -546,6 +601,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         //add listeners to layer store (doesn't exist until after the superclass's function is called)
         this.mapPanel.layers.on({
             "add": function(store, records) {
+                var layer;
                 //To take maximum advantage of tile caching and client caching combined, all dimensional layer
                 //will remain single tile, but mosaiced from GWC.
                 for(var i = records.length - 1; i >= 0; i--) {
