@@ -26,4 +26,4 @@ django-activity-stream==0.4.4
 -e git://github.com/pinax/django-mailer.git#egg=django-mailer
 django-announcements==1.0.2
 django-flatblocks==0.6.0
-
+django-flag
