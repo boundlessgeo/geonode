@@ -346,6 +346,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: {target: "paneltbar", index: 8}
             }, {
                 ptype: "gxp_layermanager",
+                loader: {
+                    baseAttrs: {
+                        baseParams: {
+                            legend_options: [
+                                'fontAntiAliasing:true',
+                                'fontSize:11',
+                                'fontName:Arial',
+                                'fontColor:#ffffff',
+                                'fontStyle:bold'].join(';')
+                        }
+                    }
+                },
                 outputConfig: {
                     id: "treecontent",
                     autoScroll: true,
