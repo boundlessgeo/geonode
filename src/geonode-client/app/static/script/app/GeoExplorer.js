@@ -346,6 +346,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: {target: "paneltbar", index: 8}
             }, {
                 ptype: "gxp_layermanager",
+                loader: {
+                    baseAttrs: {
+                        baseParams: {
+                            legend_options: [
+                                'fontAntiAliasing:true',
+                                'fontSize:11',
+                                'fontName:Arial',
+                                'fontColor:#ffffff',
+                                'fontStyle:bold'].join(';')
+                        }
+                    }
+                },
                 outputConfig: {
                     id: "treecontent",
                     autoScroll: true,
@@ -357,6 +369,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "treecontent.contextMenu"
             }, {
                 ptype: "gxp_addlayers",
+                outputConfig: {
+                    width: 400
+                },
                 actionTarget: "treetbar",
                 createExpander: function() {
                     return new GeoExplorer.CapabilitiesRowExpander({
@@ -374,6 +389,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
                 ptype: "gxp_styler",
+                outputConfig: {
+                    width: 400
+                },
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
@@ -431,7 +449,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportNoGeometry: true,
                 outputConfig: {
                     allowDelete: true,
-                    width: 325,
+                    width: 500,
+                    height: 350,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
@@ -800,7 +819,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         new Ext.Window({
             title: this.publishActionText,
             layout: "fit",
-            width: 380,
+            width: 450,
             autoHeight: true,
             items: [{
                 xtype: "gxp_embedmapdialog",
