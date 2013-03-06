@@ -27,3 +27,5 @@ django-activity-stream==0.4.4
 django-announcements==1.0.2
 django-flatblocks==0.6.0
 docutils
+-e git://github.com/pinax/django-flag.git#egg=django-flag
+

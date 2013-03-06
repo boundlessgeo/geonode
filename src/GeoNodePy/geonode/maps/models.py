@@ -601,6 +601,11 @@ class ThumbnailMixin:
         """Hook for update behavior"""
         pass
 
+    def has_thumbnail(self):
+        '''Determine if the thumbnail object exists and an image exists'''
+        thumb = self.get_thumbnail()
+        return os.path.exists(thumb.get_thumbnail_path()) if thumb else False
+
 class LayerManager(models.Manager):
 
     def __init__(self):
@@ -1849,17 +1854,13 @@ class ThumbnailManager(models.Manager):
         )
         if not os.path.exists(self.storage.location):
             os.makedirs(self.storage.location)
+
     def get_thumbnail(self,obj,allow_null=True):
         thumb_type = ContentType.objects.get_for_model(obj)
         thumbs = list(self.filter(content_type__pk=thumb_type.id,object_id=obj.id))
         if not allow_null and not thumbs:
             thumbs.append(Thumbnail(content_object=obj))
         return thumbs and thumbs[0] or None
-
-    def has_thumbnail(self):
-        '''Determine if the thumbnail object exists and an image exists'''
-        thumb = self.get_thumbnail()
-        return os.path.exists(thumb.get_thumbnail_path()) if thumb else False
 
     def get_thumbnails(self,objs):
         """For the provided objects of the same type, get a dict

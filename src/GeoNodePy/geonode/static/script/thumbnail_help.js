@@ -47,7 +47,7 @@ function updateThumbnail(interactive) {
       },
       success: function() {
           if (interactive) {
-            Ext.get('warn-missing-thumb').hide();
+            Ext.select('#warn-missing-thumb').hide();
             Ext.MessageBox.show({
                 title : "Thumbnail Updated",
                 msg : '<img src="' + randURL() + '">',

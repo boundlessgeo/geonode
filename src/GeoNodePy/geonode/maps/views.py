@@ -864,11 +864,7 @@ def _handleThumbNail(req, obj):
             RequestContext(req, {'error_message':
                 _("You are not permitted to modify this object")})), status=401)
     if req.method == 'GET':
-        thumb = Thumbnail.objects.get_thumbnail(obj,allow_null=False)
-        if thumb:
-            return HttpResponseRedirect(thumb.get_thumbnail_url())
-        else:
-            raise HttpResponse(status=404)
+        return HttpResponseRedirect(obj.get_thumbnail_url())
     elif req.method == 'POST':
         spec = _fixup_ows_url(req.raw_post_data)
         thumb = obj.set_thumbnail(spec)

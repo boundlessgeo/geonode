@@ -2,13 +2,17 @@
 {% load i18n avatar_tags %}
 
 {% block content %}
+<div class="box" style="min-height:40em">
     <p>{% trans "Your current avatar: " %}</p>
     {% avatar user %}
     {% if not avatars %}
         <p>{% trans "You haven't uploaded an avatar yet. Please upload one now." %}</p>
     {% endif %}
-    <form enctype="multipart/form-data" method="POST" action="{% url avatar_add %}">
+    <form enctype="multipart/form-data" method="POST" action="{% url avatar_add %}?next={% url profiles_edit_profile %}">
         {{ upload_avatar_form.as_p }}
-        <p>{% csrf_token %}<input type="submit" value="{% trans "Upload New Image" %}" /></p>
+        <p class="mrg-top">{% csrf_token %}<input type="submit" class="btn" value="{% trans "Upload New Image" %}" /></p>
     </form>
+    <hr/>
+    <a href="{% url profiles_edit_profile %}">Back to Profile</a>
+</div>
 {% endblock %}

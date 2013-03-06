@@ -101,7 +101,8 @@ def _next_step_response(req, upload_session, force_ajax=False):
         import_session = upload_session.import_session
         feature_type = import_session.tasks[0].items[0].resource
         if feature_type.resource_type == 'coverage':
-            upload_session.completed_step = 'time'
+            upload_session.completed_step = 'run'
+            run_import(upload_session, async=False)
             return _next_step_response(req, upload_session)
 
     # @todo this is not handled cleanly - run is not a real step in that it

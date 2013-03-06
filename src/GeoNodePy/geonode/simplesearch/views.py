@@ -87,16 +87,15 @@ def _get_search_context():
 def _get_all_keywords():
     if settings.USE_GEONETWORK:
         allkw = Layer.objects.gn_catalog.get_all_keywords()
-    else:    
-        allkw = {}
+    else:
+        allkw = set()
         # @todo tagging added to maps and contacts, depending upon search type,
         # need to get these... for now it doesn't matter (in mapstory) as
         # only layers support keywords ATM.
         for l in Layer.objects.all().select_related().only('keywords'):
-            kw = [ k.name for k in l.keywords.all() ]
-            for k in kw:
-                allkw[k] = allkw.get(k,0) + 1
-
+            allkw = allkw | set([ k.name for k in l.keywords.all() if len(k.name) > 2])
+        allkw = list(allkw)
+        allkw.sort()
     return allkw
 
 def new_search_api(request):

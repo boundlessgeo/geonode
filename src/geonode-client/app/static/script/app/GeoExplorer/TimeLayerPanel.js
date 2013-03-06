@@ -60,6 +60,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
             disabled : !this.checkLayerPlaybackMode(),
             value: this.getLayerPlaybackMode(),
             listeners : {
+                'beforemodechange': this.attachAgentToCombo,
                 'modechange' : this.setPlaybackMode,
                 scope : this
             }
@@ -67,7 +68,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         return config;
     },
 
-    attachAgent: function() {
+    attachAgentToCombo: function() {
         var modeCombo = this.playbackModeCombo;
         var layer = this.layerRecord.getLayer();
         if(!modeCombo.agents || !modeCombo.agents.length) {
@@ -78,13 +79,12 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
     toggleLayerPlaybackMode : function(cmp, checked) {
         var modeCombo = cmp.refOwner.playbackModeCombo;
         if(checked) {
-            this.attachAgent();
+            this.attachAgentToCombo();
         }
         modeCombo.setDisabled(!checked);
     },
 
     setPlaybackMode : function(cmp, mode, agents) {
-        this.attachAgent();
         if(!this.playbackToolbar.playbackMode){
             this.playbackToolbar.playbackMode = 'track';
         }
