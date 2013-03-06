@@ -22,7 +22,7 @@ body {
     background-color: #232d38;
     border-color:#556;
     color:#fff;
-    font:normal 14px tahoma, arial, helvetica, sans-serif;
+    font:normal 12px tahoma, arial, helvetica, sans-serif;
 }
 
 .x-mask-loading div {
@@ -72,7 +72,7 @@ body {
 }
 
 .loading-indicator {
-    font-size: 14px;
+    font-size: 12px;
     background-image: url(../images/access/grid/loading.gif);
 }
 
@@ -1378,11 +1378,11 @@ a.x-menu-item {
     background-image: url(../images/default/box/tb.gif);
 	font-family: "Myriad Pro","Myriad Web","Tahoma","Helvetica","Arial",sans-serif;
 	color: #393939;
-	font-size: 15px;
+	font-size: 13px;
 }
 
 .x-box-mc h3 {
-	font-size: 18px;
+	font-size: 15px;
 	font-weight: bold;
 }
 
@@ -1464,13 +1464,13 @@ a.x-menu-item {
 }
 .x-panel {
     border-color: #18181a;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .x-panel-header {
     color:#fff;
     font-weight:bold; 
-    font-size: 14px;
+    font-size: 12px;
     font-family: tahoma,arial,verdana,sans-serif;
     border-color:#18181a;
     background-image: url(../images/access/panel/white-top-bottom.gif);
@@ -1728,7 +1728,7 @@ body.x-body-masked .x-window-plain .x-window-mc {
 }
 
 .x-progress-text {
-    font-size:14px;
+    font-size:12px;
     font-weight:bold;
     color:#fff;
     padding: 0 5px !important; /* structural override for Accessibility Theme */
@@ -1792,11 +1792,11 @@ body.x-body-masked .x-window-plain .x-window-mc {
 }
 .x-window-dlg .ext-mb-text,
 .x-window-dlg .x-window-header-text {
-    font-size:15px;
+    font-size:10px;
 }
 
 .x-window-dlg .ext-mb-textarea {
-    font:normal 15px tahoma,arial,helvetica,sans-serif;
+    font:normal 10px tahoma,arial,helvetica,sans-serif;
 }
 
 .x-window-dlg .x-msg-box-wait {
