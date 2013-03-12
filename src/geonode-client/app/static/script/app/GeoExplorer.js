@@ -103,6 +103,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      *     we can insert responses from multiple requests.
      */
     popupCache: null,
+
+    searchTool: null,
     
     /** private: property[urlPortRegEx]
      *  ``RegExp``
@@ -424,8 +426,14 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             };
 
                         if (id === 'search') {
-                            toolBar.addItem(searchField);
-                            toolBar.addItem(searchButton);
+                            if (!this.searchTool) {
+                                this.searchTool = {
+                                    field: searchField,
+                                    button: searchButton
+                                }
+                                toolBar.addItem(this.searchTool.field);
+                                toolBar.addItem(this.searchTool.button);
+                            }
                         }
                     }
                 }
