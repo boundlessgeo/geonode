@@ -23,6 +23,14 @@ sitemaps = {
     "map": MapSitemap
 }
 
+# @HACK - fix the regex to match allowed usernames
+from profiles import urls as profile_urls
+_url = profile_urls.urlpatterns[2]
+assert( _url.name == 'profiles_profile_detail')
+profile_urls.urlpatterns[2] = url(r'^(?P<username>(\w|[.@+-])+)/$',
+                           'profiles.views.profile_detail',
+                           name='profiles_profile_detail')
+
 urlpatterns = patterns('',
 
     # Static pages
