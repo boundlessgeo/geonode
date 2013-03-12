@@ -137,6 +137,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     saveMapAsText: "UT: Save Map As",
     saveNotAuthorizedMessage: "UT: You Must be logged in to save this map.",
     smallSizeLabel: 'UT: Small',
+    searchMessage: 'UT: Search for Map Story Layers',
     sourceLoadFailureMessage: 'UT: Error contacting server.\n Please check the url and try again.',
     unknownMapMessage: 'UT: The map that you are trying to load does not exist.  Creating a new map instead.',
     unknownMapTitle: 'UT: Unknown Map',
@@ -370,13 +371,63 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_addlayers",
                 outputConfig: {
+                    height: 600,
                     width: 400
                 },
                 actionTarget: "treetbar",
                 createExpander: function() {
                     return new GeoExplorer.CapabilitiesRowExpander({
-                        ows: config.localGeoServerBaseUrl + "ows"
+                        ows: config.localGeoServerBaseUrl + "ows",
+                        tpl: new Ext.Template(
+                            [
+                                "<img class='thumb {thumbclass}' src='{thumb}'>",
+                                "<div class='infoBox'><div class='itemTitle'>",
+                                "<p>{title}</p>",
+                                "</div>",
+                                "<div class='itemInfo'><p>{_display_type}, by ",
+                                "<a href='{owner_detail}'>{owner}</a> ",
+                                "on {last_modified}</p></div>",
+                                "<div class='itemAbstract'><p>Abstract: {abstract}</p></div>",
+                                "<div class='rating'><p>{views} Views |",
+                                " {rating} stars </p></div>",
+                                "<div class='actions' id='{_type}-{id}'></div>",
+                            ]
+                        )
                     });
+                },
+                listeners: {
+                    sourceselected: function (tool, source) {
+                        // add a listener to the source select event
+                        // that appends the add layer widget with
+                        // search options
+                        var button,
+                            cap    = tool.capGrid,
+                            id     = source.initialConfig.id,
+                            // get the tool bar from the add layer
+                            // widget
+                            toolBar = tool.capGrid.getTopToolbar(),
+                            searchField = {
+                                xtype: 'textfield',
+                                emptyText: this.searchMessage
+                            },
+                            doSearch = function (event) {
+                                var query = toolBar.findByType('textfield')[1].getValue();
+                                source.filter({
+                                    queryString: query
+                                });
+                            },
+                            searchButton = {
+                                text: 'Search',
+                                handler: function (event) {
+                                    doSearch(event);
+                                }
+                            };
+
+                        if (id === 'search') {
+                            toolBar.addItem(searchField);
+                            toolBar.addItem(searchButton);
+                        }
+                    }
                 }
             }, {
                 ptype: "gxp_removelayer",

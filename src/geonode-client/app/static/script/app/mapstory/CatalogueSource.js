@@ -11,8 +11,17 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
 
     fields: [
         {name: "name"},
+        {name: "id"},
         {name: "title"},
         {name: "abstract"},
+        {name: "thumb"},
+        {name: "owner"},
+        {name: "owner_detail"},
+        {name: "_display_type"},
+        {name: "last_modified"},
+        {name: "views"},
+        {name: "rating"},
+        {name: "_type"},
         {name: "owsUrl", convert: function(v) {
             if (v.indexOf('/wms') !== -1 || v.indexOf('/ows') !== -1) {
                 return v;
