@@ -392,7 +392,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 "<div class='itemAbstract'><p>Abstract: {abstract}</p></div>",
                                 "<div class='rating'><p>{views} Views |",
                                 " {rating} stars </p></div>",
-                                "<div class='actions' id='{_type}-{id}'></div>",
+                                "<div class='actions' id='{_type}-{id}'></div>"
                             ]
                         )
                     });
