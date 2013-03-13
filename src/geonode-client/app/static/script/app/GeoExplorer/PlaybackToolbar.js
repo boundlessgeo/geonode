@@ -131,7 +131,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 this.el.setStyle({'z-index' : 1050});
             }
             this.resize.call(this, [-8, 0]);
-            app.mapPanel.addClass('full-mapview');
+            this.mapPanel.addClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
             btn.setTooltip(this.smallSizeTooltip);
@@ -144,7 +144,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             }
             app.portal.setSize(app.portal.originalSize);
             app.portal.setPosition(0, 0);
-            app.mapPanel.removeClass('full-mapview');
+            this.mapPanel.removeClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-smallScreen');
             btn.btnEl.addClass('gxp-icon-fullScreen');
             btn.setTooltip(this.fullSizeTooltip);
