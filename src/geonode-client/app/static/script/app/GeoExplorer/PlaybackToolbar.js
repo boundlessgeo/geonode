@@ -147,18 +147,31 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         window.scrollTo(0,0);
     },
     
-    toggleLegend:function(btn,pressed){
-        if(!btn.layerPanel){
-            btn.layerPanel = this.buildLayerPanel();
+    toggleLegend: function(btn, pressed){
+
+        if (!this.layerPanel) {
+            this.layerPanel = this.buildLayerPanel();
         }
-        if(pressed){
-            btn.layerPanel.setHeight(app.mapPanel.getHeight()-this.legendOffsetY);
-            btn.layerPanel.show();
-            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
-        }else{
-            btn.layerPanel.hide();
+
+        if (pressed) {
+            // global
+            this.layerPanel.setHeight(app.mapPanel.getHeight() - this.legendOffsetY);
+            this.layerPanel.show();
+            // global
+            this.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
+        } else {
+            this.layerPanel.hide();
         }
+
     },
+
+    buildLayerPanel: function(btn, pressed) {
+        var layerPanel = this.layerManager.output[0];
+        // uses global
+        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
+        return layerPanel;
+    },
+
     
     reverseStep:function(btn,pressed){
         var timeManager = this.control;
@@ -171,13 +184,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     loadComposser: function(btn){
         window.location.href += '/view';
     },
-    
-    buildLayerPanel: function(btn, pressed){
-        var layerPanel = this.layerManager.output[0];
-        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
-        return layerPanel;
-    },
-    
+
     addLayerManager: function(){
         var key;
         for (key in app.tools) {
