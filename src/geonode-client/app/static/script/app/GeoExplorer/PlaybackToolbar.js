@@ -52,26 +52,26 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 },
                 items : [{
                     text : 'R',
-                    pressed : this.playbackMode == 'ranged'
+                    pressed : this.playbackMode === 'ranged'
                 }, {
                     text : 'C',
-                    pressed : this.playbackMode == 'cumulative'
+                    pressed : this.playbackMode === 'cumulative'
                 }, {
                     text : 'S',
-                    pressed : this.playbackMode == 'track'
+                    pressed : this.playbackMode === 'track'
                 }]
             },
             'togglesize' : {
                 iconCls:'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
-                hidden: this.layerManager == null,
+                hidden: this.layerManager === null,
                 enableToggle: true,
                 allowDepress: true,
                 scope: this
             },
             'legend' : {
                 iconCls:'gxp-icon-legend',
-                hidden: this.layerManager == null,
+                hidden: this.layerManager === null,
                 toggleHandler: this.toggleLegend,
                 tooltip: this.legendTooltip,
                 enableToggle: true,
@@ -90,7 +90,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 scope: this,
                 ref: 'btnEdit',
                 tooltip: this.editTooltip,
-                disabled: window.location.href.match(/view|new/)!=null
+                disabled: window.location.href.match(/view|new/) !== null
             }
         });
 
@@ -186,7 +186,8 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     
     addLayerManager: function(){
-        for (var key in app.tools) {
+        var key;
+        for (key in app.tools) {
             var tool = app.tools[key];
             if (tool.ptype === "gxp_layermanager") {
                 return null;
