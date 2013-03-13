@@ -152,7 +152,14 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.registerColorManager();
 
         this.on('portalready', function () {
-            this.toggleMapSize();
+            var self = this;
+            self.toggleMapSizeViaUrl();
+
+            if (typeof window.onhashchange !== 'undefined') {
+                window.onhashchange = function (event) {
+                    self.toggleMapSizeViaUrl();
+                }
+            }
         });
 
         // limit combo boxes to the window they belong to - fixes issues with
@@ -168,7 +175,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         GeonodeViewer.superclass.constructor.apply(this, [config]);
     },
 
-    toggleMapSize: function () {
+    toggleMapSizeViaUrl: function () {
         // we have access to the mapPanel and the portal, both of
         // which we need
         var hash = window.location.hash;
@@ -188,9 +195,16 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             newWidth = window.innerWidth + 1, // why the +1 ?
             newHeight = window.innerHeight - headerHeight + 2; // why ?
 
+        if (!this.portal.originalSize) {
+            this.portal.originalSize = this.portal.getSize();
+        }
+
         this.portal.setSize(newWidth, newHeight);
         this.portal.el.alignTo(main, 'tl-tl', [-8, 0]);
-        Ext.getBody().setStyle({overflow: 'hidden'});
+
+        Ext.getBody().setStyle({
+            overflow: 'hidden'
+        });
         window.scrollTo(0, 0);
 
         this.fullScreen = true;
@@ -198,7 +212,15 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     },
 
     setMinMapSize: function () {
-        // do some stuff to set the screen to the smallest size
+
+        this.portal.setSize(this.portal.originalSize);
+        this.portal.setPosition(0, 0);
+
+        this.mapPanel.removeClass('full-mapview');
+        Ext.getBody().setStyle({
+            overflow: ''
+        });
+
         this.fullScreen = false;
         this.fireEvent('toggleSize', this.fullScreen);
 

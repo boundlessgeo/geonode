@@ -23,6 +23,8 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendOffsetY: 93,
     
     initComponent: function() {
+        var self = this;
+
         if(!this.playbackActions){
             this.playbackActions = [
                 "play","slider","loop","fastforward","prev","next",
@@ -36,6 +38,11 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.layerManager = this.addLayerManager();    
         }
         this.aggressive = (window.location.href.match(/view|new/)===null);
+
+        app.on('toggleSize', function (fullScreen) {
+            self.setToggleButton(fullScreen);
+        });
+
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
     
@@ -65,6 +72,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 iconCls:'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
                 hidden: this.layerManager === null,
+                ref: 'btnToggle',
                 enableToggle: true,
                 allowDepress: true,
                 scope: this
@@ -113,43 +121,28 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         app.portal.el.alignTo(main, 'tl-tl', offsets);
     },
 
-    toggleMapSize: function(btn,pressed){
-        var mapviewer = app.id;
-        if(pressed) {
-            if (mapviewer) {
-                Ext.getCmp('timeline-container').show();
-                if (app.isAuthorized()) {
-                    this.btnEdit.show();
-                }
-            }
-            if(!app.portal.originalSize) {
-                app.portal.originalSize = app.portal.getSize();
-                Ext.EventManager.onWindowResize(function() {
-                    this.resize.call(this, [0, 0]);
-                }, this);
-                app.portal.el.setStyle({'z-index' : 1000});
-                this.el.setStyle({'z-index' : 1050});
-            }
-            this.resize.call(this, [-8, 0]);
-            this.mapPanel.addClass('full-mapview');
+    setToggleButton: function (fullScreen) {
+        var btn = this.btnToggle;
+
+        if (fullScreen) {
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
-            btn.setTooltip(this.smallSizeTooltip);
-            Ext.getBody().setStyle({overflow:'hidden'});
-        }
-        else {
-            if (mapviewer) {
-                Ext.getCmp('timeline-container').hide();
-                this.btnEdit.hide();
-            }
-            app.portal.setSize(app.portal.originalSize);
-            app.portal.setPosition(0, 0);
-            this.mapPanel.removeClass('full-mapview');
+        } else {
             btn.btnEl.removeClass('gxp-icon-smallScreen');
             btn.btnEl.addClass('gxp-icon-fullScreen');
-            btn.setTooltip(this.fullSizeTooltip);
-            Ext.getBody().setStyle({overflow:''});
         }
+        btn.removeClass('x-btn-pressed');
+        return btn;
+    },
+
+    toggleMapSize: function(btn, pressed) {
+
+        if (app.fullScreen) {
+            app.setMinMapSize();
+        } else {
+            app.setMaxMapSize()
+        }
+
         btn.el.removeClass('x-btn-pressed');
         window.scrollTo(0,0);
     },
