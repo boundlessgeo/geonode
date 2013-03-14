@@ -23,7 +23,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendOffsetY: 93,
     
     initComponent: function() {
-        var self = this;
 
         if(!this.playbackActions){
             this.playbackActions = [
@@ -39,11 +38,19 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         }
         this.aggressive = (window.location.href.match(/view|new/)===null);
 
+        // if the app is in the fullscreen mode we want to show the
+        // legend
+        if (app.fullScreen) {
+            this.toggleLegend(null, true);
+        }
+
         app.on('toggleSize', function (fullScreen) {
             this.setToggleButton(fullScreen);
-            this.resizeLegend();
         }, this);
 
+        // TODO, We use a delay here because we have to wait until the
+        // portal is the correct size in order to resize the legend
+        // This is a hacked, ideally we would not need this delay
         app.portal.on('resize', function (event) {
             // using the lastSize seems wrong as from what I can tell
             // the last size is actually the size that the panel is
@@ -77,7 +84,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 }]
             },
             'togglesize' : {
-                iconCls:'gxp-icon-fullScreen',
+                iconCls: 'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
                 hidden: this.layerManager === null,
                 ref: 'btnToggle',
@@ -86,8 +93,16 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 scope: this
             },
             'legend' : {
-                iconCls:'gxp-icon-legend',
+                iconCls: 'gxp-icon-legend',
                 hidden: this.layerManager === null,
+                // TODO, this is a hack, but I could not find a better
+                // way of doing this. This issue is that when the app
+                // is fullscreen, then I need to set the state of the
+                // toggle button as the legend is showing, but the
+                // button is not toggled. Maybe a better way of
+                // handling is this an another event.
+                pressed: app.fullScreen,
+                ref: 'btnLegend',
                 toggleHandler: this.toggleLegend,
                 tooltip: this.legendTooltip,
                 enableToggle: true,
@@ -109,11 +124,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 disabled: window.location.href.match(/view|new/) !== null
             }
         });
-
         return tools;
     },
-    
-    buildPlaybackItems:function(){
+
+    buildPlaybackItems: function() {
         var items = GeoExplorer.PlaybackToolbar.superclass.buildPlaybackItems.call(this);
         return items;
     },
