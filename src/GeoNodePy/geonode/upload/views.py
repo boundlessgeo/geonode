@@ -33,6 +33,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.views.decorators.cache import cache_control
 from django.contrib.auth.decorators import login_required
 
 import os
@@ -187,7 +188,16 @@ def data_upload_progress(req):
     upload_session = req.session[_SESSION_KEY]
     import_session = upload_session.import_session
     progress = import_session.tasks[0].items[0].get_progress()
+    #another hacky part - set completed step back if error occurs
+    if progress.get('state', None) == 'ERROR':
+        # back up before the run step
+        prerun = get_previous_step(upload_session, 'run')
+        upload_session.completed_step = get_previous_step(upload_session, prerun)
+        # and save session state back
+        req.session[_SESSION_KEY] = upload_session
+        Upload.objects.update_from_session(upload_session)
     return json_response(progress)
+
 
 def srs_step_view(req, upload_session):
     import_session = upload_session.import_session
@@ -462,6 +472,7 @@ def notify_error(req, upload_session, msg):
 
 
 @login_required
+@cache_control(no_cache=True)
 def view(req, step):
     """Main uploader view"""
 
@@ -474,7 +485,8 @@ def view(req, step):
             session = upload_obj.get_session()
             if session:
                 req.session[_SESSION_KEY] = session
-                return _next_step_response(req, session)
+                next = get_next_step(session)
+                return _steps[next](req, session)
         
         step = 'save'
 
