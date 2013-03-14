@@ -40,10 +40,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         this.aggressive = (window.location.href.match(/view|new/)===null);
 
         app.on('toggleSize', function (fullScreen) {
-            self.setToggleButton(fullScreen);
-            //console.log(app.mapPanel.getHeight());
-            self.resizeLegend.call(self);
-        });
+            this.setToggleButton(fullScreen);
+            this.resizeLegend();
+        }, this);
 
         app.portal.on('resize', function (event) {
             // using the lastSize seems wrong as from what I can tell
