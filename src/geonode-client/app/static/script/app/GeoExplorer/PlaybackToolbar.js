@@ -132,17 +132,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         return items;
     },
 
-    resize: function(offsets) {
-        var main = Ext.get('main');
-        var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
-        var fullBox = {
-            width : window.innerWidth +1,
-            height : window.innerHeight - headerHeight + 2
-        };
-        app.portal.setSize(fullBox.width, fullBox.height);
-        app.portal.el.alignTo(main, 'tl-tl', offsets);
-    },
-
     setToggleButton: function (fullScreen) {
         var btn = this.btnToggle;
 
