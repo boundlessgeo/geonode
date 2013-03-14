@@ -41,11 +41,23 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
         app.on('toggleSize', function (fullScreen) {
             self.setToggleButton(fullScreen);
+            //console.log(app.mapPanel.getHeight());
+            self.resizeLegend.call(self);
+        });
+
+        app.portal.on('resize', function (event) {
+            // using the lastSize seems wrong as from what I can tell
+            // the last size is actually the size that the panel is
+            // going into.
+
+            window.setTimeout(function () {
+                self.resizeLegend.call(self, event.lastSize.height);
+            }, 500);
         });
 
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
-    
+
     getAvailableTools:function(){
         var tools = GeoExplorer.PlaybackToolbar.superclass.getAvailableTools.call(this);        
         Ext.apply(tools, {
@@ -155,12 +167,24 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
         if (pressed) {
             // global
-            this.layerPanel.setHeight(app.mapPanel.getHeight() - this.legendOffsetY);
             this.layerPanel.show();
-            // global
-            this.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
+            this.resizeLegend(app.mapPanel.getHeight());
         } else {
             this.layerPanel.hide();
+        }
+
+    },
+
+    resizeLegend: function (height) {
+
+        if (this.layerPanel) {
+
+            this.layerPanel.setHeight(height - this.legendOffsetY);
+            this.layerPanel.el.alignTo(
+                app.mapPanel.el,'tr-tr',[-1, 33]
+            );
+
+            this.layerPanel.doLayout();
         }
 
     },
