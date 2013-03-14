@@ -45,7 +45,9 @@ function updateThumbnail(interactive) {
           "X-CSRFToken" : Ext.util.Cookies.get('csrftoken')
       },
       success: function() {
-            Ext.select('#warn-missing-thumb').hide();
+            if (interactive) {
+                Ext.select('#warn-missing-thumb').hide();
+            }
             Ext.select('img.thumbnail').set({'src': randURL()});
             Ext.MessageBox.hide();
       }
@@ -58,7 +60,7 @@ Ext.onReady(function() {
            ev.stopEvent();
            promptThumbnail();
         });
-        if (!hasThumb) {
+        if (!hasThumb && false) {
             var loadCnt = 0, toLoad = 0;
             function checkload(layer) {
                 layer.events.unregister('loadend',null, checkload);
