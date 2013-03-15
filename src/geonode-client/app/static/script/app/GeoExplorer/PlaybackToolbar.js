@@ -141,7 +141,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             btn.btnEl.addClass('gxp-icon-fullScreen');
         }
         btn.removeClass('x-btn-pressed');
-        return btn;
     },
 
     toggleMapSize: function(btn, pressed) {
