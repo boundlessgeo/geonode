@@ -44,9 +44,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.toggleLegend(null, true);
         }
 
-        app.on('toggleSize', function (fullScreen) {
-            this.setToggleButton(fullScreen);
-        }, this);
+        app.on('toggleSize', this.setToggleButton, this);
 
         // TODO, We use a delay here because we have to wait until the
         // portal is the correct size in order to resize the legend
