@@ -155,13 +155,15 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.registerColorManager();
 
         this.on('portalready', function () {
-            var self = this;
-            self.toggleMapSizeViaUrl();
-
-            if (typeof window.onhashchange !== 'undefined') {
-                window.onhashchange = function (event) {
-                    self.toggleMapSizeViaUrl();
-                }
+            // save a reference to the class object
+            // for later use
+            this.toggleMapSizeViaUrl();
+            // check to make sure that the browser supports the
+            // onhashchange event
+            if (window.onhashchange !== undefined) {
+                // register the toggleMapSize with the onhashchange
+                // event
+                window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
             }
         });
 
@@ -178,6 +180,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         GeonodeViewer.superclass.constructor.apply(this, [config]);
     },
 
+    /**
+     * Method: toggleMapSizeViaUrl
+     * Checks the value of the hash url and switches the
+     *  state of the map portal
+     */
     toggleMapSizeViaUrl: function () {
         // we have access to the mapPanel and the portal, both of
         // which we need
@@ -189,6 +196,12 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         }
     },
 
+    /**
+     * Method: setMaxMapSize
+     * Sets the map portal to the full size of the window,
+     * minus the height of the header elements
+     * call the toggleSize function after the elements are adjusted
+     */
     setMaxMapSize: function () {
         var headerHeight =
             Ext.get('header').getHeight() +
@@ -214,6 +227,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.fireEvent('toggleSize', this.fullScreen);
     },
 
+    /**
+     * Method: setMinMapSize
+     * Sets the map portal to the min or default size.
+     * Calls the toggleSize event at the end
+     */
     setMinMapSize: function () {
 
         this.portal.setSize(this.portal.originalSize);
