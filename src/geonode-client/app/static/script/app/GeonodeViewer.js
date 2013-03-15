@@ -102,7 +102,13 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
      *  ``RegExp``
      */
     urlPortRegEx: /^(http[s]?:\/\/[^:]*)(:80|:443)?\//,
-    
+
+    /** private: property[fullScreen]
+     *  Boolean
+     */
+    fullScreen: false,
+
+
     //public variables for string literals needed for localization
     backgroundContainerText: "UT:Background",
     connErrorTitleText: "UT:Connection Error",
@@ -135,7 +141,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
              * Fires before the page unloads. Return false to stop the page
              * from unloading.
              */
-            "beforeunload"
+            "beforeunload",
+            /** api: event[toggleSize]
+             * an event that is fired before the map portal is resized
+             */
+            "toggleSize"
         );
         
         //Add special connection handlers
@@ -143,7 +153,20 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         
         //Globally register the color manager for any field
         this.registerColorManager();
-        
+
+        this.on('portalready', function () {
+            // save a reference to the class object
+            // for later use
+            this.toggleMapSizeViaUrl();
+            // check to make sure that the browser supports the
+            // onhashchange event
+            if (window.onhashchange !== undefined) {
+                // register the toggleMapSize with the onhashchange
+                // event
+                window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
+            }
+        });
+
         // limit combo boxes to the window they belong to - fixes issues with
         // list shadow covering list items
         Ext.form.ComboBox.prototype.getListParent = function(){
@@ -156,7 +179,74 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         
         GeonodeViewer.superclass.constructor.apply(this, [config]);
     },
-    
+
+    /**
+     * Method: toggleMapSizeViaUrl
+     * Checks the value of the hash url and switches the
+     *  state of the map portal
+     */
+    toggleMapSizeViaUrl: function () {
+        // we have access to the mapPanel and the portal, both of
+        // which we need
+        var hash = window.location.hash;
+        if (hash === '#full') {
+            this.setMaxMapSize();
+        } else {
+            this.setMinMapSize();
+        }
+    },
+
+    /**
+     * Method: setMaxMapSize
+     * Sets the map portal to the full size of the window,
+     * minus the height of the header elements
+     * call the toggleSize function after the elements are adjusted
+     */
+    setMaxMapSize: function () {
+        var headerHeight =
+            Ext.get('header').getHeight() +
+            Ext.get('top-crossbar').getHeight() +
+            Ext.get('crossbar').getHeight(),
+            main = Ext.get('main'),
+            newWidth = window.innerWidth + 1, // why the +1 ?
+            newHeight = window.innerHeight - headerHeight + 2; // why ?
+
+        if (!this.portal.originalSize) {
+            this.portal.originalSize = this.portal.getSize();
+        }
+
+        this.portal.setSize(newWidth, newHeight);
+        this.portal.el.alignTo(main, 'tl-tl', [-8, 0]);
+
+        Ext.getBody().setStyle({
+            overflow: 'hidden'
+        });
+        window.scrollTo(0, 0);
+
+        this.fullScreen = true;
+        this.fireEvent('toggleSize', this.fullScreen);
+    },
+
+    /**
+     * Method: setMinMapSize
+     * Sets the map portal to the min or default size.
+     * Calls the toggleSize event at the end
+     */
+    setMinMapSize: function () {
+
+        this.portal.setSize(this.portal.originalSize);
+        this.portal.setPosition(0, 0);
+
+        this.mapPanel.removeClass('full-mapview');
+        Ext.getBody().setStyle({
+            overflow: ''
+        });
+
+        this.fullScreen = false;
+        this.fireEvent('toggleSize', this.fullScreen);
+
+    },
+
     loadConfig: function(config, callback){
         var hasConfig = config && (config.tools || config.sources || config.map);
         config = Ext.apply(config ||

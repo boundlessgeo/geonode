@@ -23,6 +23,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendOffsetY: 93,
     
     initComponent: function() {
+
         if(!this.playbackActions){
             this.playbackActions = [
                 "play","slider","loop","fastforward","prev","next",
@@ -36,9 +37,28 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.layerManager = this.addLayerManager();    
         }
         this.aggressive = (window.location.href.match(/view|new/)===null);
+
+        // if the app is in the fullscreen mode we want to show the
+        // legend
+        if (app.fullScreen) {
+            this.toggleLegend(null, true);
+        }
+
+        app.on('toggleSize', this.setToggleButton, this);
+
+        // TODO, We use a delay here because we have to wait until the
+        // portal is the correct size in order to resize the legend
+        // This is a hacked, ideally we would not need this delay
+        app.portal.on('resize', function (event) {
+            // using the lastSize seems wrong as from what I can tell
+            // the last size is actually the size that the panel is
+            // going into.
+            this.resizeLegend(event.lastSize.height);
+        }, this, {delay: 100});
+
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
-    
+
     getAvailableTools:function(){
         var tools = GeoExplorer.PlaybackToolbar.superclass.getAvailableTools.call(this);        
         Ext.apply(tools, {
@@ -52,26 +72,35 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 },
                 items : [{
                     text : 'R',
-                    pressed : this.playbackMode == 'ranged'
+                    pressed : this.playbackMode === 'ranged'
                 }, {
                     text : 'C',
-                    pressed : this.playbackMode == 'cumulative'
+                    pressed : this.playbackMode === 'cumulative'
                 }, {
                     text : 'S',
-                    pressed : this.playbackMode == 'track'
+                    pressed : this.playbackMode === 'track'
                 }]
             },
             'togglesize' : {
-                iconCls:'gxp-icon-fullScreen',
+                iconCls: 'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
-                hidden: this.layerManager == null,
+                hidden: this.layerManager === null,
+                ref: 'btnToggle',
                 enableToggle: true,
                 allowDepress: true,
                 scope: this
             },
             'legend' : {
-                iconCls:'gxp-icon-legend',
-                hidden: this.layerManager == null,
+                iconCls: 'gxp-icon-legend',
+                hidden: this.layerManager === null,
+                // TODO, this is a hack, but I could not find a better
+                // way of doing this. This issue is that when the app
+                // is fullscreen, then I need to set the state of the
+                // toggle button as the legend is showing, but the
+                // button is not toggled. Maybe a better way of
+                // handling is this an another event.
+                pressed: app.fullScreen,
+                ref: 'btnLegend',
                 toggleHandler: this.toggleLegend,
                 tooltip: this.legendTooltip,
                 enableToggle: true,
@@ -90,82 +119,79 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 scope: this,
                 ref: 'btnEdit',
                 tooltip: this.editTooltip,
-                disabled: window.location.href.match(/view|new/)!=null
+                disabled: window.location.href.match(/view|new/) !== null
             }
         });
-
         return tools;
     },
-    
-    buildPlaybackItems:function(){
+
+    buildPlaybackItems: function() {
         var items = GeoExplorer.PlaybackToolbar.superclass.buildPlaybackItems.call(this);
         return items;
     },
 
-    resize: function(offsets) {
-        var main = Ext.get('main');
-        var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
-        var fullBox = {
-            width : window.innerWidth +1,
-            height : window.innerHeight - headerHeight + 2
-        };
-        app.portal.setSize(fullBox.width, fullBox.height);
-        app.portal.el.alignTo(main, 'tl-tl', offsets);
-    },
+    setToggleButton: function (fullScreen) {
+        var btn = this.btnToggle;
 
-    toggleMapSize: function(btn,pressed){
-        var mapviewer = app.id;
-        if(pressed) {
-            if (mapviewer) {
-                Ext.getCmp('timeline-container').show();
-                if (app.isAuthorized()) {
-                    this.btnEdit.show();
-                }
-            }
-            if(!app.portal.originalSize) {
-                app.portal.originalSize = app.portal.getSize();
-                Ext.EventManager.onWindowResize(function() {
-                    this.resize.call(this, [0, 0]);
-                }, this);
-                app.portal.el.setStyle({'z-index' : 1000});
-                this.el.setStyle({'z-index' : 1050});
-            }
-            this.resize.call(this, [-8, 0]);
-            app.mapPanel.addClass('full-mapview');
+        if (fullScreen) {
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
-            btn.setTooltip(this.smallSizeTooltip);
-            Ext.getBody().setStyle({overflow:'hidden'});
-        }
-        else {
-            if (mapviewer) {
-                Ext.getCmp('timeline-container').hide();
-                this.btnEdit.hide();
-            }
-            app.portal.setSize(app.portal.originalSize);
-            app.portal.setPosition(0, 0);
-            app.mapPanel.removeClass('full-mapview');
+        } else {
             btn.btnEl.removeClass('gxp-icon-smallScreen');
             btn.btnEl.addClass('gxp-icon-fullScreen');
-            btn.setTooltip(this.fullSizeTooltip);
-            Ext.getBody().setStyle({overflow:''});
         }
+        btn.removeClass('x-btn-pressed');
+    },
+
+    toggleMapSize: function(btn, pressed) {
+
+        if (app.fullScreen) {
+            app.setMinMapSize();
+        } else {
+            app.setMaxMapSize()
+        }
+
         btn.el.removeClass('x-btn-pressed');
         window.scrollTo(0,0);
     },
     
-    toggleLegend:function(btn,pressed){
-        if(!btn.layerPanel){
-            btn.layerPanel = this.buildLayerPanel();
+    toggleLegend: function(btn, pressed){
+
+        if (!this.layerPanel) {
+            this.layerPanel = this.buildLayerPanel();
         }
-        if(pressed){
-            btn.layerPanel.setHeight(app.mapPanel.getHeight()-this.legendOffsetY);
-            btn.layerPanel.show();
-            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
-        }else{
-            btn.layerPanel.hide();
+
+        if (pressed) {
+            // global
+            this.layerPanel.show();
+            this.resizeLegend(app.mapPanel.getHeight());
+        } else {
+            this.layerPanel.hide();
         }
+
     },
+
+    resizeLegend: function (height) {
+
+        if (this.layerPanel) {
+
+            this.layerPanel.setHeight(height - this.legendOffsetY);
+            this.layerPanel.el.alignTo(
+                app.mapPanel.el,'tr-tr',[-1, 33]
+            );
+
+            this.layerPanel.doLayout();
+        }
+
+    },
+
+    buildLayerPanel: function(btn, pressed) {
+        var layerPanel = this.layerManager.output[0];
+        // uses global
+        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
+        return layerPanel;
+    },
+
     
     reverseStep:function(btn,pressed){
         var timeManager = this.control;
@@ -178,15 +204,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     loadComposser: function(btn){
         window.location.href += '/view';
     },
-    
-    buildLayerPanel: function(btn, pressed){
-        var layerPanel = this.layerManager.output[0];
-        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
-        return layerPanel;
-    },
-    
+
     addLayerManager: function(){
-        for (var key in app.tools) {
+        var key;
+        for (key in app.tools) {
             var tool = app.tools[key];
             if (tool.ptype === "gxp_layermanager") {
                 return null;
