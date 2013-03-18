@@ -149,6 +149,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             app.setMinMapSize();
         } else {
             app.setMaxMapSize()
+            this.toggleLegend(null, true);
         }
 
         btn.el.removeClass('x-btn-pressed');
