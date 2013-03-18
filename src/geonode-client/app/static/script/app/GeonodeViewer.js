@@ -195,6 +195,16 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             this.setMinMapSize();
         }
     },
+    /**
+     * Method: setHashUrl
+     * Safely sets the value of the hash url. First checks to make sure
+     * that hash url is not already set to that value.
+     */
+    setHashUrl: function (newValue) {
+        if (window.location.hash !== newValue) {
+            window.location.hash = newValue;
+        }
+    },
 
     /**
      * Method: setMaxMapSize
@@ -224,7 +234,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             overflow: 'hidden'
         });
         window.scrollTo(0, 0);
-
+        this.setHashUrl("#full");
         this.fullScreen = true;
         this.fireEvent('toggleSize', this.fullScreen);
     },
@@ -243,7 +253,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         Ext.getBody().setStyle({
             overflow: ''
         });
-
+        this.setHashUrl("#small");
         this.fullScreen = false;
         this.fireEvent('toggleSize', this.fullScreen);
 

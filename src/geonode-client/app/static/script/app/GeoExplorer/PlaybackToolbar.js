@@ -54,7 +54,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             // the last size is actually the size that the panel is
             // going into.
             this.resizeLegend(event.lastSize.height);
-        }, this, {delay: 500});
+        }, this, {delay: 400});
 
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
@@ -148,7 +148,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         if (app.fullScreen) {
             app.setMinMapSize();
         } else {
-            app.setMaxMapSize()
+            app.setMaxMapSize();
             this.toggleLegend(null, true);
         }
 
