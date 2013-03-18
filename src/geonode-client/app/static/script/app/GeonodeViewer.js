@@ -147,10 +147,10 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
              */
             "toggleSize"
         );
-        
+
         //Add special connection handlers
         this.addConnectionHandlers();
-        
+
         //Globally register the color manager for any field
         this.registerColorManager();
 
@@ -165,6 +165,16 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 // event
                 window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
             }
+            window.onresize = Ext.createDelegate(function () {
+                // if the map is fullscreen we need to adjust the size
+                // of the map window when an user resizes the browser
+                // however, if we are not in full screen mode, then we
+                // don't care
+                if (this.fullScreen) {
+                    this.expandMap();
+                }
+            }, this);
+
         });
 
         // limit combo boxes to the window they belong to - fixes issues with
@@ -205,20 +215,20 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             window.location.hash = newValue;
         }
     },
-
     /**
-     * Method: setMaxMapSize
-     * Sets the map portal to the full size of the window,
-     * minus the height of the header elements
-     * call the toggleSize function after the elements are adjusted
+     * Method: expandMap 
+     *
+     * Expands the map portal to what we consider an full screen used
+     * by the setMaxMapSize and also attached to the window.onresize
+     * event
      */
-    setMaxMapSize: function () {
+    expandMap: function () {
         var headerHeight =
             Ext.get('header').getHeight() +
             Ext.get('top-crossbar').getHeight() +
             Ext.get('crossbar').getHeight(),
             main = Ext.get('main'),
-            newWidth = window.innerWidth + 1, // why the +1 ?
+            newWidth = window.innerWidth,
             newHeight = window.innerHeight - headerHeight + 2; // why ?
 
         if (!this.portal.originalSize) {
@@ -227,6 +237,16 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
 
         this.portal.setSize(newWidth, newHeight);
         this.portal.el.alignTo(main, 'tl-tl', [-8, 0]);
+    },
+
+    /**
+     * Method: setMaxMapSize
+     * Sets the map portal to the full size of the window,
+     * minus the height of the header elements
+     * call the toggleSize function after the elements are adjusted
+     */
+    setMaxMapSize: function () {
+        this.expandMap();
         // prevent the thumb nail images from showing through in full
         // screen mode
         this.portal.el.setStyle({'z-index' : 1000});
@@ -253,7 +273,9 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         Ext.getBody().setStyle({
             overflow: ''
         });
-        this.setHashUrl("#small");
+
+        // we need to set the value of the hash url to be empty
+        this.setHashUrl("");
         this.fullScreen = false;
         this.fireEvent('toggleSize', this.fullScreen);
 

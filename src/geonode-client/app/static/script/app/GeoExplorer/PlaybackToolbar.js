@@ -38,13 +38,26 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         }
         this.aggressive = (window.location.href.match(/view|new/)===null);
 
-        // if the app is in the fullscreen mode we want to show the
-        // legend
-        if (app.fullScreen) {
-            this.toggleLegend(null, true);
-        }
+        // It now possible for the user to toggle the map state
+        // outside of the toggle button handler. For example, now on
+        // the hash change event, we toggle the map portal. We need to
+        // change the state of the legend and the toggle button in
+        // order to support this work flow
+        app.on('toggleSize', function () {
+            // show the legend when the map goes full screen
+            this.toggleLegend(null, app.fullScreen);
+            this.setToggleButton(app.fullScreen);
+        }, this);
 
-        app.on('toggleSize', this.setToggleButton, this);
+        // we need to run these two methods on page load, after all of
+        // the buttons are created and attached to the PlayBack tool.
+        // the only way i can figure out how to do this is to delay
+        // this event by 400 ms, which I am not sure is a great
+        // solution
+        this.on('afterrender', function () {
+            this.toggleLegend(null, app.fullScreen);
+            this.setToggleButton(app.fullScreen);
+        }, this, {delay: 400});
 
         // TODO, We use a delay here because we have to wait until the
         // portal is the correct size in order to resize the legend
@@ -143,13 +156,12 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         btn.removeClass('x-btn-pressed');
     },
 
-    toggleMapSize: function(btn, pressed) {
+    toggleMapSize: function (btn, pressed) {
 
         if (app.fullScreen) {
             app.setMinMapSize();
         } else {
             app.setMaxMapSize();
-            this.toggleLegend(null, true);
         }
 
         btn.el.removeClass('x-btn-pressed');
@@ -157,19 +169,27 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     
     toggleLegend: function(btn, pressed){
+        var buttonState  = true;
 
         if (!this.layerPanel) {
             this.layerPanel = this.buildLayerPanel();
         }
 
         if (pressed) {
-            // global
             this.layerPanel.show();
+            // access global vars
             this.resizeLegend(app.mapPanel.getHeight());
         } else {
+            buttonState = false;
             this.layerPanel.hide();
         }
-
+        // at some point this method is fired but this.btnLegend is
+        // not yet attached to this
+        if (this.btnLegend !== undefined) {
+            // We have the suppress the event, other wise we recur
+            // until the stack blows up.
+            this.btnLegend.toggle(buttonState, true);
+        }
     },
 
     resizeLegend: function (height) {
