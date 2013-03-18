@@ -49,15 +49,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.setToggleButton(app.fullScreen);
         }, this);
 
-        // we need to run these two methods on page load, after all of
-        // the buttons are created and attached to the PlayBack tool.
-        // the only way i can figure out how to do this is to delay
-        // this event by 400 ms, which I am not sure is a great
-        // solution
-        this.on('afterrender', function () {
+        this.on('afterlayout', function (event) {
             this.toggleLegend(null, app.fullScreen);
             this.setToggleButton(app.fullScreen);
-        }, this, {delay: 400});
+        });
 
         // TODO, We use a delay here because we have to wait until the
         // portal is the correct size in order to resize the legend
