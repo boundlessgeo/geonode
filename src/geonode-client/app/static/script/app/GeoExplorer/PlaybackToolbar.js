@@ -165,7 +165,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         }
 
         btn.el.removeClass('x-btn-pressed');
-        window.scrollTo(0,0);
     },
     
     toggleLegend: function(btn, pressed){
