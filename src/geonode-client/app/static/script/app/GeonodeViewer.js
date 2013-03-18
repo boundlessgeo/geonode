@@ -236,7 +236,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         }
 
         this.portal.setSize(newWidth, newHeight);
-        this.portal.el.alignTo(main, 'tl-tl', [-8, 0]);
+        this.portal.el.alignTo(main, 'tl-tl', [0, 0]);
     },
 
     /**
