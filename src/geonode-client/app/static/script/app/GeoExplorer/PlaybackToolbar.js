@@ -54,7 +54,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             // the last size is actually the size that the panel is
             // going into.
             this.resizeLegend(event.lastSize.height);
-        }, this, {delay: 100});
+        }, this, {delay: 500});
 
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
