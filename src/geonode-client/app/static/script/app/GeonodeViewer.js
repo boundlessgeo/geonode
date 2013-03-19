@@ -145,7 +145,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             /** api: event[toggleSize]
              * an event that is fired before the map portal is resized
              */
-            "toggleSize"
+            "togglesize"
         );
 
         //Add special connection handlers
