@@ -43,10 +43,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         // the hash change event, we toggle the map portal. We need to
         // change the state of the legend and the toggle button in
         // order to support this work flow
-        app.on('toggleSize', function () {
+        app.on('togglesize', function (fullScreen) {
             // show the legend when the map goes full screen
-            this.toggleLegend(null, app.fullScreen);
-            this.setToggleButton(app.fullScreen);
+            this.toggleLegend(null, fullScreen);
+            this.setToggleButton(fullScreen);
         }, this);
 
         this.on('afterlayout', function (event) {
@@ -56,7 +56,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
         // TODO, We use a delay here because we have to wait until the
         // portal is the correct size in order to resize the legend
-        // This is a hacked, ideally we would not need this delay
+        // This is a hack, ideally we would not need this delay
         app.portal.on('resize', function (event) {
             // using the lastSize seems wrong as from what I can tell
             // the last size is actually the size that the panel is
@@ -163,7 +163,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     
     toggleLegend: function(btn, pressed){
-        var buttonState  = true;
+        var buttonState = true;
 
         if (!this.layerPanel) {
             this.layerPanel = this.buildLayerPanel();

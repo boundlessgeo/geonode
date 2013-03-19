@@ -165,7 +165,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 // event
                 window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
             }
-            window.onresize = Ext.createDelegate(function () {
+
+            Ext.EventManager.onWindowResize(function () {
                 // if the map is fullscreen we need to adjust the size
                 // of the map window when an user resizes the browser
                 // however, if we are not in full screen mode, then we
@@ -256,7 +257,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         window.scrollTo(0, 0);
         this.setHashUrl("#full");
         this.fullScreen = true;
-        this.fireEvent('toggleSize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen);
     },
 
     /**
@@ -277,7 +278,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         // we need to set the value of the hash url to be empty
         this.setHashUrl("");
         this.fullScreen = false;
-        this.fireEvent('toggleSize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen);
 
     },
 
