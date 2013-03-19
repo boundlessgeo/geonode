@@ -145,12 +145,12 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             /** api: event[toggleSize]
              * an event that is fired before the map portal is resized
              */
-            "toggleSize"
+            "togglesize"
         );
-        
+
         //Add special connection handlers
         this.addConnectionHandlers();
-        
+
         //Globally register the color manager for any field
         this.registerColorManager();
 
@@ -165,6 +165,17 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 // event
                 window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
             }
+
+            Ext.EventManager.onWindowResize(function () {
+                // if the map is fullscreen we need to adjust the size
+                // of the map window when an user resizes the browser
+                // however, if we are not in full screen mode, then we
+                // don't care
+                if (this.fullScreen) {
+                    this.expandMap();
+                }
+            }, this);
+
         });
 
         // limit combo boxes to the window they belong to - fixes issues with
@@ -195,6 +206,39 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             this.setMinMapSize();
         }
     },
+    /**
+     * Method: setHashUrl
+     * Safely sets the value of the hash url. First checks to make sure
+     * that hash url is not already set to that value.
+     */
+    setHashUrl: function (newValue) {
+        if (window.location.hash !== newValue) {
+            window.location.hash = newValue;
+        }
+    },
+    /**
+     * Method: expandMap 
+     *
+     * Expands the map portal to what we consider an full screen used
+     * by the setMaxMapSize and also attached to the window.onresize
+     * event
+     */
+    expandMap: function () {
+        var headerHeight =
+            Ext.get('header').getHeight() +
+            Ext.get('top-crossbar').getHeight() +
+            Ext.get('crossbar').getHeight(),
+            main = Ext.get('main'),
+            newWidth = window.innerWidth,
+            newHeight = window.innerHeight - headerHeight + 2; // why ?
+
+        if (!this.portal.originalSize) {
+            this.portal.originalSize = this.portal.getSize();
+        }
+
+        this.portal.setSize(newWidth, newHeight);
+        this.portal.el.alignTo(main, 'tl-tl', [0, 0]);
+    },
 
     /**
      * Method: setMaxMapSize
@@ -203,20 +247,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
      * call the toggleSize function after the elements are adjusted
      */
     setMaxMapSize: function () {
-        var headerHeight =
-            Ext.get('header').getHeight() +
-            Ext.get('top-crossbar').getHeight() +
-            Ext.get('crossbar').getHeight(),
-            main = Ext.get('main'),
-            newWidth = window.innerWidth + 1, // why the +1 ?
-            newHeight = window.innerHeight - headerHeight + 2; // why ?
-
-        if (!this.portal.originalSize) {
-            this.portal.originalSize = this.portal.getSize();
-        }
-
-        this.portal.setSize(newWidth, newHeight);
-        this.portal.el.alignTo(main, 'tl-tl', [-8, 0]);
+        this.expandMap();
         // prevent the thumb nail images from showing through in full
         // screen mode
         this.portal.el.setStyle({'z-index' : 1000});
@@ -224,9 +255,9 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             overflow: 'hidden'
         });
         window.scrollTo(0, 0);
-
+        this.setHashUrl("#full");
         this.fullScreen = true;
-        this.fireEvent('toggleSize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen);
     },
 
     /**
@@ -244,8 +275,10 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             overflow: ''
         });
 
+        // we need to set the value of the hash url to be empty
+        this.setHashUrl("");
         this.fullScreen = false;
-        this.fireEvent('toggleSize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen);
 
     },
 
