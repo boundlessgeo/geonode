@@ -254,10 +254,18 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         Ext.getBody().setStyle({
             overflow: 'hidden'
         });
+
+        // if our geonodeview object has an id, we know that we are
+        // current on the map view page, other wise its a layer view
+        // page which does not have a timeline
+        if (this.id) {
+            Ext.getCmp('timeline-container').show();
+        }
+
         window.scrollTo(0, 0);
         this.setHashUrl("#full");
         this.fullScreen = true;
-        this.fireEvent('togglesize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
     },
 
     /**
@@ -275,10 +283,15 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             overflow: ''
         });
 
+        // same check as above
+        if (this.id) {
+            Ext.getCmp('timeline-container').hide();
+        }
+
         // we need to set the value of the hash url to be empty
         this.setHashUrl("");
         this.fullScreen = false;
-        this.fireEvent('togglesize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
 
     },
 
