@@ -38,23 +38,31 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         }
         this.aggressive = (window.location.href.match(/view|new/)===null);
 
-        // if the app is in the fullscreen mode we want to show the
-        // legend
-        if (app.fullScreen) {
-            this.toggleLegend(null, true);
-        }
+        // It now possible for the user to toggle the map state
+        // outside of the toggle button handler. For example, now on
+        // the hash change event, we toggle the map portal. We need to
+        // change the state of the legend and the toggle button in
+        // order to support this work flow
+        app.on('togglesize', function (fullScreen) {
+            // show the legend when the map goes full screen
+            this.toggleLegend(null, fullScreen);
+            this.setToggleButton(fullScreen);
+        }, this);
 
-        app.on('toggleSize', this.setToggleButton, this);
+        this.on('afterlayout', function (event) {
+            this.toggleLegend(null, app.fullScreen);
+            this.setToggleButton(app.fullScreen);
+        });
 
         // TODO, We use a delay here because we have to wait until the
         // portal is the correct size in order to resize the legend
-        // This is a hacked, ideally we would not need this delay
+        // This is a hack, ideally we would not need this delay
         app.portal.on('resize', function (event) {
             // using the lastSize seems wrong as from what I can tell
             // the last size is actually the size that the panel is
             // going into.
             this.resizeLegend(event.lastSize.height);
-        }, this, {delay: 100});
+        }, this, {delay: 400});
 
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
@@ -143,32 +151,39 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         btn.removeClass('x-btn-pressed');
     },
 
-    toggleMapSize: function(btn, pressed) {
+    toggleMapSize: function (btn, pressed) {
 
         if (app.fullScreen) {
             app.setMinMapSize();
         } else {
-            app.setMaxMapSize()
+            app.setMaxMapSize();
         }
 
         btn.el.removeClass('x-btn-pressed');
-        window.scrollTo(0,0);
     },
     
     toggleLegend: function(btn, pressed){
+        var buttonState = true;
 
         if (!this.layerPanel) {
             this.layerPanel = this.buildLayerPanel();
         }
 
         if (pressed) {
-            // global
             this.layerPanel.show();
+            // access global vars
             this.resizeLegend(app.mapPanel.getHeight());
         } else {
+            buttonState = false;
             this.layerPanel.hide();
         }
-
+        // at some point this method is fired but this.btnLegend is
+        // not yet attached to this
+        if (this.btnLegend !== undefined) {
+            // We have the suppress the event, other wise we recur
+            // until the stack blows up.
+            this.btnLegend.toggle(buttonState, true);
+        }
     },
 
     resizeLegend: function (height) {
