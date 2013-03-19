@@ -254,10 +254,13 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         Ext.getBody().setStyle({
             overflow: 'hidden'
         });
+
+        Ext.getCmp('timeline-container').show();
+
         window.scrollTo(0, 0);
         this.setHashUrl("#full");
         this.fullScreen = true;
-        this.fireEvent('togglesize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
     },
 
     /**
@@ -275,10 +278,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             overflow: ''
         });
 
+        Ext.getCmp('timeline-container').hide();
         // we need to set the value of the hash url to be empty
         this.setHashUrl("");
         this.fullScreen = false;
-        this.fireEvent('togglesize', this.fullScreen);
+        this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
 
     },
 

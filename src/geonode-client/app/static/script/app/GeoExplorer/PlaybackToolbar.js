@@ -43,15 +43,21 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         // the hash change event, we toggle the map portal. We need to
         // change the state of the legend and the toggle button in
         // order to support this work flow
-        app.on('togglesize', function (fullScreen) {
+        app.on('togglesize', function (fullScreen, isAuthorized) {
             // show the legend when the map goes full screen
             this.toggleLegend(null, fullScreen);
             this.setToggleButton(fullScreen);
+
         }, this);
 
         this.on('afterlayout', function (event) {
             this.toggleLegend(null, app.fullScreen);
             this.setToggleButton(app.fullScreen);
+
+            if (app.fullScreen && app.isAuthorized()) {
+                this.btnEdit.show();
+            } else { this.btnEdit.hide(); }
+
         });
 
         // TODO, We use a delay here because we have to wait until the
