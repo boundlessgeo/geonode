@@ -241,6 +241,17 @@ def setup_geonode_client(options):
 
 
 @task
+def geonode_client(options):
+    static = path("./src/GeoNodePy/geonode/static/geonode")
+    opts = ''
+    if options.get('jsdebug', None):
+        opts = '-Djsdebug' 
+    with pushd("src/geonode-client/"):
+        sh("ant %s clean dist" % opts)
+
+    sh("cp -a src/geonode-client/build/geonode-client/WEB-INF/app/static %s" % static)
+
+@task
 def sync_django_db(options):
     sh("django-admin.py syncdb --settings=geonode.settings --noinput")
     sh("django-admin.py migrate --settings=geonode.settings --noinput")

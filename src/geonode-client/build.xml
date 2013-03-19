@@ -11,6 +11,9 @@
     <condition property="git" value="git.cmd" else="git">
         <os family="windows"/>
     </condition>
+    <condition property="build.opts" value="-u" else="">
+        <isset property="jsdebug"/>
+    </condition>
 
     <target name="init">
         <mkdir dir="${build}"/>
@@ -25,7 +28,7 @@
         <java jar="externals/ringo/run.jar" fork="true" failonerror="true">
             <sysproperty key="ringo.home" path="externals/ringo"/>
             <arg path="externals/buildkit/lib/buildkit/build.js"/>
-            <arg line="-o ${build}/${ant.project.name}/WEB-INF/app/static/script buildjs.cfg"/>
+            <arg line="${build.opts} -o ${build}/${ant.project.name}/WEB-INF/app/static/script buildjs.cfg"/>
         </java>
 
     </target>
