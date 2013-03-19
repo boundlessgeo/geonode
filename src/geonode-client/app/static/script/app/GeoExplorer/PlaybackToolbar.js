@@ -43,15 +43,28 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         // the hash change event, we toggle the map portal. We need to
         // change the state of the legend and the toggle button in
         // order to support this work flow
-        app.on('togglesize', function (fullScreen) {
+        app.on('togglesize', function (fullScreen, isAuthorized) {
             // show the legend when the map goes full screen
             this.toggleLegend(null, fullScreen);
             this.setToggleButton(fullScreen);
+
         }, this);
 
         this.on('afterlayout', function (event) {
             this.toggleLegend(null, app.fullScreen);
             this.setToggleButton(app.fullScreen);
+
+            // First check to see if we have an edit button. On a map
+            // story pages we have an edit button, while on the layer
+            // view page we do not
+            if (this.btnEdit) {
+                if (app.fullScreen && app.isAuthorized()) {
+                    this.btnEdit.show();
+                } else {
+                    this.btnEdit.hide();
+                }
+            }
+
         });
 
         // TODO, We use a delay here because we have to wait until the
@@ -217,7 +230,12 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     
     loadComposser: function(btn){
-        window.location.href += '/view';
+        // handle the hash url when we redirect the user to the map
+        // view page
+
+        // take the url before the # and append 'view'
+        var url = window.location.href.split("#")[0];
+        window.location.href = url + 'view';
     },
 
     addLayerManager: function(){
