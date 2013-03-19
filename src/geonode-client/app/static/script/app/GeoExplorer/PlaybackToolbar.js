@@ -54,9 +54,16 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.toggleLegend(null, app.fullScreen);
             this.setToggleButton(app.fullScreen);
 
-            if (app.fullScreen && app.isAuthorized()) {
-                this.btnEdit.show();
-            } else { this.btnEdit.hide(); }
+            // First check to see if we have an edit button. On a map
+            // story pages we have an edit button, while on the layer
+            // view page we do not
+            if (this.btnEdit) {
+                if (app.fullScreen && app.isAuthorized()) {
+                    this.btnEdit.show();
+                } else {
+                    this.btnEdit.hide();
+                }
+            }
 
         });
 
@@ -223,7 +230,12 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     
     loadComposser: function(btn){
-        window.location.href += '/view';
+        // handle the hash url when we redirect the user to the map
+        // view page
+
+        // take the url before the # and append 'view'
+        var url = window.location.href.split("#")[0];
+        window.location.href = url + 'view';
     },
 
     addLayerManager: function(){
