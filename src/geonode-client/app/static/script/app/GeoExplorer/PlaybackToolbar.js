@@ -188,25 +188,28 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     toggleLegend: function(btn, pressed){
         var buttonState = true;
 
-        if (!this.layerPanel) {
+        if (this.layerPanel === undefined) {
             this.layerPanel = this.buildLayerPanel();
         }
 
-        if (pressed) {
-            this.layerPanel.show();
-            // access global vars
-            this.resizeLegend(app.mapPanel.getHeight());
-        } else {
-            buttonState = false;
-            this.layerPanel.hide();
+        if (this.layerPanel !== null) {
+            if (pressed) {
+                this.layerPanel.show();
+                // access global vars
+                this.resizeLegend(app.mapPanel.getHeight());
+            } else {
+                buttonState = false;
+                this.layerPanel.hide();
+            }
+            // at some point this method is fired but this.btnLegend is
+            // not yet attached to this
+            if (this.btnLegend !== undefined) {
+                // We have the suppress the event, other wise we recur
+                // until the stack blows up.
+                this.btnLegend.toggle(buttonState, true);
+            }
         }
-        // at some point this method is fired but this.btnLegend is
-        // not yet attached to this
-        if (this.btnLegend !== undefined) {
-            // We have the suppress the event, other wise we recur
-            // until the stack blows up.
-            this.btnLegend.toggle(buttonState, true);
-        }
+
     },
 
     resizeLegend: function (height) {
@@ -224,10 +227,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
 
     buildLayerPanel: function(btn, pressed) {
-        var layerPanel = this.layerManager.output[0];
-        // uses global
-        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
-        return layerPanel;
+        if (this.layerManager !== null) {
+            var layerPanel = this.layerManager.output[0];
+            // uses global
+            layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
+            return layerPanel;
+        }
+        return null;
     },
 
     
