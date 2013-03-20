@@ -45,13 +45,23 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         // order to support this work flow
         app.on('togglesize', function (fullScreen, isAuthorized) {
             // show the legend when the map goes full screen
-            this.toggleLegend(null, fullScreen);
+
+            // handle the case when we are on the map composer page
+            // and don't need to show a
+            if (app.id !== null) {
+                this.toggleLegend(null, fullScreen);
+            }
             this.setToggleButton(fullScreen);
 
         }, this);
 
         this.on('afterlayout', function (event) {
-            this.toggleLegend(null, app.fullScreen);
+            // handle we do not have an legend in the map composer
+            // page
+            if (app.id !== null) {
+                this.toggleLegend(null, app.fullScreen);
+            }
+
             this.setToggleButton(app.fullScreen);
 
             // First check to see if we have an edit button. On a map
