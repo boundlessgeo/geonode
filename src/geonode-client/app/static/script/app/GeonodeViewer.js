@@ -348,13 +348,6 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
      * Create the various mapItems & mapPlugins used by the viewer.
      */
     initMapPanel: function() {
-        /** Define this.mapItems, this.mapPlugins & map config defaults in subclasses **/
-        /** Put any absolute default (will be in every map viewer) items here **/
-        var defaultPlugins = [{
-            ptype: "gxp_loadingindicator", 
-            onlyShowOnFirstLoad: true
-        }];
-        this.mapPlugins = (this.mapPlugins) ? defaultPlugins.concat(this.mapPlugins) : defaultPlugins;
         var defaultControls = [new OpenLayers.Control.Zoom(),new OpenLayers.Control.Navigation()];
         if(!this.initialConfig.map){
             this.initialConfig.map = {controls:defaultControls};
@@ -539,7 +532,6 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                     // exceptions are handled elsewhere
                 }
                 else {
-                    this.mapPlugins[0].busyMask && this.mapPlugins[0].busyMask.hide();
                     var url = options.url;
                     if (response.status == 401 && url.indexOf("http" != 0) &&
                     url.indexOf(this.proxy) === -1) {

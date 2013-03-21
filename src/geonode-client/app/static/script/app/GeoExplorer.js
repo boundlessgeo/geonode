@@ -244,7 +244,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 if(options.failure) {
                     // exceptions are handled elsewhere
                 } else {
-                    this.mapPlugins[0].busyMask && this.mapPlugins[0].busyMask.hide();
                     var url = (options.url instanceof Array) ? options.url[0] : options.url;
                     if (response.status == 401 && url.indexOf("http" != 0) &&
                                             url.indexOf(this.proxy) === -1) {
@@ -576,11 +575,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     },
     
     initMapPanel: function() {
-        this.mapPlugins = [{
-            ptype: "gxp_loadingindicator", 
-            onlyShowOnFirstLoad: true
-        }];
-
         var defaultControls = [
             new OpenLayers.Control.Zoom(),
             new OpenLayers.Control.Navigation({
