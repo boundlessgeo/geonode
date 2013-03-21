@@ -157,13 +157,30 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.on('portalready', function () {
             // save a reference to the class object
             // for later use
-            this.toggleMapSizeViaUrl();
+
+            if (this.embed !== true) {
+                this.toggleMapSizeViaUrl();
+            }
+
+            if (this.embed === true) {
+                Ext.getCmp('timeline-container').show();
+                // after we add the time container to the map, we need
+                // to refresh the layout in order for the map to make
+                // room for it
+                this.portal.doLayout();
+            }
+
             // check to make sure that the browser supports the
             // onhashchange event
             if (window.onhashchange !== undefined) {
                 // register the toggleMapSize with the onhashchange
                 // event
-                window.onhashchange = Ext.createDelegate(this.toggleMapSizeViaUrl, this);
+                if (this.embed !== true) { // check to see if we are in the embed mode
+                    window.onhashchange = Ext.createDelegate(
+                        this.toggleMapSizeViaUrl,
+                        this
+                    );
+                }
             }
 
             Ext.EventManager.onWindowResize(function () {
@@ -171,11 +188,10 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 // of the map window when an user resizes the browser
                 // however, if we are not in full screen mode, then we
                 // don't care
-                if (this.fullScreen) {
+                if ((this.fullScreen) && (this.embed !== true)) {
                     this.expandMap();
                 }
             }, this);
-
         });
 
         // limit combo boxes to the window they belong to - fixes issues with
@@ -183,11 +199,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         Ext.form.ComboBox.prototype.getListParent = function(){
             return this.el.up(".x-window") || document.body;
         };
-        
+
         // don't draw window shadows - allows us to use autoHeight: true
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
-        
+
         GeonodeViewer.superclass.constructor.apply(this, [config]);
     },
 
