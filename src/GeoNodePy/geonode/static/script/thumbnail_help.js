@@ -48,7 +48,7 @@ function updateThumbnail(interactive) {
             if (interactive) {
                 Ext.select('#warn-missing-thumb').hide();
             }
-            Ext.select('img.thumbnail').set({'src': randURL()});
+            Ext.select('img.thumbnail').set({'src': randURL()}).setStyle({'display':'block'});
             Ext.MessageBox.hide();
       }
     });
@@ -60,6 +60,9 @@ Ext.onReady(function() {
            ev.stopEvent();
            promptThumbnail();
         });
+        if (!hasThumb) {
+            Ext.select('img.thumbnail').setStyle({'display':'none'});
+        }
         if (!hasThumb && false) {
             var loadCnt = 0, toLoad = 0;
             function checkload(layer) {
