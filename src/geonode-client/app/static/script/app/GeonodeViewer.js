@@ -164,6 +164,10 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
 
             if (this.embed === true) {
                 Ext.getCmp('timeline-container').show();
+                // after we add the time container to the map, we need
+                // to refresh the layout in order for the map to make
+                // room for it
+                this.portal.doLayout();
             }
 
             // check to make sure that the browser supports the
