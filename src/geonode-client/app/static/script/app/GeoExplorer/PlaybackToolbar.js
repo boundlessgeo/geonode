@@ -47,7 +47,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             // show the legend when the map goes full screen
 
             // handle the case when we are on the map composer page
-            // and don't need to show a
+            // and don't need to show a legend
             if (app.id !== null) {
                 this.toggleLegend(null, fullScreen);
             }
@@ -115,7 +115,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             'togglesize' : {
                 iconCls: 'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
-                hidden: this.layerManager === null,
+                hidden: (this.layerManager === null || app.embed === true),
                 ref: 'btnToggle',
                 enableToggle: true,
                 allowDepress: true,
