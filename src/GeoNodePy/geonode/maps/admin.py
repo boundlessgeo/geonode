@@ -24,6 +24,8 @@ class MapAdmin(admin.ModelAdmin):
     list_editable = ('owner',)
     #inlines = [MapLayerInline,]
     exclude = ('tools_params','portal_params')
+    list_filter = ('owner',)
+    search_fields = ('title',)
 
 class ContactAdmin(admin.ModelAdmin):
     inlines = [ContactRoleInline]
@@ -37,6 +39,7 @@ class LayerAdmin(admin.ModelAdmin):
     date_hierarchy = 'date'
     readonly_fields = ('uuid', 'typename', 'workspace') 
     inlines = [ContactRoleInline]
+    search_fields = ('title', 'typename')
 
     actions = ['change_poc']
 
