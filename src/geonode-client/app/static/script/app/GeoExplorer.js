@@ -401,21 +401,29 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         // add a listener to the source select event
                         // that appends the add layer widget with
                         // search options
-                        var button,
-                            cap    = tool.capGrid,
-                            id     = source.initialConfig.id,
+                        var id     = source.initialConfig.id,
                             // get the tool bar from the add layer
                             // widget
                             toolBar = tool.capGrid.getTopToolbar(),
-                            searchField = {
-                                xtype: 'textfield',
-                                emptyText: this.searchMessage
-                            },
-                            doSearch = function (event) {
+                            doSearch = function () {
                                 var query = toolBar.findByType('textfield')[1].getValue();
                                 source.filter({
                                     queryString: query
                                 });
+                            },
+                            searchField = {
+                                xtype: 'textfield',
+                                emptyText: this.searchMessage,
+                                listeners:{
+                                    scope:this,
+                                    specialkey: function(f,e){
+                                        if(e.getKey() === e.ENTER) {
+                                            source.filter({
+                                                queryString: f.getValue()
+                                            });
+                                        }
+                                    }
+                                }
                             },
                             searchButton = {
                                 text: 'Search',
