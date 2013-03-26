@@ -9,6 +9,12 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
 
     rootProperty: "rows",
 
+    minChars: 3,
+
+    minCharsTitle: "Layer Search",
+
+    minCharsError: "Please specify at least {count} characters",
+
     fields: [
         {name: "name"},
         {name: "id"},
@@ -32,6 +38,18 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
     ],
 
     baseParams: {limit: 0, sort: 'alphaaz'},
+
+    constructor: function(config) {
+        mapstory.plugins.CatalogueSource.superclass.constructor.apply(this, arguments);
+        this.on('ready', function() {
+            this.store.on('beforeload', function(store, options) {
+                if (store.baseParams.q !== undefined && store.baseParams.q.length < this.minChars) {
+                    Ext.Msg.alert(this.minCharsTitle, new Ext.Template(this.minCharsError).apply({count: this.minChars}));
+                }
+                return store.baseParams.q !== undefined && store.baseParams.q.length >=  this.minChars;
+            }, this);
+        }, this);
+    },
 
     createLayerRecord: function(config, callback, scope) {
         var idx = this.store.findExact('name', config.name);
