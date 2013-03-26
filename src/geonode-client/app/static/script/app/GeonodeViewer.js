@@ -405,14 +405,6 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                         if(layer.params) {
                             layer.params.TILED = true;
                         }
-                        layer.events.on({
-                            'loadstart': function(evt) {
-                                Ext.get(evt.object.div).addClass('fade-all');
-                            },
-                            'loadend': function(evt) {
-                                Ext.get(evt.object.div).removeClass('fade-all');
-                            }
-                        });
                         /*layer.events.on({
                             'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
@@ -447,6 +439,18 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     initPortal: function(){
         /** Define the portal items in subclasses **/
         this.on("ready", function(){
+            this.mapPanel.map.events.on({
+                'changelayer': function(evt) {
+                    var layer = evt.layer;
+                    if (evt.property === 'params' && layer.params.TILED === true) {
+                        Ext.get(layer.div).addClass('fade-all');
+                        layer.events.register('loadend', this, function loadend() {
+                            layer.events.unregister('loadend', this, loadend);
+                            Ext.get(layer.div).removeClass('fade-all');
+                        });
+                    }
+                }
+            });
             this.mapPanel.layers.on({
                 "update": function(){
                     this.modified |= 1;
