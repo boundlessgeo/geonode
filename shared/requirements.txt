@@ -30,4 +30,5 @@ docutils
 -e git://github.com/pinax/django-flag.git#egg=django-flag
 django-social-auth
 django-oauth2-provider
+-e git://github.com/worldcompany/djangoembed#egg=oembed
 
