@@ -174,7 +174,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             config.tools = (config.tools || []).concat({
                 ptype: "gxp_wmsgetfeatureinfo",
                 format: "grid",
-                actionTarget: "main.tbar",
+                actionTarget: "map-bbar",
                 toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
                 controlOptions: {
@@ -334,19 +334,43 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     }
                 }
             };
-            return (config.tools || []).concat({
-                ptype: "gxp_mapproperties",
-                actionTarget: {target: "paneltbar", index: 0}
-            }, {
-                ptype: "gxp_zoom",
-                actionTarget: {target: "paneltbar", index: 4}
-            }, {
-                ptype: "gxp_navigationhistory",
-                actionTarget: {target: "paneltbar", index: 6}
-            }, {
-                ptype: "gxp_zoomtoextent",
-                actionTarget: {target: "paneltbar", index: 8}
-            }, {
+
+            var MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
+                ptype: 'mapstory-tool-bar',
+                addOutput: function () {
+                    return MapStoryToolBar.superclass.addOutput.call(this, {
+                        xtype: 'toolbar',
+                        items: [
+                            {
+                                xtype: 'button',
+                                text: 'Save Map',
+                                scope: this,
+                                handler: function () {
+                                    this.target.showMetadataForm();
+                                }
+                            },
+                            {
+                                xtype: 'button',
+                                text: 'Publish Map',
+                                scope: this,
+                                handler: function () {
+                                    this.target.makeExportDialog();
+                                }
+                            }
+                        ]
+                    })
+                }
+            })
+
+            Ext.preg(MapStoryToolBar.prototype.ptype, MapStoryToolBar);
+
+            return (config.tools || []).concat(
+            {
+                    ptype: "mapstory-tool-bar",
+                    outputTarget: "map-bbar",
+            },
+
+            {
                 ptype: "gxp_layermanager",
                 loader: {
                     baseAttrs: {
@@ -464,7 +488,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_print",
                 includeLegend: true,
                 printCapabilities: window.printCapabilities,
-                actionTarget: {target: "paneltbar", index: 3}
+                actionTarget: {target: "map-bbar", index: 3}
             }, {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
@@ -487,7 +511,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputConfig: {
                     id: 'notes_menu'
                 },
-                actionTarget: {target: "paneltbar", index: 12}
+                actionTarget: {target: "map-bbar", index: 12}
             },{
                 ptype: "gxp_featuremanager",
                 id: "general_manager",
@@ -498,7 +522,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 toggleGroup: toggleGroup,
                 featureManager: "general_manager",
                 autoLoadFeature: true,
-                actionTarget: {target: "paneltbar", index: 13}
+                actionTarget: {target: "map-bbar", index: 13}
             }, {
                 ptype: "gxp_featuremanager",
                 id: "annotations_manager",
@@ -595,7 +619,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         } else {
             this.initialConfig.map.controls = (this.initialConfig.map.controls || []).concat(defaultControls);
         }
-        
+
         //ensure map has a bbar with our prefered id
         if (this.initialConfig.map && this.initialConfig.map.bbar) {
             this.initialConfig.map.bbar.id = 'map-bbar';
@@ -790,7 +814,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         this.toolbar = new Ext.Toolbar({
             disabled: true,
             id: 'paneltbar',
-            items: this.createTools()
+            actionTarget: {
+                target: "map-bbar"
+            },
+            items: []
         });
 
         this.on("ready", function() {
