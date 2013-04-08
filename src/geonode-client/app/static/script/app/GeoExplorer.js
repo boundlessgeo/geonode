@@ -1,6 +1,10 @@
+/*global gxp, Ext*/
 /**
  * Copyright (c) 2009 The Open Planning Project
  */
+var MapStoryToolBar,
+    MapStoryMapProperties,
+    GeoExplorer;
 
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
@@ -27,26 +31,57 @@ Ext.override(Ext.dd.DragTracker, {
     }
 });
 
+MapStoryMapProperties = Ext.extend(gxp.plugins.Tool, {
+    ptype: 'ms-map-properties',
+    buttonText: 'UT: Map Properties',
+    numberOfZoomLevelsText: 'Number of zoom levels',
 
-var MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
-    ptype: 'mapstory-tool-bar',
+    addActions: function () {
+        'use strict';
+        return MapStoryMapProperties.superclass.addActions.apply(this, [{
+            xtype: 'button',
+            text: this.buttonText,
+            scope: this,
+            handler: function () {
+                this.addOutput();
+            }
+        }]);
+    },
+    addOutput: function () {
+        'use strict';
+        var baseLayer = this.target.mapPanel.map.baseLayer;
+
+        return MapStoryMapProperties.superclass.addOutput.call(this, {
+            xtype: 'form',
+            border: false,
+            bodyStyle: 'padding: 10px',
+            items: [
+                {
+                    xtype: 'numberfield',
+                    fieldLabel: this.numberOfZoomLevelsText,
+                    value: baseLayer.numZoomLevels
+                },
+                {
+                    xtype: 'checkbox'
+                }
+            ]
+        });
+    }
+});
+Ext.preg(MapStoryMapProperties.prototype.ptype, MapStoryMapProperties);
+
+MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
+    ptype: 'ms-tool-bar',
+    saveText: 'UT: Save Map',
+    publishText: 'UT: Publish Map',
     addOutput: function () {
         'use strict';
         return MapStoryToolBar.superclass.addOutput.call(this, {
             xtype: 'toolbar',
             items: [
                 {
-                    ptype: 'gxp_wmsgetfeatureinfo',
-                    format: 'grid',
-                    layerParams: ['TIME'],
-                    outputConfig: {
-                        width: 400,
-                        height: 400
-                    }
-                },
-                {
                     xtype: 'button',
-                    text: 'Save Map',
+                    text: this.saveText,
                     scope: this,
                     handler: function () {
                         this.target.showMetadataForm();
@@ -54,12 +89,12 @@ var MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
                 },
                 {
                     xtype: 'button',
-                    text: 'Publish Map',
+                    text: this.publishText,
                     scope: this,
                     handler: function () {
                         this.target.makeExportDialog();
-                    }
-                }
+                    },
+                },
             ]
         });
     }
@@ -88,8 +123,8 @@ Ext.preg(MapStoryToolBar.prototype.ptype, MapStoryToolBar);
  * name - {String} Required WMS layer name.
  * title - {String} Optional title to display for layer.
  */
-var GeoExplorer = Ext.extend(gxp.Viewer, {
-    
+GeoExplorer = Ext.extend(gxp.Viewer, {
+
     /**
      * api: config[localGeoServerBaseUrl]
      * ``String`` url of the local GeoServer instance
@@ -113,7 +148,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * ``String``
      */
     toggleGroup: "map",
-    
+
     /**
      * private: property[mapPanel]
      * the :class:`GeoExt.MapPanel` instance for the main viewport
@@ -131,7 +166,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * {<Ext.Window>} A window which includes a CapabilitiesGrid panel.
      */
     capGrid: null,
-    
+
     /**
      * Property: modified
      * ``Number``
@@ -146,7 +181,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     popupCache: null,
 
     searchTool: null,
-    
+
     /** private: property[urlPortRegEx]
      *  ``RegExp``
      */
@@ -163,7 +198,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     layerSelectionLabel: "UT:View available data from:",
     layersContainerText: "UT:Data",
     layersPanelText: "UT:Layers",
-    mapSizeLabel: 'UT: Map Size', 
+    mapSizeLabel: 'UT: Map Size',
     metadataFormCancelText : "UT:Cancel",
     metadataFormSaveAsCopyText : "UT:Save as Copy",
     metadataFormSaveText : "UT:Save",
@@ -370,8 +405,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
 
             return (config.tools || []).concat(
             {
-                    ptype: "mapstory-tool-bar",
-                    outputTarget: "map-bbar",
+                ptype: 'ms-tool-bar',
+                outputTarget: 'map-bbar',
+            },
+            {
+                ptype: 'ms-map-properties',
+                actionTarget: 'map-bbar'
             },
 
             {
@@ -488,12 +527,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 },
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
-            }, {
-                ptype: "gxp_print",
-                includeLegend: true,
-                printCapabilities: window.printCapabilities,
-                actionTarget: {target: "map-bbar", index: 3}
-            }, {
+            },
+
+            // {
+            //     ptype: "gxp_print",
+            //     includeLegend: true,
+            //     printCapabilities: window.printCapabilities,
+            //     actionTarget: {target: "map-bbar", index: 3}
+            // }, 
+
+            {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
                 outputConfig: {
@@ -506,77 +549,89 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_timelinelayers",
                 timelineTool: "timeline-tool",
                 actionTarget: "timeline-container.tbar"
-            }, {
-                ptype: "app_notes",
-                createLayerUrl: "/data/create_annotations_layer/{mapID}",
-                layerNameTpl: "_map_{mapID}_annotations",
-                workspacePrefix: "geonode",
-                featureEditor: "annotations_editor",
-                outputConfig: {
-                    id: 'notes_menu'
-                },
-                actionTarget: {target: "map-bbar", index: 12}
-            },{
-                ptype: "gxp_featuremanager",
-                id: "general_manager",
-                paging: false,
-                autoSetLayer: true
-            }, {
-                ptype: "gxp_featureeditor",
-                toggleGroup: toggleGroup,
-                featureManager: "general_manager",
-                autoLoadFeature: true,
-                actionTarget: {target: "map-bbar", index: 13}
-            }, {
-                ptype: "gxp_featuremanager",
-                id: "annotations_manager",
-                autoLoadFeatures: true,
-                autoSetLayer: false,
-                paging: false
-            }, {
-                ptype: "gxp_featureeditor",
-                id: "annotations_editor",
-                closeOnSave: true,
-                toggleGroup: toggleGroup,
-                supportAbstractGeometry: true,
-                showSelectedOnly: false,
-                supportNoGeometry: true,
-                outputConfig: {
-                    allowDelete: true,
-                    width: 500,
-                    height: 350,
-                    editorPluginConfig: {
-                        ptype: "gxp_editorform",
-                        bodyStyle: "padding: 5px 5px 0",
-                        autoScroll: true,
-                        fieldConfig: {
-                            'title': {fieldLabel: "Title", allowBlank: false, width: '100%', anchor: '99%'},
-                            'content': {fieldLabel: "Description", xtype: "textarea", width: '100%', anchor: '99%', grow: true},
-                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false, msgTarget: 'under'},
-                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>", msgTarget: 'under'},
-                            'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
-                            'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
-                            'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
-                                ['tl-tl?', 'Top left'], 
-                                ['t-t?', 'Top center'],
-                                ['tr-tr?', 'Top right'],
-                                ['l-l?', 'Center left'],
-                                ['c-c?', 'Center'],
-                                ['r-r?', 'Center right'],
-                                ['bl-bl?', 'Bottom left'],
-                                ['b-b?', 'Bottom center'],
-                                ['br-br?', 'Bottom right']
-                            ]}
-                        }
-                    }
-                },
-                featureManager: "annotations_manager",
-                actionTarget: "notes_menu",
-                createFeatureActionText: "Add note",
-                iconClsAdd: 'gxp-icon-addnote',
-                editFeatureActionText: "Edit note"
             });
         }
+// {
+//                 ptype: "app_notes",
+//                 createLayerUrl: "/data/create_annotations_layer/{mapID}",
+//                 layerNameTpl: "_map_{mapID}_annotations",
+//                 workspacePrefix: "geonode",
+//                 featureEditor: "annotations_editor",
+//                 outputConfig: {
+//                     id: 'notes_menu'
+//                 },
+//                 actionTarget: {target: "map-bbar", index: 12}
+// },
+
+// {
+//                 ptype: "gxp_featuremanager",
+//                 id: "general_manager",
+//                 paging: false,
+//                 autoSetLayer: true
+// },
+
+// {
+//                 ptype: "gxp_featureeditor",
+//                 toggleGroup: toggleGroup,
+//                 featureManager: "general_manager",
+//                 autoLoadFeature: true,
+//                 actionTarget: {target: "map-bbar", index: 13}
+// }, 
+
+// {
+//                 ptype: "gxp_featuremanager",
+//                 id: "annotations_manager",
+//                 autoLoadFeatures: true,
+//                 autoSetLayer: false,
+//                 paging: false
+// }
+
+// {
+//                 ptype: "gxp_featureeditor",
+//                 id: "annotations_editor",
+//                 closeOnSave: true,
+//                 toggleGroup: toggleGroup,
+//                 supportAbstractGeometry: true,
+//                 showSelectedOnly: false,
+//                 supportNoGeometry: true,
+//                 outputConfig: {
+//                     allowDelete: true,
+//                     width: 500,
+//                     height: 350,
+//                     editorPluginConfig: {
+//                         ptype: "gxp_editorform",
+//                         bodyStyle: "padding: 5px 5px 0",
+//                         autoScroll: true,
+//                         fieldConfig: {
+//                             'title': {fieldLabel: "Title", allowBlank: false, width: '100%', anchor: '99%'},
+//                             'content': {fieldLabel: "Description", xtype: "textarea", width: '100%', anchor: '99%', grow: true},
+//                             'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false, msgTarget: 'under'},
+//                             'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>", msgTarget: 'under'},
+//                             'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
+//                             'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
+//                             'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
+//                                 ['tl-tl?', 'Top left'], 
+//                                 ['t-t?', 'Top center'],
+//                                 ['tr-tr?', 'Top right'],
+//                                 ['l-l?', 'Center left'],
+//                                 ['c-c?', 'Center'],
+//                                 ['r-r?', 'Center right'],
+//                                 ['bl-bl?', 'Bottom left'],
+//                                 ['b-b?', 'Bottom center'],
+//                                 ['br-br?', 'Bottom right']
+//                             ]}
+//                         }
+//                     }
+//                 },
+//                 featureManager: "annotations_manager",
+//                 actionTarget: "notes_menu",
+//                 createFeatureActionText: "Add note",
+//                 iconClsAdd: 'gxp-icon-addnote',
+//                 editFeatureActionText: "Edit note"
+//             });
+//         }
+
+
         Ext.Ajax.request({
             url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
             success: function(response) {
@@ -608,6 +663,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             scope: this
         });
+
     },
     
     initMapPanel: function() {
