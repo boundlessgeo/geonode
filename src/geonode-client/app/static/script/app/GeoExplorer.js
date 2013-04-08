@@ -27,6 +27,47 @@ Ext.override(Ext.dd.DragTracker, {
     }
 });
 
+
+var MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
+    ptype: 'mapstory-tool-bar',
+    addOutput: function () {
+        'use strict';
+        return MapStoryToolBar.superclass.addOutput.call(this, {
+            xtype: 'toolbar',
+            items: [
+                {
+                    ptype: 'gxp_wmsgetfeatureinfo',
+                    format: 'grid',
+                    layerParams: ['TIME'],
+                    outputConfig: {
+                        width: 400,
+                        height: 400
+                    }
+                },
+                {
+                    xtype: 'button',
+                    text: 'Save Map',
+                    scope: this,
+                    handler: function () {
+                        this.target.showMetadataForm();
+                    }
+                },
+                {
+                    xtype: 'button',
+                    text: 'Publish Map',
+                    scope: this,
+                    handler: function () {
+                        this.target.makeExportDialog();
+                    }
+                }
+            ]
+        });
+    }
+});
+
+Ext.preg(MapStoryToolBar.prototype.ptype, MapStoryToolBar);
+
+
 /**
  * Constructor: GeoExplorer
  * Create a new GeoExplorer application.
@@ -171,26 +212,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // Common tools for viewer and composer go here. Note that this
         // modifies the viewer's initialConfig.
         if (config.useToolbar !== false) {
-            config.tools = (config.tools || []).concat({
-                ptype: "gxp_wmsgetfeatureinfo",
-                format: "grid",
-                actionTarget: "map-bbar",
-                toggleGroup: this.toggleGroup,
-                layerParams: ['TIME'],
-                controlOptions: {
-                    hover: true
-                },
-                outputConfig: {width: 400, height: 300}
-            }, {
-                ptype: "gxp_playback",
-                id: "playback-tool",
-                outputTarget: "map-bbar",
-                looped: true,
-                outputConfig:{
-                    xtype: 'app_playbacktoolbar',
-                    defaults: {scale: 'medium'}
+            config.tools = (config.tools || []).concat(
+                {
+                    ptype: "gxp_playback",
+                    id: "playback-tool",
+                    outputTarget: "map-bbar",
+                    looped: true,
+                    outputConfig:{
+                        xtype: 'app_playbacktoolbar',
+                        defaults: {scale: 'medium'}
+                    }
                 }
-            });
+            );
         }
 
         // add old ptypes
@@ -334,35 +367,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     }
                 }
             };
-
-            var MapStoryToolBar = Ext.extend(gxp.plugins.Tool, {
-                ptype: 'mapstory-tool-bar',
-                addOutput: function () {
-                    return MapStoryToolBar.superclass.addOutput.call(this, {
-                        xtype: 'toolbar',
-                        items: [
-                            {
-                                xtype: 'button',
-                                text: 'Save Map',
-                                scope: this,
-                                handler: function () {
-                                    this.target.showMetadataForm();
-                                }
-                            },
-                            {
-                                xtype: 'button',
-                                text: 'Publish Map',
-                                scope: this,
-                                handler: function () {
-                                    this.target.makeExportDialog();
-                                }
-                            }
-                        ]
-                    })
-                }
-            })
-
-            Ext.preg(MapStoryToolBar.prototype.ptype, MapStoryToolBar);
 
             return (config.tools || []).concat(
             {
