@@ -1,7 +1,4 @@
 /*global Ext, mapstory, gxp */
-/**
-   @requires gxp/plugins/Tool.js
-*/
 
 (function () {
     'use strict';
@@ -24,14 +21,6 @@
                         handler: function () {
                             this.target.showMetadataForm();
                         }
-                    },
-                    {
-                        xtype: 'button',
-                        text: this.publishText,
-                        scope: this,
-                        handler: function () {
-                            this.target.makeExportDialog();
-                        },
                     },
                 ]
             });
