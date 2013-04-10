@@ -922,7 +922,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
 
     updateURL: function() {
         /* PUT to this url to update an existing map */
-        return this.rest + this.mapID + '/data';
+        return this.rest + this.mapID + '/data/';
     },
 
     /** api: method[save]
@@ -933,7 +933,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
      */
     save: function(as){
         var config = this.getState();
-        
+
         if (!this.mapID || as) {
             /* create a new map */ 
             Ext.Ajax.request({
