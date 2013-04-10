@@ -34,6 +34,8 @@ class _UploadBase(object):
             raise Exception('bogus')
         self._bind_json(json)
     def _bind(self,json):
+        if isinstance(json, basestring):
+            raise ValueError("expected json, got '%s'" % json)
         for k in json:
             v = json[k]
             if not isinstance(v,dict):
@@ -97,12 +99,19 @@ class Task(_UploadBase):
 class Workspace(_UploadBase):
     def _bind_json(self,json):
         self._bind(json)
-    
+
 class Source(_UploadBase):
     def _bind_json(self,json):
         self._bind(json)
-        # @todo more
-        
+        if 'files' in json:
+            self.files = [ File(f) for f in json['files'] ]
+
+
+class File(_UploadBase):
+    def _bind_json(self, json):
+        self._bind(json)
+
+
 class Target(_UploadBase):
 
     # this allows compatibility with the gsconfig datastore object
@@ -111,6 +120,8 @@ class Target(_UploadBase):
     def _bind_json(self,json):
         key,val = json.items()[0]
         self.target_type = key
+        if self.target_type == 'coverageStore':
+            self.resource_type = 'coverage'
         self._bind(val)
         self.workspace = Workspace(val['workspace'])
         # @todo more
@@ -163,14 +174,12 @@ class Layer(_UploadBase):
     def _bind_json(self,json):
         self.layer_type = json.pop('type')
         self._bind(json)
-        
-class FeatureType(_UploadBase):
-    resource_type = "featureType"
 
-    def _bind_json(self,json):
-        self._bind(json)
-        attributes = json['attributes']['attribute'] # why extra
-        self.attributes = self._build(attributes,Attribute)
+
+class ResourceMixin(object):
+
+    def _bind_resource(self, json):
+        '''common resource binding'''
         self.nativeCRS = None
         if 'nativeCRS' in json:
             self.nativeCRS = json['nativeCRS']
@@ -185,7 +194,7 @@ class FeatureType(_UploadBase):
             "item" : {
                 "id" : item.id,
                 "resource" : {
-                    "featureType" : {
+                    self.resource_type : {
                         "srs" : srs
                     }
                 }
@@ -193,7 +202,22 @@ class FeatureType(_UploadBase):
         }
         self._client().put_json(item.href,json.dumps(data))
         self.srs = srs
-        
+
+
+class FeatureType(_UploadBase, ResourceMixin):
+    resource_type = "featureType"
+
+    def _bind_json(self,json):
+        self._bind(json)
+
+        # work around xstream oddity when single attribute is present
+        attributes = json['attributes']['attribute']
+        if isinstance(attributes, dict):
+            attributes = [ attributes ]
+
+        self.attributes = self._build(attributes,Attribute)
+        self._bind_resource(json)
+
     def add_meta_data_entry(self,key,mtype,**kw):
         if not hasattr(self,'metadata'):
             self.metadata = []
@@ -245,12 +269,14 @@ class FeatureType(_UploadBase):
         self._client().put_json(item.href, json.dumps(data))
 
 
-class Coverage(_UploadBase):
+class Coverage(_UploadBase, ResourceMixin):
     resource_type = "coverage"
 
     def _bind_json(self, json):
         # TODO
         self._bind(json)
+
+        self._bind_resource(json)
 
 
 class Attribute(_UploadBase):

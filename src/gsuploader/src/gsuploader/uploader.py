@@ -33,12 +33,12 @@ class Uploader(object):
         """
         return self._call(self.client.get_import,id)
 
-    def start_import(self, import_id=None):
+    def start_import(self, import_id=None, mosaic=False, name=None):
         """Create a new import session.
         import_id - optional id to specify
         returns a gsuploader.api.Session object
         """
-        session = self._call(self.client.start_import, import_id)
+        session = self._call(self.client.start_import, import_id, mosaic, name)
         if import_id: assert session.id >= import_id
         return session
         
@@ -54,10 +54,20 @@ class Uploader(object):
         files = [ fpath ]
         if fpath.lower().endswith(".shp"):
             files = _util.shp_files(fpath)
-            
-        session = self.start_import(import_id)
+
+        return self.upload_files(files, use_url, import_id)
+
+    def upload_files(self, files, use_url=False, import_id=None, mosaic=False):
+        name = None
+        if mosaic:
+            # @hack - ensure that target layer gets a nice name
+            layername = os.path.basename(files[0])
+            name, _ = os.path.splitext(layername)
+        session = self.start_import(import_id, mosaic=mosaic, name=name)
         session.upload_task(files, use_url)
+        
         return session
+
         
     # pickle protocol - client object cannot be serialized
     # this allows api objects to be seamlessly pickled and loaded without restarting
@@ -158,14 +168,27 @@ class _Client(object):
     def get_imports(self):
         return parse_response(self._request(self.url("imports")))
     
-    def start_import(self, import_id=None):
+    def start_import(self, import_id=None, mosaic=False, name=None):
         method = 'POST'
+        data = None
+        headers = {}
+        if mosaic:
+            data = json.dumps({"import": {
+                "data": {
+                   "type": "mosaic",
+                   "name": name,
+                   "time": {
+                        "mode": "auto"
+                   }
+                }
+            }})
+            headers["Content-type"] = "application/json"
         if import_id is not None:
             url = self.url("imports/%s" % import_id)
             method = 'PUT'
         else:
             url = self.url("imports")
-        return parse_response(self._request(url, method))
+        return parse_response(self._request(url, method, data, headers))
         
     def post_multipart(self,url,files,fields=[]):
         """
