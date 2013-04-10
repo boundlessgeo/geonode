@@ -8,11 +8,11 @@
 
     mapstory.ToolBar = Ext.extend(gxp.plugins.Tool, {
         ptype: 'ms-tool-bar',
-        saveText: 'UT: Save Map',
-        publishText: 'UT: Publish Map',
-        zoomText: 'UT: Number of zoom levels',
-        wrapDateLineText: 'UT: Wrap dateline',
-        colorText: 'UT: Background color',
+        saveText: 'Save Map',
+        publishText: 'Publish Map',
+        zoomText: 'Number of zoom levels',
+        wrapDateLineText: 'Wrap dateline',
+        colorText: 'Background color',
 
         buildSaveForm: function () {
             var ge = this.target,
@@ -23,9 +23,11 @@
                         values = saveForm.getValues();
                     this.about.title = values.mapTitle;
                     this.about['abstract'] = values.mapAbstract;
+
                     if (asCopy) {
                         this.save(true);
                     } else { this.save(); }
+
                     this.metadataForm.hide();
                 },
                 saveButton = new Ext.Button({
@@ -63,7 +65,17 @@
                                     width: '95%',
                                     fieldLabel: ge.metaDataMapTitle,
                                     allowBlank: false,
-                                    value: ge.about.title
+                                    value: ge.about.title,
+                                    listeners: {
+                                        valid: function () {
+                                            saveButton.enable();
+                                            saveAsButton.enable();
+                                        },
+                                        invalid: function () {
+                                            saveButton.disable();
+                                            saveAsButton.disable();
+                                        }
+                                    }
                                 },
                                 {
                                     xtype: 'textarea',
@@ -167,11 +179,13 @@
                 baseLayer.wrapDateLine = config.wrapDateLine;
             }
 
-
             return mapstory.ToolBar.superclass.addOutput.call(this, {
                 xtype: 'toolbar',
+                id: 'ms-toolbar',
                 defaults: {
-                    scale: 'medium'
+                    scale: 'medium',
+                    height: 31 // this seems to match the mapstory
+                              // playback tool
                 },
                 items: [
                     {
