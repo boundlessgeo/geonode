@@ -333,7 +333,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
             return (config.tools || []).concat(
             {
                 ptype: 'ms-tool-bar',
-                outputTarget: 'map-bbar',
+                outputTarget: 'map-bbar'
             },
 
             {
