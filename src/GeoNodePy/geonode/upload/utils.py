@@ -9,37 +9,14 @@ import re
 from zipfile import ZipFile
 import logging
 
+class UploadException(Exception):
+    '''A handled exception meant to be presented to the user'''
 
-def get_upload_type(filename):
-    # @todo - this is bad and all file handling should be fixed now 
-    # (but I'm working on somethign else)!
-    
-    base_name, extension = os.path.splitext(filename)
-    extension = extension[1:].lower()
-    
-    possible_types = set(('shp','csv','tif'))
-    
-    if extension == 'zip':
-        zf = ZipFile(filename, 'r')
-        file_list = zf.namelist()
-        zf.close()
-        for f in file_list:
-            _, ext = os.path.splitext(f)
-            ext = ext[1:].lower()
-            if ext in possible_types:
-                return ext
-        raise Exception('Could not find a supported upload type in %s' % file_list)
-    else:
-        assert extension in possible_types
-        return extension
-    
-
-
-def find_sld(base_file):
-    '''work around assumption in get_files that sld will be named the same'''
-    for f in os.listdir(os.path.dirname(base_file)):
-        if f.lower().endswith('.sld'):
-            return f
+    @staticmethod
+    def from_exc(msg, ex):
+        args = [msg]
+        args.extend(ex.args)
+        return UploadException(*args)
 
 
 def rename_and_prepare(base_file):
@@ -52,7 +29,6 @@ def rename_and_prepare(base_file):
     
     Additionally, if a SLD file is present, extract this.
     """
-    from geonode.upload import upload # workaround circular dep
     name, ext = os.path.splitext(os.path.basename(base_file))
     xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
     dirname = os.path.dirname(base_file)
@@ -75,7 +51,7 @@ def rename_and_prepare(base_file):
             # if an sld is there, extract so it can be found
             if ext.lower() == '.sld':
                 zf.extract(f, dirname)
-        if not main_file: raise upload.UploadException(
+        if not main_file: raise UploadException(
                 'Could not locate a shapefile or tif file')
         if rename:
             # dang, have to unpack and rename

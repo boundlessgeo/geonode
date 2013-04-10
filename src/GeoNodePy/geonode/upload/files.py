@@ -2,6 +2,7 @@ import os.path
 from geoserver.resource import FeatureType
 from geoserver.resource import Coverage
 
+from UserList import UserList
 import zipfile
 import os
 import re
@@ -14,70 +15,74 @@ raster = Coverage.resource_type
 xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
 
 
+class SpatialFiles(UserList):
+
+    def __init__(self, data, archive=None):
+        self.data = data
+        self.archive = archive
+
+    def all_files(self):
+        if self.archive:
+            return [self.archive]
+        all = []
+        for f in self.data:
+            all.extend(f.all_files())
+        return all
+
+
 class SpatialFile(object):
 
-    is_compressed = False
-    
-    file_type = "unknown"
+    def __init__(self, base_file, file_type, auxillary_files, 
+                 sld_files):
+        self.base_file = base_file
+        self.file_type = file_type
+        self.auxillary_files = auxillary_files
+        self.sld_files = sld_files
 
-    layer_type = None
+    def all_files(self):
+        return [self.base_file] + self.auxillary_files
 
-    base_file = None
-
-    auxillary_files = []
-
-    sld_files = []
-
-    def __init__(self, **kwargs):
-        for k in kwargs:
-            if hasattr(self, k):
-                setattr(self, k, kwargs[k])
-            else:
-                raise ValueError("%s invalid arg" % k)
+    def __repr__(self):
+        return "<SpatialFile base_file=%s file_type=%s aux=%s sld=%s>" % \
+               (self.base_file, self.file_type, self.auxillary_files, self.sld_files)
 
 
 class FileType(object):
     
-    name = None
-
-    code = None
-
-    auxillary_file_exts = []
-    
-    aliases = []
-
-    layer_type = None
-
     def __init__(self, name, code, layer_type, aliases=None, auxillary_file_exts=None):
         self.name = name
         self.code = code
         self.layer_type = layer_type
-        if auxillary_file_exts:
-            self.auxillary_file_exts = auxillary_file_exts
+        self.auxillary_file_exts = auxillary_file_exts or []
+        self.aliases = aliases or []
             
     def matches(self, ext):
+        ext = ext.lower()
         return ext == self.code or ext in self.aliases
     
-    def build_spatial_file(self, base, others, is_compressed):
+    def build_spatial_file(self, base, others):
         aux_files, slds = self.find_auxillary_files(base, others)
-        return SpatialFile( is_compressed=is_compressed, file_type=self.code,
-                            layer_type = self.layer_type, base_file=base,
-                            auxillary_files = aux_files, sld_files = slds
-        )
+        return SpatialFile( file_type=self, base_file=base,
+                            auxillary_files = aux_files, sld_files = slds )
         
     def find_auxillary_files(self, base, others):
         base_name = os.path.splitext(base)[0]
-        base_matches = filter( lambda f: os.path.splitext(f)[0] == base_name, others)
+        base_matches = [ f for f in others if os.path.splitext(f)[0] == base_name ]
         slds = _find_sld_files(base_matches)
-        aux_files = filter( lambda f: os.path.splitext(f)[1][1:].lower() in self.aux_files, others)
+        aux_files = [ f for f in others if os.path.splitext(f)[1][1:].lower() in self.auxillary_file_exts ]
         return aux_files, slds
 
+    def __repr__(self):
+        return "<FileType %s>" % self.code
 
-TYPE_UNKNOWN = FileType("unknown", None)
+
+TYPE_UNKNOWN = FileType("unknown", None, None)
 
 types = [
     FileType("Shapefile", "shp", vector, auxillary_file_exts=('dbf','shx','prj')),
     FileType("GeoTIFF", "tif", raster, aliases=('tiff','geotif','geotiff')),
+    FileType("PNG", "png", raster, auxillary_file_exts=('prj',)),
+    FileType("JPG", "jpg", raster, auxillary_file_exts=('prj',)),
     FileType("CSV", "csv", vector),
 ]
 
@@ -89,29 +94,29 @@ def _contains_bad_names(file_names):
 
 
 def _rename_files(file_names):
-    renamed = []
+    safe_files = []
     for f in file_names:
-        base_name, dirname = os.path.split(f)
+        dirname, base_name = os.path.split(f)
         safe = xml_unsafe.sub("_", base_name)
         if safe != base_name:
             safe = os.path.join(dirname, safe)
             os.rename(f, safe)
-            renamed.append(safe)
-    return renamed
+            f = safe
+        safe_files.append(f)
+    return safe_files
             
 
 def _find_sld_files(file_names):
-    return filter( lambda f: f.lower().endswith('.sld'), file_names)
+    return [ f for f in file_names if f.lower().endswith('.sld') ]
 
 
 def scan_file(file_name):
     '''get a list of SpatialFiles for the provided file'''
-    
     dirname = os.path.dirname(file_name)
     
     files = None
     
-    is_compressed = False
+    archive = None
     
     if zipfile.is_zipfile(file_name):
         zf = None
@@ -122,7 +127,7 @@ def scan_file(file_name):
                 zf.extractall(dirname)
                 files = None
             else:
-                is_compressed = True
+                archive = os.path.abspath(file_name)
                 for f in _find_sld_files(files):
                     zf.extract(f, dirname)
         except:
@@ -130,21 +135,19 @@ def scan_file(file_name):
         zf.close()
         
     if files is None:
-        files = os.listdir(dirname)
-        
-    _rename_files(files)
+        abs = lambda *p : os.path.abspath(os.path.join(*p))
+        files = [abs(dirname, f) for f in os.listdir(dirname)]
+
+    files = _rename_files(files)
     
     found = []
     
     for file_type in types:
         for f in files:
             name, ext = os.path.splitext(f)
-            ext = ext[1:].lower()
-            if file_type.matches(ext):
-                found.append( file_type.build(f, files, is_compressed) )
+            if file_type.matches(ext[1:]):
+                found.append( file_type.build_spatial_file(f, files) )
 
-    found.extend( [SpatialFile(f) for f in found] )
-    
     # detect slds and assign iff a single upload is found
     sld_files = _find_sld_files(files)
     if sld_files:
@@ -154,4 +157,4 @@ def scan_file(file_name):
             raise Exception("One or more SLD files was provided, but no " +
                             "matching files were found for them.")
                 
-    return found
+    return SpatialFiles(found, archive)

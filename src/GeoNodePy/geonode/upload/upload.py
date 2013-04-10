@@ -15,7 +15,6 @@ This needs to be made more stateful by adding a model.
 """
 from geonode.maps.gs_helpers import get_sld_for
 from geonode.maps.utils import get_valid_layer_name
-from geonode.maps.utils import layer_type
 from geonode.maps.models import Layer
 from geonode.maps.models import Contact
 from geonode.maps.models import GeoNodeException
@@ -23,11 +22,11 @@ from geonode.maps.utils import get_default_user
 from geonode.upload.models import Upload
 from geonode.upload import signals
 from geonode.upload.utils import create_geoserver_db_featurestore
+from geonode.upload.utils import UploadException
 
 import geoserver
 from geoserver.resource import Coverage
 from geoserver.resource import FeatureType
-from gsuploader.uploader import RequestFailed
 from gsuploader.uploader import BadRequest
 
 from django.conf import settings
@@ -42,15 +41,6 @@ import time
 import uuid
 
 logger = logging.getLogger(__name__)
-
-class UploadException(Exception):
-    '''A handled exception meant to be presented to the user'''
-    
-    @staticmethod
-    def from_exc(msg, ex):
-        args = [msg]
-        args.extend(ex.args)
-        return UploadException(*args)
 
 
 class UploaderSession(object):
@@ -155,20 +145,20 @@ def _log(msg, *args):
     logger.info(msg, *args)
 
 
-def save_step(user, layer, base_file, overwrite=True):
+def save_step(user, layer, spatial_files, overwrite=True):
 
-    _log('Uploading layer: [%s], base file [%s]', layer, base_file)
+    _log('Uploading layer: [%s], files [%s]', layer, spatial_files)
 
-    # TODO Add better error handling
-    assert os.path.exists(base_file), 'invalid base_file - does not exist'
+    
+    if len(spatial_files) > 1:
+        # we only support more than one file if they're rasters for mosaicing
+        if not all([ f.file_type.layer_type == 'coverage' for f in spatial_files]):
+            raise UploadException("Please upload only one type of file at a time")
 
     name = get_valid_layer_name(layer, overwrite)
     _log('Name for layer: [%s]', name)
 
-    # Step 2. Check that it is uploading to the same resource type as
-    # the existing resource
-
-    the_layer_type = layer_type(base_file)
+    the_layer_type = spatial_files[0].file_type.layer_type
 
     # Check if the store exists in geoserver
     try:
@@ -218,8 +208,8 @@ def save_step(user, layer, base_file, overwrite=True):
 
         # @todo settings for use_url or auto detection if geoserver is
         # on same host
-        import_session = Layer.objects.gs_uploader.upload(
-            base_file, use_url=False, import_id=next_id)
+        import_session = Layer.objects.gs_uploader.upload_files(
+            spatial_files.all_files(), use_url=False, import_id=next_id, mosaic=len(spatial_files) > 1)
             
         # save record of this whether valid or not - will help w/ debugging
         upload = Upload.objects.create_from_session(user, import_session)
@@ -401,6 +391,7 @@ def csv_step(upload_session, lat_field, lng_field):
 def srs_step(upload_session, srs):
     resource = upload_session.import_session.tasks[0].items[0].resource
     srs = srs.strip().upper()
+    print srs
     if not srs.startswith("EPSG:"):
         srs = "EPSG:%s" % srs
     logger.info('Setting SRS to %s', srs)
@@ -477,9 +468,7 @@ def final_step(upload_session, user):
 
     cat._cache.clear()
 
-    saved_layer, created = Layer.objects.get_or_create(
-        name=resource.name,
-        defaults=dict(
+    defaults = dict(
             store=target.name,
             storeType=target.resource_type,
             typename=typename,
@@ -489,6 +478,10 @@ def final_step(upload_session, user):
             abstract=abstract or '',
             owner=user,
             )
+    _log('record defaults: %s', defaults)
+    saved_layer, created = Layer.objects.get_or_create(
+        name=resource.name,
+        defaults=defaults
         )
 
     # Should we throw a clearer error here?

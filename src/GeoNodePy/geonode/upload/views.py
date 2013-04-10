@@ -19,6 +19,7 @@ from geonode.upload import forms
 from geonode.upload.models import Upload
 from geonode.upload import upload
 from geonode.upload import utils
+from geonode.upload import files
 
 from gsuploader import uploader
 
@@ -157,12 +158,17 @@ def save_step_view(req, session):
     tempdir = None
     if form.is_valid():
         tempdir, base_file = form.write_files()
-        base_file = utils.rename_and_prepare(base_file)
+        
+        #@todo verify that scan_file does what we need
+        #base_file = utils.rename_and_prepare(base_file)
         name, ext = os.path.splitext(os.path.basename(base_file))
-        import_session = upload.save_step(req.user, name, base_file, overwrite=False)
-        sld = utils.find_sld(base_file)
+        found = files.scan_file(base_file)
+        import_session = upload.save_step(req.user, name, found, overwrite=False)
+        # @todo can we handle more than one?
+        sld = None
+        if found[0].sld_files:
+            sld = found[0].sld_files[0]
         logger.info('provided sld is %s' % sld)
-        upload_type = utils.get_upload_type(base_file)
         upload_session = req.session[_SESSION_KEY] = upload.UploaderSession(
             tempdir=tempdir,
             base_file=base_file,
@@ -172,7 +178,7 @@ def save_step_view(req, session):
             layer_title=form.cleaned_data["layer_title"],
             permissions=form.cleaned_data["permissions"],
             import_sld_file = sld,
-            upload_type = upload_type
+            upload_type = found[0].file_type.code
         )
         return _next_step_response(req, upload_session, force_ajax=True)
     else:
@@ -210,10 +216,12 @@ def srs_step_view(req, upload_session):
             upload.srs_step(upload_session, srs)
             return _next_step_response(req, upload_session)
 
-    if import_session.tasks[0].state == 'INCOMPLETE':
+    task = import_session.tasks[0]
+    if task.state == 'INCOMPLETE':
         # CRS missing/unknown
-        if import_session.tasks[0].items[0].state == 'NO_CRS':
-            native_crs = import_session.tasks[0].items[0].resource.nativeCRS
+        item = task.items[0]
+        if item.state == 'NO_CRS':
+            native_crs = item.resource.nativeCRS
             form = form or forms.SRSForm()
 
     if form:
@@ -411,7 +419,7 @@ _steps = {
 # and 'save' is the implied first step :P
 _pages = {
     'shp' : ('srs', 'time', 'run', 'final'),
-    'tif' : ('time', 'run', 'final'),
+    'tif' : ('srs', 'time', 'run', 'final'),
     'csv' : ('csv', 'time', 'run', 'final'),
 }
 
@@ -515,9 +523,11 @@ def view(req, step):
         if upload_session:
             Upload.objects.update_from_session(upload_session)
         return resp
-    except upload.UploadException, e:
+    except utils.UploadException, e:
+        logger.exception('upload exception')
         return _error_response(req, errors=e.args)
     except uploader.BadRequest, e:
+        logger.exception('bad request')
         return _error_response(req, errors=e.args)
     except Exception, e:
         if upload_session:
