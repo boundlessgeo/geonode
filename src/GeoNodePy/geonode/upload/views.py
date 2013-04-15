@@ -402,7 +402,6 @@ def run_response(req, upload_session):
 
 
 def final_step_view(req, upload_session):
-    del req.session[_SESSION_KEY]
     saved_layer = upload.final_step(upload_session, req.user)
     return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
 
@@ -480,7 +479,7 @@ def notify_error(req, upload_session, msg):
 
 
 @login_required
-@cache_control(no_cache=True)
+@cache_control(no_cache=True, must_revalidate=True, private=True, max_age=0, no_store=True)
 def view(req, step):
     """Main uploader view"""
 
@@ -517,7 +516,13 @@ def view(req, step):
         resp = _steps[step](req, upload_session)
         # must be put back to update object in session
         if upload_session:
-            req.session[_SESSION_KEY] = upload_session
+            if step == 'final':
+                # we're done with this session, wax it
+                Upload.objects.update_from_session(upload_session)
+                upload_session = None
+                del req.session[_SESSION_KEY]
+            else:
+                req.session[_SESSION_KEY] = upload_session
         elif _SESSION_KEY in req.session:
             upload_session = req.session[_SESSION_KEY]
         if upload_session:
