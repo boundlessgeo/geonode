@@ -22,7 +22,7 @@ function pollProgress(redirectTo, progressEndpoint, form) {
         } else {
             switch (response.state) {
                 // give it a chance to start running or return complete
-                case 'PENDING': case 'RUNNING':
+                case 'PENDING': case 'RUNNING': case 'READY':
                     break;
                 case 'ERROR':
                     msg = 'message' in response ? response.message :
