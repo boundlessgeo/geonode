@@ -65,7 +65,8 @@ class UploaderSession(object):
     # blob of permissions JSON
     permissions = None
 
-    form = None  # @todo - needed?
+    # store most recently configured time transforms to support deleting
+    time_transforms = None
 
     # defaults to REPLACE if not provided. Accepts APPEND, too
     update_mode = None
@@ -366,11 +367,18 @@ def time_step(upload_session, time_attribute, time_transform_type,
         logger.info('Setting time dimension info')
         resource.save()
 
+
+    if upload_session.time_transforms:
+        upload_session.import_session.tasks[0].items[0].remove_transforms(
+            upload_session.time_transforms
+        )
+
     if transforms:
         logger.info('Setting transforms %s' % transforms)
         upload_session.import_session.tasks[0].items[0].add_transforms(transforms)
         try:
             upload_session.import_session.tasks[0].items[0].save()
+            upload_session.time_transforms = transforms
         except BadRequest, br:
             raise UploadException.from_exc('Error configuring time:',br)
 
