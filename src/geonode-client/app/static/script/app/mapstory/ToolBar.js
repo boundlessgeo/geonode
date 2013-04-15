@@ -199,6 +199,15 @@
                             }
                             this.target.metadataForm.show();
                         }
+                    },
+                    {
+                        xtype: 'button',
+                        text: 'Timeline',
+                        scope: this,
+                        handler: function () {
+                            var tl = Ext.getCmp('timeline-container');
+                            tl.toggleCollapse();
+                        }
                     }
                 ]
             });
