@@ -127,6 +127,7 @@ class Target(_UploadBase):
         # @todo more
 
 class Item(_UploadBase):
+
     def _bind_json(self,json):
         self._bind(json)
         # @todo iws - why is layer nested in another layer
@@ -139,13 +140,22 @@ class Item(_UploadBase):
         else:
             raise Exception('not handling resource %s' % resource)
         self.transformChain = json.get('transformChain',[])
-    def set_transforms(self,transforms):
+
+    def set_transforms(self, transforms):
         """Set the transforms of this Item. transforms is a list of dicts"""
         self._transforms = transforms
-    def add_transforms(self,transforms):
+
+    def add_transforms(self, transforms):
         if not hasattr(self, '_transforms') and 'transforms' in self.transformChain:
             self._transforms = list(self.transformChain['transforms'])
         self._transforms.extend(transforms)
+    
+    def remove_transforms(self, transforms):
+        '''remove transforms by equality'''
+        if not hasattr(self, '_transforms') and 'transforms' in self.transformChain:
+            self._transforms = list(self.transformChain['transforms'])
+        self._transforms = [ t for t in self._transforms if t not in transforms ]
+
     def get_progress(self):
         """Get a json object representing progress of this item"""
         if self.progress:
@@ -158,6 +168,7 @@ class Item(_UploadBase):
                 raise ex
         else:
             raise Exception("Item does not have a progress endpoint")
+
     def save(self):
         """@todo,@hack This really only saves transforms and will overwrite existing"""
         data = {
