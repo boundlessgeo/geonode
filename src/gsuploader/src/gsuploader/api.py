@@ -24,6 +24,9 @@ def parse_response(args):
         return Task(resp['task'])
     elif "imports" in resp:
         return [ Session(json=j) for j in resp['imports'] ]
+    elif "tasks" in resp:
+        # non-recognized file tasks have null source.format
+        return [ Task(t) for t in resp['tasks'] if 'source' in t and t['source'].get('format') ]
     raise Exception("Unknown response %s" % resp)
 
 class _UploadBase(object):
@@ -330,11 +333,12 @@ class Session(_UploadBase):
         else:
             url = self._url("imports/%s/tasks" % self.id)
             resp = self._client().post_multipart(url, files)
-        task = parse_response( resp )
-        task._parent = self
-        if not isinstance(task,Task):
-            raise Exception("expected Task, got %s" % task)
-        self.tasks.append(task)
+        tasks = parse_response( resp )
+        if not isinstance(tasks, list):
+            tasks = [tasks]
+        for t in tasks:
+            t._parent = self
+        self.tasks.extend(tasks)
 
     def commit(self, async=False):
         """complete upload"""
