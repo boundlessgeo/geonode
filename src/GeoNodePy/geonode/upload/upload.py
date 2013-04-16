@@ -159,6 +159,9 @@ def save_step(user, layer, spatial_files, overwrite=True):
     name = get_valid_layer_name(layer, overwrite)
     _log('Name for layer: [%s]', name)
 
+    if not spatial_files:
+        raise UploadException("Unable to recognize the uploaded file(s)")
+
     the_layer_type = spatial_files[0].file_type.layer_type
 
     # Check if the store exists in geoserver
@@ -216,9 +219,9 @@ def save_step(user, layer, spatial_files, overwrite=True):
         upload = Upload.objects.create_from_session(user, import_session)
 
         if not import_session.tasks:
-            error_msg = 'No upload tasks were created'
+            error_msg = 'No valid upload files could be found'
         elif not import_session.tasks[0].items:
-            error_msg = 'No upload items found for task'
+            error_msg = 'There may be a problem with the data provided'
 
         if len(import_session.tasks) > 1:
             error_msg = "Only a single upload is supported at the moment"
