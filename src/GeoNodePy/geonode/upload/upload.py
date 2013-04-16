@@ -214,12 +214,15 @@ def save_step(user, layer, spatial_files, overwrite=True):
             
         # save record of this whether valid or not - will help w/ debugging
         upload = Upload.objects.create_from_session(user, import_session)
-        
+
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
             error_msg = 'No upload items found for task'
-            
+
+        if len(import_session.tasks) > 1:
+            error_msg = "Only a single upload is supported at the moment"
+
         if error_msg:
             upload.state = upload.STATE_INVALID
             upload.save()
