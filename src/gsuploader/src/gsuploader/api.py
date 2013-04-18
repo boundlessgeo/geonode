@@ -26,7 +26,7 @@ def parse_response(args):
         return [ Session(json=j) for j in resp['imports'] ]
     elif "tasks" in resp:
         # non-recognized file tasks have null source.format
-        return [ Task(t) for t in resp['tasks'] if 'source' in t and t['source'].get('format') ]
+        return [ Task(t) for t in resp['tasks'] ]
     raise Exception("Unknown response %s" % resp)
 
 class _UploadBase(object):
@@ -96,8 +96,13 @@ class Task(_UploadBase):
             }
         }}
         self._client().put_json(self.href,json.dumps(data))
-    def _add_url_part(self,parts):
-        parts.append('tasks/%s' % self.id)
+
+    def delete(self):
+        """Delete the task"""
+        resp, content = self._client().delete(self.href)
+        if resp['status'] != '204':
+            raise Exception('expected 204 response code, got %s' % resp['status'],content)
+
 
 class Workspace(_UploadBase):
     def _bind_json(self,json):
@@ -305,6 +310,13 @@ class Session(_UploadBase):
             self._bind(json)
             if 'tasks' in json:
                 self.tasks = self._build(json['tasks'], Task)
+
+    def delete_unrecognized_tasks(self):
+        for t in list(self.tasks):
+            if t.source.format is None:
+                _logger.info("deleting unrecognized task %s", t)
+                t.delete()
+                self.tasks.remove(t)
                 
     def reload(self):
         '''return a reloaded version of this session'''

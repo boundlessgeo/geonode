@@ -218,6 +218,9 @@ def save_step(user, layer, spatial_files, overwrite=True):
         # save record of this whether valid or not - will help w/ debugging
         upload = Upload.objects.create_from_session(user, import_session)
 
+        # any unrecognized tasks/files must be deleted or we can't proceed
+        import_session.delete_unrecognized_tasks()
+
         if not import_session.tasks:
             error_msg = 'No valid upload files could be found'
         elif not import_session.tasks[0].items:
@@ -235,10 +238,10 @@ def save_step(user, layer, spatial_files, overwrite=True):
         # target store name can be used
     except Exception, e:
         logger.exception('Error creating import session')
-        error_msg = str(e)
+        raise e
 
     if error_msg:
-        raise Exception('Could not save the layer %s, there was an upload error: %s' % (name, error_msg))
+        raise UploadException(error_msg)
     else:
         _log("Finished upload of [%s] to GeoServer without errors.", name)
 
