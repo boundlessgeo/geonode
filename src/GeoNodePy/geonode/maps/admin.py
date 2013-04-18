@@ -19,7 +19,7 @@ class ContactRoleAdmin(admin.ModelAdmin):
     list_editable = ('contact', 'layer', 'role')
 
 class MapAdmin(admin.ModelAdmin):
-    list_display = ('id','title','owner')
+    list_display = ('id','title','owner', 'last_modified')
     list_display_links = ('id',)
     list_editable = ('owner',)
     #inlines = [MapLayerInline,]
@@ -31,7 +31,7 @@ class ContactAdmin(admin.ModelAdmin):
     inlines = [ContactRoleInline]
 
 class LayerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'typename','service_type','title', 'date', 'owner')
+    list_display = ('id', 'typename','service_type','title', 'date', 'date_type', 'owner')
     list_display_links = ('id',)
     list_editable = ('title', 'owner')
     list_filter  = ('date', 'date_type', 'constraints_use', 'owner')
