@@ -288,9 +288,12 @@ def csv_step_view(request, upload_session):
     # try to guess the lat/lng fields from the candidates
     lat_candidate = None
     lng_candidate = None
+    non_str_in_headers = False
     for candidate in attributes:
         if candidate.name in point_candidates:
-            if is_latitude(candidate.name):
+            if not isinstance(candidate.name, basestring):
+                non_str_in_headers = True
+            elif is_latitude(candidate.name):
                 lat_candidate = candidate.name
             elif is_longitude(candidate.name):
                 lng_candidate = candidate.name
@@ -303,6 +306,9 @@ def csv_step_view(request, upload_session):
         selected_lat = lat_candidate
         selected_lng = lng_candidate
     present_choices = len(point_candidates) >= 2
+    if non_str_in_headers:
+        possible_data_problems = "There are some suspicious column names in \
+                                 your data. Did you provide column names in the header?"
     context = dict(present_choices=present_choices,
                    point_candidates=point_candidates,
                    async_upload=_is_async_step(upload_session),
@@ -311,6 +317,7 @@ def csv_step_view(request, upload_session):
                    guessed_lat_or_lng=guessed_lat_or_lng,
                    layer_name = import_session.tasks[0].items[0].layer.name,
                    error = error,
+                   possible_data_problems = possible_data_problems
                    )
     return render_to_response('upload/layer_upload_csv.html',
                               RequestContext(request, context))
