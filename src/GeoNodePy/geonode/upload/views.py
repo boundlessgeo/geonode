@@ -450,6 +450,8 @@ def notify_error(req, upload_session, msg):
     db.close_connection()
 
     upload_obj = None
+    # grab the stacktrace now before another happens
+    stack_trace = traceback.format_exc()
     if upload_session and upload_session.import_session and \
        upload_session.import_session.id:
         try:
@@ -467,7 +469,7 @@ def notify_error(req, upload_session, msg):
     """ % dict( msg=msg,
                 user=req.user,
                 id=upload_obj.id if upload_obj else None,
-                stack_trace=''.join(traceback.format_exc()))
+                stack_trace=''.join(stack_trace))
     mail_admins('upload error', message)
 
 
