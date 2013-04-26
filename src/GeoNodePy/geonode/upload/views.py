@@ -426,6 +426,8 @@ _steps = {
 _pages = {
     'shp' : ('srs', 'time', 'run', 'final'),
     'tif' : ('srs', 'time', 'run', 'final'),
+    'jpg' : ('srs', 'time', 'run', 'final'),
+    'png' : ('srs', 'time', 'run', 'final'),
     'csv' : ('csv', 'time', 'run', 'final'),
 }
 
