@@ -1011,7 +1011,7 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None,
            'success' : False,
            'errors' : [ body ]
        }
-   elif body:
+   elif body is not None:
        pass
    else:
        raise Exception("must call with body, errors or redirect_to")
