@@ -230,10 +230,12 @@ def save_step(user, layer, spatial_files, overwrite=True):
             error_msg = "Only a single upload is supported at the moment"
 
         if not error_msg and import_session.tasks:
-            files = import_session.tasks[0].source.files
-            if not all([hasattr(f,'timestamp') for f in files]):
-                error_msg = ("Not all timestamps could be recognized."
-                             "Please ensure your files contain the correct formats.")
+            task = import_session.tasks[0]
+            # single file tasks will have just a file entry
+            if hasattr(task.source, 'files'):
+                if not all([hasattr(f,'timestamp') for f in task.source.files]):
+                    error_msg = ("Not all timestamps could be recognized."
+                                 "Please ensure your files contain the correct formats.")
 
         if error_msg:
             upload.state = upload.STATE_INVALID
