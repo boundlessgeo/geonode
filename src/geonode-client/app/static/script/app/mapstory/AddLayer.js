@@ -11,7 +11,7 @@
             return mapstory.plugins.AddLayers.superclass.addActions.apply(this, [
                 {
                     type: 'button',
-                    text: 'Add Layer',
+                    iconCls: 'gxp-icon-addlayers',
                     scope: this,
                     handler: function () {
                         var search = new window.LayerSearch({
