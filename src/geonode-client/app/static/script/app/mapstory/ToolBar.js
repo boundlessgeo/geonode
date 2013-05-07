@@ -3,10 +3,10 @@
 (function () {
     'use strict';
 
-    Ext.ns('mapstory');
+    Ext.ns('mapstory.plugins');
 
 
-    mapstory.ToolBar = Ext.extend(gxp.plugins.Tool, {
+    mapstory.plugins.ToolBar = Ext.extend(gxp.plugins.Tool, {
         ptype: 'ms-tool-bar',
         saveText: 'Save Map',
         publishText: 'Publish Map',
@@ -18,29 +18,29 @@
             var ge = this.target,
                 baseLayer = this.target.mapPanel.map.baseLayer,
                 container = Ext.get(this.target.mapPanel.map.getViewport()),
-                updateMap = function (asCopy) {
+                updateMap = function (ge, asCopy) {
                     var saveForm = Ext.getCmp('saveForm').getForm(),
                         values = saveForm.getValues();
-                    this.about.title = values.mapTitle;
-                    this.about['abstract'] = values.mapAbstract;
+                    ge.about.title = values.mapTitle;
+                    ge.about['abstract'] = values.mapAbstract;
 
                     if (asCopy) {
-                        this.save(true);
-                    } else { this.save(); }
+                        ge.save(true);
+                    } else { ge.save(); }
 
-                    this.metadataForm.hide();
+                    ge.metadataForm.hide();
                 },
                 saveButton = new Ext.Button({
                     text: ge.metadataFormSaveText,
                     handler: function (e) {
-                        updateMap.call(this, false);
+                        updateMap(this, false);
                     },
                     scope: ge
                 }),
                 saveAsButton = new Ext.Button({
                     text: ge.metadataFormSaveAsCopyText,
                     handler: function (e) {
-                        updateMap.call(this, true);
+                        updateMap(this, true);
                     },
                     scope: ge
                 }),
@@ -179,7 +179,7 @@
                 baseLayer.wrapDateLine = config.wrapDateLine;
             }
 
-            return mapstory.ToolBar.superclass.addOutput.call(this, {
+            return mapstory.plugins.ToolBar.superclass.addOutput.call(this, {
                 xtype: 'toolbar',
                 id: 'ms-toolbar',
                 defaults: {
@@ -214,6 +214,6 @@
         }
     });
 
-    Ext.preg(mapstory.ToolBar.prototype.ptype, mapstory.ToolBar);
+    Ext.preg(mapstory.plugins.ToolBar.prototype.ptype, mapstory.plugins.ToolBar);
 
 }());
