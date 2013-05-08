@@ -103,6 +103,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
             text: this.notesText,
             disabled: !id,
+            id: 'notes-button',
             iconCls: this.iconCls,
             menu: new Ext.menu.Menu({
                 id: this.outputConfig.id,
