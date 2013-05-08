@@ -798,9 +798,6 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
         this.toolbar = new Ext.Toolbar({
             disabled: true,
             id: 'paneltbar',
-            actionTarget: {
-                target: "map-bbar"
-            },
             items: []
         });
 
