@@ -1,6 +1,8 @@
+/*global gxp, Ext*/
 /**
  * Copyright (c) 2009 The Open Planning Project
  */
+var GeoExplorer;
 
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
@@ -27,6 +29,7 @@ Ext.override(Ext.dd.DragTracker, {
     }
 });
 
+
 /**
  * Constructor: GeoExplorer
  * Create a new GeoExplorer application.
@@ -47,8 +50,8 @@ Ext.override(Ext.dd.DragTracker, {
  * name - {String} Required WMS layer name.
  * title - {String} Optional title to display for layer.
  */
-var GeoExplorer = Ext.extend(gxp.Viewer, {
-    
+GeoExplorer = Ext.extend(gxp.Viewer, {
+
     /**
      * api: config[localGeoServerBaseUrl]
      * ``String`` url of the local GeoServer instance
@@ -72,7 +75,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * ``String``
      */
     toggleGroup: "map",
-    
+
     /**
      * private: property[mapPanel]
      * the :class:`GeoExt.MapPanel` instance for the main viewport
@@ -90,7 +93,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * {<Ext.Window>} A window which includes a CapabilitiesGrid panel.
      */
     capGrid: null,
-    
+
     /**
      * Property: modified
      * ``Number``
@@ -105,7 +108,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     popupCache: null,
 
     searchTool: null,
-    
+
     /** private: property[urlPortRegEx]
      *  ``RegExp``
      */
@@ -122,7 +125,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     layerSelectionLabel: "UT:View available data from:",
     layersContainerText: "UT:Data",
     layersPanelText: "UT:Layers",
-    mapSizeLabel: 'UT: Map Size', 
+    mapSizeLabel: 'UT: Map Size',
     metadataFormCancelText : "UT:Cancel",
     metadataFormSaveAsCopyText : "UT:Save as Copy",
     metadataFormSaveText : "UT:Save",
@@ -171,26 +174,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // Common tools for viewer and composer go here. Note that this
         // modifies the viewer's initialConfig.
         if (config.useToolbar !== false) {
-            config.tools = (config.tools || []).concat({
-                ptype: "gxp_wmsgetfeatureinfo",
-                format: "grid",
-                actionTarget: "main.tbar",
-                toggleGroup: this.toggleGroup,
-                layerParams: ['TIME'],
-                controlOptions: {
-                    hover: true
-                },
-                outputConfig: {width: 400, height: 300}
-            }, {
-                ptype: "gxp_playback",
-                id: "playback-tool",
-                outputTarget: "map-bbar",
-                looped: true,
-                outputConfig:{
-                    xtype: 'app_playbacktoolbar',
-                    defaults: {scale: 'medium'}
+            config.tools = (config.tools || []).concat(
+                {
+                    ptype: "gxp_playback",
+                    id: "playback-tool",
+                    outputTarget: "map-bbar",
+                    looped: true,
+                    outputConfig:{
+                        xtype: 'app_playbacktoolbar',
+                        defaults: {scale: 'medium'}
+                    }
                 }
-            });
+            );
         }
 
         // add old ptypes
@@ -334,19 +329,14 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     }
                 }
             };
-            return (config.tools || []).concat({
-                ptype: "gxp_mapproperties",
-                actionTarget: {target: "paneltbar", index: 0}
-            }, {
-                ptype: "gxp_zoom",
-                actionTarget: {target: "paneltbar", index: 4}
-            }, {
-                ptype: "gxp_navigationhistory",
-                actionTarget: {target: "paneltbar", index: 6}
-            }, {
-                ptype: "gxp_zoomtoextent",
-                actionTarget: {target: "paneltbar", index: 8}
-            }, {
+
+            return (config.tools || []).concat(
+            {
+                ptype: 'ms-tool-bar',
+                outputTarget: 'map-bbar'
+            },
+
+            {
                 ptype: "gxp_layermanager",
                 loader: {
                     baseAttrs: {
@@ -372,7 +362,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_addlayers",
                 outputConfig: {
-                    height: 600,
+                    height: window.innerHeight > 600 ? 600 : window.innerHeight - 100,
                     width: 400
                 },
                 actionTarget: "treetbar",
@@ -460,12 +450,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 },
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
-            }, {
-                ptype: "gxp_print",
-                includeLegend: true,
-                printCapabilities: window.printCapabilities,
-                actionTarget: {target: "paneltbar", index: 3}
-            }, {
+            },
+
+            {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
                 outputConfig: {
@@ -478,7 +465,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_timelinelayers",
                 timelineTool: "timeline-tool",
                 actionTarget: "timeline-container.tbar"
-            }, {
+            },
+            {
+                ptype: "gxp_featuremanager",
+                id: "annotations_manager",
+                autoLoadFeatures: true,
+                autoSetLayer: false,
+                paging: false
+            },
+            {
                 ptype: "app_notes",
                 createLayerUrl: "/data/create_annotations_layer/{mapID}",
                 layerNameTpl: "_map_{mapID}_annotations",
@@ -487,18 +482,26 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputConfig: {
                     id: 'notes_menu'
                 },
-                actionTarget: {target: "paneltbar", index: 12}
-            },{
+                actionTarget: {
+                    target: "map-bbar",
+                    index: 12
+                }
+            },
+            {
                 ptype: "gxp_featuremanager",
                 id: "general_manager",
                 paging: false,
                 autoSetLayer: true
             }, {
                 ptype: "gxp_featureeditor",
+                id: 'feature-editor',
                 toggleGroup: toggleGroup,
                 featureManager: "general_manager",
                 autoLoadFeature: true,
-                actionTarget: {target: "paneltbar", index: 13}
+                actionTarget: {
+                    target: "map-bbar", 
+                    index: 13
+                }
             }, {
                 ptype: "gxp_featuremanager",
                 id: "annotations_manager",
@@ -529,7 +532,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
                             'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
                             'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
-                                ['tl-tl?', 'Top left'], 
+                                ['tl-tl?', 'Top left'],
                                 ['t-t?', 'Top center'],
                                 ['tr-tr?', 'Top right'],
                                 ['l-l?', 'Center left'],
@@ -547,8 +550,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 createFeatureActionText: "Add note",
                 iconClsAdd: 'gxp-icon-addnote',
                 editFeatureActionText: "Edit note"
-            });
+            }
+
+            );
         }
+
+
         Ext.Ajax.request({
             url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
             success: function(response) {
@@ -580,6 +587,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             scope: this
         });
+
     },
     
     initMapPanel: function() {
@@ -595,7 +603,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         } else {
             this.initialConfig.map.controls = (this.initialConfig.map.controls || []).concat(defaultControls);
         }
-        
+
         //ensure map has a bbar with our prefered id
         if (this.initialConfig.map && this.initialConfig.map.bbar) {
             this.initialConfig.map.bbar.id = 'map-bbar';
@@ -790,7 +798,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         this.toolbar = new Ext.Toolbar({
             disabled: true,
             id: 'paneltbar',
-            items: this.createTools()
+            items: []
         });
 
         this.on("ready", function() {
@@ -830,7 +838,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             height: 175,
                             split: true,
                             collapsed: true,
-                            collapsible: true,
+                            collapsible: true, // we want to hide the
+                            // button that allows users to toggle the
+                            // time panel
                             id: "timeline-container",
                             xtype: "panel",
                             tbar: ['->'],
@@ -991,7 +1001,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
 
     updateURL: function() {
         /* PUT to this url to update an existing map */
-        return this.rest + this.mapID + '/data';
+        return this.rest + this.mapID + '/data/';
     },
 
     /** api: method[save]
@@ -1002,7 +1012,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      */
     save: function(as){
         var config = this.getState();
-        
+
         if (!this.mapID || as) {
             /* create a new map */ 
             Ext.Ajax.request({
