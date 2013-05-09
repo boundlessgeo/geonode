@@ -13,7 +13,7 @@
                     iconCls: 'gxp-icon-addlayers',
                     scope: this,
                     handler: function () {
-                        var search = new window.LayerSearch({
+                        var search = new window.mapstory.LayerSearch({
                             geoExplorer: this.target,
                             searchUrl: '/search/api'
                         }).render();
