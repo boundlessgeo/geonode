@@ -6,11 +6,10 @@
     Ext.ns('mapstory.plugins');
 
     mapstory.plugins.AddLayers = Ext.extend(gxp.plugins.Tool, {
-        ptype: 'ms-add-layer',
+        ptype: 'ms_add_layer',
         addActions: function () {
             return mapstory.plugins.AddLayers.superclass.addActions.apply(this, [
                 {
-                    type: 'button',
                     iconCls: 'gxp-icon-addlayers',
                     scope: this,
                     handler: function () {

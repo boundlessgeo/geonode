@@ -372,8 +372,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
 
             {
-                ptype: 'ms-add-layer',
-                actionTarget: ['treetbar']
+                ptype: 'ms_add_layer',
+                actionTarget: 'treetbar'
             },
 
             {
