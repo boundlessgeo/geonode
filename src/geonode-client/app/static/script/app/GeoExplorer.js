@@ -359,85 +359,17 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_zoomtolayerextent",
                 actionTarget: "treecontent.contextMenu"
-            }, {
-                ptype: "gxp_addlayers",
-                outputConfig: {
-                    height: window.innerHeight > 600 ? 600 : window.innerHeight - 100,
-                    width: 400
-                },
-                actionTarget: "treetbar",
-                createExpander: function() {
-                    return new GeoExplorer.CapabilitiesRowExpander({
-                        ows: config.localGeoServerBaseUrl + "ows",
-                        tpl: new Ext.Template(
-                            [
-                                "<img class='thumb {thumbclass}' src='{thumb}'>",
-                                "<div class='infoBox'><div class='itemTitle'>",
-                                "<p>{title}</p>",
-                                "</div>",
-                                "<div class='itemInfo'><p>{_display_type}, by ",
-                                "<a href='{owner_detail}'>{owner}</a> ",
-                                "on {last_modified}</p></div>",
-                                "<div class='itemAbstract'><p>Abstract: {abstract}</p></div>",
-                                "<div class='rating'><p>{views} Views |",
-                                " {rating} stars </p></div>",
-                                "<div class='actions' id='{_type}-{id}'></div>"
-                            ]
-                        )
-                    });
-                },
-                listeners: {
-                    sourceselected: function (tool, source) {
-                        // add a listener to the source select event
-                        // that appends the add layer widget with
-                        // search options
-                        var id     = source.initialConfig.id,
-                            // get the tool bar from the add layer
-                            // widget
-                            toolBar = tool.capGrid.getTopToolbar(),
-                            doSearch = function () {
-                                var query = toolBar.findByType('textfield')[1].getValue();
-                                source.filter({
-                                    queryString: query
-                                });
-                            },
-                            searchField = {
-                                xtype: 'textfield',
-                                emptyText: this.searchMessage,
-                                listeners:{
-                                    scope:this,
-                                    specialkey: function(f,e){
-                                        if(e.getKey() === e.ENTER) {
-                                            source.filter({
-                                                queryString: f.getValue()
-                                            });
-                                        }
-                                    }
-                                }
-                            },
-                            searchButton = {
-                                text: 'Search',
-                                handler: function (event) {
-                                    doSearch(event);
-                                }
-                            };
 
-                        if (id === 'search') {
-                            if (!this.searchTool) {
-                                this.searchTool = {
-                                    field: searchField,
-                                    button: searchButton
-                                }
-                                toolBar.addItem(this.searchTool.field);
-                                toolBar.addItem(this.searchTool.button);
-                            }
-                        }
-                    }
-                }
-            }, {
+            },
+            {
+                ptype: 'ms_add_layer',
+                actionTarget: 'treetbar'
+            },
+            {
                 ptype: "gxp_removelayer",
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
-            }, {
+            },
+            {
                 ptype: "app_layerproperties",
                 layerPanelConfig: {
                     "gxp_wmslayerpanel": {rasterStyling: true}
