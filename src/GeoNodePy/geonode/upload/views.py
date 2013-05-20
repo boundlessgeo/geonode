@@ -306,6 +306,7 @@ def csv_step_view(request, upload_session):
         selected_lat = lat_candidate
         selected_lng = lng_candidate
     present_choices = len(point_candidates) >= 2
+    possible_data_problems = None
     if non_str_in_headers:
         possible_data_problems = "There are some suspicious column names in \
                                  your data. Did you provide column names in the header?"
