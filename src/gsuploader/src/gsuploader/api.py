@@ -169,8 +169,17 @@ class Item(_UploadBase):
         if self.progress:
             client = self._client()
             headers, response = client._request(self.progress)
+            unicode_error = False
             try:
-                return json.loads(response)
+                response = response.decode('utf-8', 'strict')
+            except UnicodeDecodeError:
+                response = response.decode('utf-8', 'replace')
+                unicode_error = True
+            try:
+                progress = json.loads(response)
+                if unicode_error:
+                    progress['message'] += ' - it looks like an invalid character'
+                return progress
             except ValueError,ex:
                 _logger.warn('invalid JSON response: %s',response)
                 raise ex
