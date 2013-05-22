@@ -152,7 +152,7 @@ def save_step_view(req, session):
             'async_upload' : _ASYNC_UPLOAD,
             'incomplete' : Upload.objects.get_incomplete_uploads(req.user)
         }))
-        
+
     assert session is None
     form = NewLayerUploadForm(req.POST, req.FILES)
     tempdir = None
@@ -160,7 +160,6 @@ def save_step_view(req, session):
         tempdir, base_file = form.write_files()
         
         #@todo verify that scan_file does what we need
-        #base_file = utils.rename_and_prepare(base_file)
         name, ext = os.path.splitext(os.path.basename(base_file))
         found = files.scan_file(base_file)
         import_session = upload.save_step(req.user, name, found, overwrite=False)
@@ -473,6 +472,10 @@ def notify_error(req, upload_session, msg):
             upload_obj = Upload.objects.get(import_id = upload_session.import_session.id)
         except Upload.DoesNotExist:
             pass
+    post = ''.join([ '\n\t\t%s : "%s"' % kv for kv in req.POST.items() ])
+    if req.FILES:
+        for k in req.FILES:
+            post = post + '\n\t\t(file) %s: "%s"' % (k, req.FILES[k])
     message = """
         Message: %(msg)s
         
@@ -481,10 +484,13 @@ def notify_error(req, upload_session, msg):
         Upload object id: %(id)s
         
         StackTrace: %(stack_trace)s
+
+        POST: %(post)s
     """ % dict( msg=msg,
                 user=req.user,
                 id=upload_obj.id if upload_obj else None,
-                stack_trace=''.join(stack_trace))
+                stack_trace=''.join(stack_trace),
+                post = post)
     mail_admins('upload error', message)
 
 
