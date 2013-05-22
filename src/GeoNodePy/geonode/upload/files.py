@@ -97,7 +97,12 @@ def _rename_files(file_names):
     safe_files = []
     for f in file_names:
         dirname, base_name = os.path.split(f)
-        safe = xml_unsafe.sub("_", base_name)
+        test_name = base_name
+        # prefix any leading digit with an underscore to prevent a whole
+        # number from getting wiped out
+        if base_name[0].isdigit():
+            test_name = '_%s' % base_name
+        safe = xml_unsafe.sub("_", test_name)
         if safe != base_name:
             safe = os.path.join(dirname, safe)
             os.rename(f, safe)
