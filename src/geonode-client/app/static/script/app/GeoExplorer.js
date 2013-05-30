@@ -748,6 +748,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                             height: 175,
                             split: true,
                             collapsed: true,
+                            collapseMode: 'mini',
                             collapsible: true, // we want to hide the
                             // button that allows users to toggle the
                             // time panel
