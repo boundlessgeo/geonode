@@ -51,7 +51,7 @@ mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
         this.initialConfig.map.id = 'msmap';
         mapstory.LayerViewer.superclass.initMapPanel.call(this);
         //add in the tile manager for internal img element caching
-        var tileManager = new OpenLayers.TileManager({cacheSize: 512});
+        var tileManager = new OpenLayers.TileManager({cacheSize: 512, tilesPerFrame: 24});
         this.mapPanel.map.tileManager = tileManager;
         tileManager.addMap(this.mapPanel.map);
     },

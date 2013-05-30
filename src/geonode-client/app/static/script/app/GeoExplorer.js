@@ -62,7 +62,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
      * api: config[cachedSourceMatch]
      * ``RegExp`` pattern to match the layer url to for adding extra subdomains
      */
-    cachedSourceMatch: /mapstory\.dev/,
+    cachedSourceMatch: /mapstory\.dev|mapstory\.org/,
 
     /**
      * api: config[cachedSubdomains]
@@ -559,7 +559,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
         delete this.initialConfig.map.controls;
         
         //add in the tile manager for internal img element caching
-        var tileManager = new OpenLayers.TileManager({cacheSize: 512});
+        var tileManager = new OpenLayers.TileManager({cacheSize: 512, tilesPerFrame: 24});
         this.mapPanel.map.tileManager = tileManager;
         tileManager.addMap(this.mapPanel.map);
         
@@ -575,49 +575,25 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                             transitionEffect: 'resize'
                         });
                         //hack for adding subdomain support to prevent socket flooding on client side
-                        if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
-                            var uparts = layer.url.split('://');
+                        var url = layer.url;
+                        if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
+                            url = this.localGeoServerBaseUrl + 'wms';
+                        }
+                        if(Ext.isString(url) && url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
+                            var uparts = url.split('://');
                             var urls = [];
                             for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
                                 urls.push(
                                     (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
                                 );
                             }
-                            layer.url = urls.concat([layer.url]);
+                            layer.url = urls.concat([url]);
                         }
                         //Make sure all temporal layers are using the single tile option and the GWC mosiacing
                         if(layer.params && layer.dimensions && layer.dimensions.time) {
                             layer.params.TILED = true;
                             layer.params['GWC.FULLWMS']='';
                         }
-                        //this was to prevent tile by tile redraws and out of sync map portions.
-                        //should not be needed with singleTile, TileManager, & GWC tile mosiacing working.
-                        //TODO determine if / when this code can be deleted
-                        /*
-                        layer.events.on({
-                            'tileloaded': function(evt) {
-                                var img = evt.tile && evt.tile.imgDiv;
-                                if (img) {
-                                    img.style.visibility = 'hidden';
-                                    img.style.opacity = 0;
-                                }
-                            },
-                            'loadend': function(evt) {
-                                var grid = evt.object.grid;
-                                var layer = evt.object;
-                                for(var i = 0, rlen = grid.length; i < rlen; i++) {
-                                    for(var j = 0, clen = grid[i].length; j < clen; j++) {
-                                        var img = grid[i][j].imgDiv;
-                                        if(img) {
-                                            img.style.visibility = 'inherit';
-                                            img.style.opacity = layer.opacity;
-                                        }
-                                    }
-                                }
-                            },
-                            scope: layer
-                        });
-                        */
                     }
                 }
             },
