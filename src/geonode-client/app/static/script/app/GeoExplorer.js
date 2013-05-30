@@ -576,18 +576,20 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                         });
                         //hack for adding subdomain support to prevent socket flooding on client side
                         var url = layer.url;
-                        if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
-                            url = this.localGeoServerBaseUrl + 'wms';
-                        }
-                        if(Ext.isString(url) && url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
-                            var uparts = url.split('://');
-                            var urls = [];
-                            for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
-                                urls.push(
-                                    (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
-                                );
+                        if (Ext.isString(url)) {
+                            if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
+                                url = this.localGeoServerBaseUrl + 'wms';
                             }
-                            layer.url = urls.concat([url]);
+                            if(url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
+                                var uparts = url.split('://');
+                                var urls = [];
+                                for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
+                                    urls.push(
+                                        (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
+                                    );
+                                }
+                                layer.url = urls.concat([url]);
+                            }
                         }
                         //Make sure all temporal layers are using the single tile option and the GWC mosiacing
                         if(layer.params && layer.dimensions && layer.dimensions.time) {
