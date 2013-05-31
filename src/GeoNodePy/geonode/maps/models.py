@@ -1281,6 +1281,7 @@ def describe_layer(typename):
     return body
 
 map_changed_signal = Signal(providing_args=['what_changed','old','new'])
+map_copied_signal = Signal(providing_args=['source_id'])
 
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """

@@ -1,5 +1,6 @@
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole,Role, get_csw, Thumbnail
+from geonode.maps.models import map_copied_signal
 from geonode.maps.gs_helpers import fixup_style, cascading_delete, delete_from_postgis
 from geonode import geonetwork
 import geoserver
@@ -150,7 +151,11 @@ def maps(request, mapid=None):
                 map = Map(owner=request.user, zoom=0, center_x=0, center_y=0)
                 map.save()
                 map.set_default_permissions()
-                map.update_from_viewer(request.raw_post_data)
+                config = json.loads(request.raw_post_data)
+                map.update_from_viewer(config)
+                # make sure ids differ or it's not a successful copy
+                if map.id != int(config['id']):
+                    map_copied_signal.send_robust(sender=map, source_id=config['id'])
                 response = HttpResponse('', status=201)
                 response['Location'] = map.id
                 return response
