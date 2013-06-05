@@ -37,6 +37,8 @@ from django.template import RequestContext
 from django.views.decorators.cache import cache_control
 from django.contrib.auth.decorators import login_required
 
+from httplib import BadStatusLine
+
 import os
 import logging
 import traceback
@@ -51,6 +53,10 @@ _ASYNC_UPLOAD = settings.DB_DATASTORE == True
 # at the moment, the various time support transformations require the database
 if _ALLOW_TIME_STEP and not _ASYNC_UPLOAD:
     raise Exception("To support the time step, you must enable DB_DATASTORE")
+
+_geoserver_down_error_msg = """
+GeoServer is not responding. Please try again later and sorry for the incovenience.
+"""
 
 _unexpected_error_msg = """
 An error occurred while trying to process your request.  Our administrator has
@@ -71,6 +77,16 @@ def _progress_redirect(step):
         redirect_to= reverse('data_upload', args=[step]),
         progress = reverse('data_upload_progress')
     ))
+
+
+def unexpected_error(req, upload_session, e):
+    code = uuid.uuid4()
+    try:
+        notify_error(req, upload_session, 'Unhandled Exception %s' % code)
+    except:
+        logger.exception('ERROR IN MAIL HANDLER!')
+    errors= ['Sorry, but an error occurred:', _unexpected_error_msg, str(code)]
+    return _error_response(req, exception=e, errors=errors)
 
 
 def _error_response(req, exception=None, errors=None, force_ajax=False):
@@ -546,6 +562,16 @@ def view(req, step):
         if upload_session:
             Upload.objects.update_from_session(upload_session)
         return resp
+    except BadStatusLine:
+        logger.exception('bad status line, geoserver down?')
+        return _error_response(req, errors=[_geoserver_down_error_msg])
+    except uploader.RequestFailed, e:
+        logger.exception('request failed')
+        errors = e.args
+        # http bad gateway or service unavailable
+        if int(errors[0]) in (502,503):
+            return _error_response(req, errors=[_geoserver_down_error_msg])
+        return unexpected_error(req, upload_session, e)
     except utils.UploadException, e:
         logger.exception('upload exception')
         return _error_response(req, errors=e.args)
@@ -553,16 +579,7 @@ def view(req, step):
         logger.exception('bad request')
         return _error_response(req, errors=e.args)
     except Exception, e:
-        if upload_session:
-            # @todo probably don't want to do this
-            upload_session.cleanup()
-        code = uuid.uuid4()
-        try:
-            notify_error(req, upload_session, 'Unhandled Exception %s' % code)
-        except:
-            logger.exception('ERROR IN MAIL HANDLER!')
-        errors= ['Sorry, but an error occurred:', _unexpected_error_msg, str(code)]
-        return _error_response(req, exception=e, errors=errors)
+        unexpected_error(req, upload_session, e)
 
 
 @login_required
