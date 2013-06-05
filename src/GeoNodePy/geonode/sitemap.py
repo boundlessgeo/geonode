@@ -6,7 +6,7 @@ class LayerSitemap(Sitemap):
     priority = 0.5
 
     def items(self):
-        return Layer.objects.all()
+        return Layer.objects.filtered()
 
     def lastmod(self, obj):
         return obj.date
