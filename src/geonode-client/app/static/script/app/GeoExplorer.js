@@ -753,6 +753,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                             // button that allows users to toggle the
                             // time panel
                             id: "timeline-container",
+                            header: false,
                             xtype: "panel",
                             tbar: ['->'],
                             layout: "fit"
