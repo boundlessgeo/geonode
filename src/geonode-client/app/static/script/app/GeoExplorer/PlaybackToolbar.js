@@ -28,7 +28,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             this.playbackActions = [
                 "play","slider","loop","fastforward","prev","next",
                 {xtype: "tbspacer"},"legend",{xtype:"tbfill"},
-                "settings",{xtype: "tbspacer"},"togglesize","edit"]; 
+                "settings",{xtype: "tbspacer"},"togglesize","edit", "timeline"]; 
         }
         this.defaults = Ext.applyIf(this.defaults || {},{
             scale: 'large'
@@ -74,7 +74,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                     this.btnEdit.hide();
                 }
             }
-
+            if (this.btnTimeline) {
+                if (app.fullScreen) {
+                    this.btnTimeline.show();
+                } else {
+                    this.btnTimeline.hide();
+                }
+            }
         });
 
         // TODO, We use a delay here because we have to wait until the
@@ -151,6 +157,16 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 ref: 'btnEdit',
                 tooltip: this.editTooltip,
                 disabled: window.location.href.match(/view|new/) !== null
+            },
+            'timeline': {
+                text: 'Timeline',
+                enableToggle: true,
+                handler: function() {
+                    Ext.getCmp('timeline-container').toggleCollapse();
+                },
+                hidden: true,
+                cls: 'btn-timeline',
+                ref: 'btnTimeline'
             }
         });
         return tools;
