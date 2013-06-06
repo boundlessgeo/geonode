@@ -409,6 +409,7 @@ def csv_step(upload_session, lat_field, lng_field):
                  'lngField': lng_field,
                  }
     feature_type.set_srs('EPSG:4326')
+    item.remove_transforms(['AttributesToPointGeometryTransform'], by_type=True)
     item.add_transforms([transform])
     item.save()
 
