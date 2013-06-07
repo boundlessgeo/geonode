@@ -15,6 +15,26 @@ from mock import Mock, patch
 import os
 import base64
 import math
+try:
+    from unittest import skip
+except:
+    # @todo 2.6 compat
+    def skip(reason):
+        """
+        Unconditionally skip a test.
+        """
+        def decorator(test_item):
+            if not (isinstance(test_item, type) and issubclass(test_item, TestCase)):
+                @functools.wraps(test_item)
+                def skip_wrapper(*args, **kwargs):
+                    print 'skipping : %s' % reason
+                test_item = skip_wrapper
+
+            test_item.__unittest_skip__ = True
+            test_item.__unittest_skip_why__ = reason
+            return test_item
+        return decorator
+
 
 _gs_resource = Mock()
 _gs_resource.native_bbox = [1, 2, 3, 4]
@@ -237,11 +257,11 @@ community."
         c = Client()
 
         # Test that saving a map when not logged in gives 401
-        response = c.put("/maps/1/data",data=MapTest.viewer_config,content_type="text/json")
+        response = c.put("/maps/1/data/",data=MapTest.viewer_config,content_type="text/json")
         self.assertEqual(response.status_code,401)
 
         log = c.login(username="bobby", password="bob")
-        response = c.put("/maps/1/data",data=MapTest.viewer_config_alternative,content_type="text/json")
+        response = c.put("/maps/1/data/",data=MapTest.viewer_config_alternative,content_type="text/json")
         self.assertEqual(response.status_code,204)
 
         map = Map.objects.get(id=1)
@@ -257,7 +277,7 @@ community."
         # check some missing data assumptions - tools and portalConfig should not be present
         self.assertEqual(map.tools_params,None)
         self.assertEqual(map.portal_params,None)
-        response = c.get('/maps/1/data')
+        response = c.get('/maps/1/data/')
         config = json.loads(response.content)
         self.assertFalse('tools' in config)
         self.assertFalse('portalConfig' in config)
@@ -271,7 +291,7 @@ community."
         c.login(username='bobby',password='bob')
         config = json.loads(MapTest.viewer_config_alternative)
         config['tools'] = ['something',{'random':'in here'}]
-        response = c.put("/maps/1/data",data=json.dumps(config),content_type="text/json")
+        response = c.put("/maps/1/data/",data=json.dumps(config),content_type="text/json")
         print response
         self.assertEqual(response.status_code,204)
 
@@ -281,7 +301,7 @@ community."
         self.assertEqual(map.portal_params, None)
 
         # and json
-        response = c.get('/maps/1/data')
+        response = c.get('/maps/1/data/')
         config = json.loads(response.content)
         self.assertEqual(json.loads(map.tools_params), config['tools'])
         self.assertFalse('portalConfig' in config)
@@ -398,10 +418,10 @@ community."
         c.logout()
 
     def test_map_fetch(self):
-        """/maps/[id]/data -> Test fetching a map in JSON"""
+        """/maps/[id]/data/ -> Test fetching a map in JSON"""
         map = Map.objects.get(id="1")
         c = Client()
-        response = c.get("/maps/%s/data" % map.id)
+        response = c.get("/maps/%s/data/" % map.id)
         self.assertEquals(response.status_code, 200)
         cfg = json.loads(response.content)
         self.assertEquals(cfg["about"]["abstract"], self.default_abstract) 
@@ -431,7 +451,7 @@ community."
         """/maps/1 -> Test accessing the detail view of a map"""
         map = Map.objects.get(id=1) 
         c = Client() 
-        response = c.get("/maps/%s" % map.id)
+        response = c.get("/maps/%s/" % map.id)
         self.assertEquals(response.status_code,200) 
 
 #    def test_delete_map(self):
@@ -652,6 +672,7 @@ community."
 
     # Data Tests
 
+    @skip('we redirect to mapstory search')
     def test_data(self):
         '''/data/ -> Test accessing the data page'''
         c = Client()
@@ -666,13 +687,13 @@ community."
         from django.contrib.auth.models import User
         self.assertEqual(2, User.objects.all().count())
         c = Client()
-        response = c.get('/data/base:CA/metadata')
+        response = c.get('/data/base:CA/metadata/')
         # Since we are not authenticated, we should not be able to access it
         self.failUnlessEqual(response.status_code, 302)
         # but if we log in ...
         c.login(username='bobby', password='bob')
         # ... all should be good
-        response = c.get('/data/base:CA/metadata')
+        response = c.get('/data/base:CA/metadata/')
         self.failUnlessEqual(response.status_code, 200)
     
     # Layer Tests
@@ -789,6 +810,7 @@ community."
         self.assert_("None" not in md_doc, "None in " + md_doc)
 
 
+    @skip('we redirect to layer page - meta data is combined')
     def test_describe_data(self):
         '''/data/base:CA/metadata -> Test accessing the description of a layer '''
 
@@ -862,22 +884,23 @@ class ViewTest(TestCase):
 
     def test_new_map_without_layers(self):
         client = Client()
-        response = client.get("/maps/new")
+        response = client.get("/maps/new/")
 
     def test_new_map_with_layer(self):
         with patch('geonode.maps.models.Layer.objects.gs_catalog') as mock_gs:
             mock_gs.get_resource.return_value.latlon_bbox = ["0", "1", "0", "1"]
             client = Client()
             layer = Layer.objects.all()[0]
-            response = client.get("/maps/new?layer=" + layer.typename)
+            response = client.get("/maps/new/?layer=" + layer.typename)
 
     def test_new_map_with_empty_bbox_layer(self):
         with patch('geonode.maps.models.Layer.objects.gs_catalog') as mock_gs:
             mock_gs.get_resource.return_value.latlon_bbox = ["0", "0", "0", "0"]
             client = Client()
             layer = Layer.objects.all()[0]
-            response = client.get("/maps/new?layer=" + layer.typename)
+            response = client.get("/maps/new/?layer=" + layer.typename)
 
+    @skip('will not be needed with move to new annotations')
     def test_create_layer(self):
         with patch('geonode.maps.models.Layer.objects.gs_catalog') as mock_gs:
                 settings.DB_DATASTORE_NAME = 'target_datastore'
@@ -1049,7 +1072,7 @@ class UtilsTest(TestCase):
     def tearDown(self):
         pass
 
-    fixtures = ['map_data.json']
+    fixtures = ['test_data.json', 'map_data.json']
 
     def test_layer_type(self):
         from geonode.maps.utils import layer_type
@@ -1264,6 +1287,7 @@ class UtilsTest(TestCase):
             mock_catalog.delete.side_effect = blowup
             cleanup("FOO", "1234")
 
+    @skip('Old, probably not needed')
     def test_check_geonode_is_up(self):
         from contextlib import nested
         from geonode.maps.utils import check_geonode_is_up
@@ -1293,6 +1317,7 @@ class UtilsTest(TestCase):
                 check_geonode_is_up()
 
 
+    @skip('Old, using new uploader')
     def test_save(self):
         import shutil
         import tempfile
