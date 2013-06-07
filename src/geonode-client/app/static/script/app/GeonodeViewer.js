@@ -242,8 +242,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     expandMap: function () {
         var headerHeight =
             Ext.get('header').getHeight() +
-            Ext.get('top-crossbar').getHeight() +
-            Ext.get('crossbar').getHeight(),
+            Ext.get('top-crossbar').getHeight()/* +
+            Ext.get('crossbar').getHeight()*/,
             main = Ext.get('main'),
             newWidth = window.innerWidth,
             newHeight = window.innerHeight - headerHeight + 2; // why ?
@@ -253,7 +253,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         }
 
         this.portal.setSize(newWidth, newHeight);
-        this.portal.el.alignTo(main, 'tl-tl', [0, 0]);
+        this.portal.el.alignTo(main, 'tl-tl', [0, -Ext.get('crossbar').getHeight()]);
     },
 
     /**
