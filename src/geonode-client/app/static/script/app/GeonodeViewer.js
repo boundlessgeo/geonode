@@ -111,8 +111,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
 
     //public variables for string literals needed for localization
     backgroundContainerText: "UT:Background",
-    connErrorTitleText: "UT:Connection Error",
-    connErrorText: "UT:The server returned an error",
+    connErrorTitleText: "Communication error",
+    connErrorText: "The mapping server did not respond properly. It is likely temporarily down, but should be up soon. If this problem persists please let the administrators know.",
     connErrorDetailsText: "UT:Details...",
     layerContainerText: "UT:Map Layers",
     saveFailMessage: "UT: Sorry, your map could not be saved.",
@@ -657,8 +657,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     displayXHRTrouble: function(response) {
         response.status && Ext.Msg.show({
             title: this.connErrorTitleText,
-            msg: this.connErrorText +
-                ": " + response.status + " " + response.statusText,
+            msg: this.connErrorText,
             icon: Ext.MessageBox.ERROR,
             buttons: {ok: this.connErrorDetailsText, cancel: true},
             fn: function(result) {
