@@ -118,7 +118,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
     backgroundContainerText: "UT:Background",
     connErrorTitleText: "Communication error",
     connErrorText: "The mapping server did not respond properly. It is likely temporarily down, but should be up soon. If this problem persists please let the administrators know.",
-    connErrorDetailsText: "UT:Details...",
+    connErrorDetailsText: "Details...",
     heightLabel: 'UT: Height',
     largeSizeLabel: 'UT:Large',
     layerContainerText: "UT:Map Layers",

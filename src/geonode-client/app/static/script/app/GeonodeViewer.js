@@ -113,7 +113,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     backgroundContainerText: "UT:Background",
     connErrorTitleText: "Communication error",
     connErrorText: "The mapping server did not respond properly. It is likely temporarily down, but should be up soon. If this problem persists please let the administrators know.",
-    connErrorDetailsText: "UT:Details...",
+    connErrorDetailsText: "Details...",
     layerContainerText: "UT:Map Layers",
     saveFailMessage: "UT: Sorry, your map could not be saved.",
     saveFailTitle: "UT: Error While Saving",
