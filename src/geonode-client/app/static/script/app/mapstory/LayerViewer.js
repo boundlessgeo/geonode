@@ -68,7 +68,9 @@ mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
             layout: 'fit',
             tbar: ['->'], 
             id: 'timeline-container', 
-            collapsible: true, 
+            collapsible: true,
+            collapseMode: 'mini',
+            header: false, 
             collapsed: true, 
             height: 150
           }, 'msmap'];
