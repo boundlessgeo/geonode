@@ -90,6 +90,7 @@
                                     allowNegative: false,
                                     allowDecimals: false,
                                     fieldLabel: this.zoomText,
+                                    hidden: true,
                                     value: baseLayer.numZoomLevels,
                                     listeners: {
                                         change: function (fld, value) {
