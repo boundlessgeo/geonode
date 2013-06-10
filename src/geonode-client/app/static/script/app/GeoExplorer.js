@@ -429,6 +429,8 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                 toggleGroup: toggleGroup,
                 featureManager: "general_manager",
                 autoLoadFeature: true,
+                editFeatureActionTip: "Select feature",
+                iconClsEdit: "gxp-icon-getfeatureinfo",
                 actionTarget: {
                     target: "map-bbar", 
                     index: 13
