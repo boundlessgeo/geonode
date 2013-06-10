@@ -337,6 +337,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     },
     applyConfig: function(config){
         var defaultTools = this.getDefaultTools(config, this.toggleGroup);
+        defaultTools.push({ptype: 'ms-tool-bar', suppressOutput: true});
         var origTools = config.tools || [];
         var ptypes = Ext.pluck(config.tools, 'ptype');
         config.tools = [];

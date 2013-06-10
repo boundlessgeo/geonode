@@ -13,7 +13,7 @@
         zoomText: 'Number of zoom levels',
         wrapDateLineText: 'Wrap dateline',
         colorText: 'Background color',
-
+        suppressOutput: false,
         buildSaveForm: function () {
             var ge = this.target,
                 baseLayer = this.target.mapPanel.map.baseLayer,
@@ -180,7 +180,7 @@
                 baseLayer.wrapDateLine = config.wrapDateLine;
             }
 
-            return mapstory.plugins.ToolBar.superclass.addOutput.call(this, {
+            return !this.suppressOutput && mapstory.plugins.ToolBar.superclass.addOutput.call(this, {
                 xtype: 'toolbar',
                 id: 'ms-toolbar',
                 defaults: {
