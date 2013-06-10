@@ -266,7 +266,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.expandMap();
         // prevent the thumb nail images from showing through in full
         // screen mode
-        this.portal.el.setStyle({'z-index' : 1000});
+        this.portal.el.setStyle({'z-index' : 999});
         Ext.getBody().setStyle({
             overflow: 'hidden'
         });
