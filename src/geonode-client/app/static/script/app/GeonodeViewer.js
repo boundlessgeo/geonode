@@ -266,7 +266,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.expandMap();
         // prevent the thumb nail images from showing through in full
         // screen mode
-        this.portal.el.setStyle({'z-index' : 1000});
+        this.portal.el.setStyle({'z-index' : 999});
         Ext.getBody().setStyle({
             overflow: 'hidden'
         });
@@ -337,6 +337,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     },
     applyConfig: function(config){
         var defaultTools = this.getDefaultTools(config, this.toggleGroup);
+        defaultTools.push({ptype: 'ms-tool-bar', suppressOutput: true});
         var origTools = config.tools || [];
         var ptypes = Ext.pluck(config.tools, 'ptype');
         config.tools = [];
