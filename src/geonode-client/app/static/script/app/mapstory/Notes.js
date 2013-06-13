@@ -49,23 +49,21 @@
         init: function (target) {
             var self = this;
             mapstory.NotesManager.superclass.init.apply(this, arguments);
-            // we need to wait until the all of the layers have been
-            // added to add the vector layer
-            // this seems like a poor way of making sure the
-            // annotations layer is on the top
+
+            // check if there is a target.id. if there is not that
+            // means its a new map, we want to suppress the notes
+            // manager
+
+            this.isNewMap = !target.id;
 
             if (!this.isNewMap) {
                 this.createStore(target);
             }
 
-
             // save a reference to the ol map object
             this.map = target.mapPanel.map || null;
-            // check if there is a target.id. if there is not that
-            // means its a new map, we want to suppress the notes
-            // manager
-            this.isNewMap = !target.id;
-            // if we give gxp this property, it will automaticly call
+
+            // if we give gxp this property, it will automatically call
             // our addOutput method
             this.outputAction = 0;
 
