@@ -90,7 +90,7 @@
             this.isNewMap = !target.id;
             // if we give gxp this property, it will automaticly call
             // our addOutput method
-            this.outputActions = 0;
+            this.outputAction = 0;
 
             if (!this.isNewMap) {
                 this.loadVectorLayer(target);
