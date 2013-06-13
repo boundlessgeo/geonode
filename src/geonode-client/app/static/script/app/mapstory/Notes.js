@@ -6,28 +6,6 @@
 
     Ext.ns('mapstory');
 
-    mapstory.VectorSource = Ext.extend(gxp.plugins.LayerSource, {
-        ptype: 'ms_vector_source',
-        store: null,
-        lazy: false,
-        hidden: true,
-        title: 'Vector Layers',
-
-        createStore: function () {
-
-        }
-
-    });
-
-    mapstory.NoteStore = new Ext.data.Store({});
-
-    mapstory.GridPanel = new Ext.grid.GridPanel({
-        height: 400,
-        width: 400,
-        store: mapstory.NoteStore
-    });
-
-
     mapstory.NotesManager = Ext.extend(gxp.plugins.Tool, {
         ptype: 'ms_notes_manager',
         menuText: 'Manage annotations',
@@ -46,10 +24,9 @@
                     {name: 'type', type: 'string'}
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
-                    protocol: new mapstory.notes.Protocol({
-                        mapConfig: {
-                            id: target.id
-                        }
+                    protocol: new OpenLayers.Protocol.HTTP({
+                        url: '/maps/' + target.id + '/annotations',
+                        format: new OpenLayers.Format.GeoJSON()
                     })
                 }),
                 autoLoad: true
@@ -76,13 +53,12 @@
             // added to add the vector layer
             // this seems like a poor way of making sure the
             // annotations layer is on the top
-            target.on({
-                'ready': function () {
-                    if (!self.isNewMap) {
-                        self.createStore(target);
-                    }
-                }
-            });
+
+            if (!this.isNewMap) {
+                this.createStore(target);
+            }
+
+
             // save a reference to the ol map object
             this.map = target.mapPanel.map || null;
             // check if there is a target.id. if there is not that
