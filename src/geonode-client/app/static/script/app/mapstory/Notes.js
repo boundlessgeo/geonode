@@ -18,9 +18,8 @@
         createStore: function (target) {
             this.store = new GeoExt.data.FeatureStore({
                 fields: [
-                    {name: 'the_geom'},
-                    {name: 'name', type: 'string'},
-                    {name: 'type', type: 'string'}
+                    {name: 'geometry'},
+                    {name: 'title', type: 'string'},
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
                     protocol: new mapstory.notes.Protocol({
@@ -56,6 +55,7 @@
             // if we give gxp this property, it will automatically call
             // our addOutput method
             this.outputAction = 0;
+            this.outputConfig = {width: 350, height: 300};
             mapstory.NotesManager.superclass.init.apply(this, arguments);
 
         },
@@ -68,7 +68,14 @@
             ];
         },
         addOutput: function () {
-            alert('make a grid now');
+            return mapstory.NotesManager.superclass.addOutput.call(this, {
+                xtype: 'gxp_featuregrid',
+                title: 'Mapstory Annotations',
+                store: this.store,
+                map:  this.map,
+                height: 300,
+                width: 350
+            });
         },
 
         addActions: function () {
