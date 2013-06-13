@@ -37,7 +37,8 @@
         layer: null,
         isNewMap: null,
 
-        createStore: function () {
+        createStore: function (target) {
+
             this.store = new GeoExt.data.FeatureStore({
                 fields: [
                     {name: 'geometry'},
@@ -46,7 +47,7 @@
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
                     protocol: new OpenLayers.Protocol.HTTP({
-                        url: "http://demo.mapfish.org/mapfishsample/2.2/wsgi/pois",
+                        url: "/map" + target.id + "/annotations",
                         format: new OpenLayers.Format.GeoJSON()
                     })
                 }),
@@ -66,22 +67,6 @@
             ];
         },
 
-        loadVectorLayer: function (target) {
-            // we need to add layers via the layer source, not sure
-            // what should be the layer source for this vector layer
-            var layer = new OpenLayers.Layer.Vector(this.layerName, {
-                displayInLayerSwitcher: false,
-                strategies: this.strategies,
-                protocol: new this.protocol({
-                    mapConfig: {
-                        id: target.id
-                    }
-                })
-            });
-            // save a reference for later
-            this.layer = layer;
-            return layer;
-        },
 
         init: function (target) {
             var self = this;
@@ -93,7 +78,7 @@
             target.on({
                 'ready': function () {
                     if (!self.isNewMap) {
-                        self.map.addLayer(self.layer);
+                        self.createStore(target);
                     }
                 }
             });
@@ -103,29 +88,25 @@
             // means its a new map, we want to suppress the notes
             // manager
             this.isNewMap = !target.id;
-            this.createStore();
+            // if we give gxp this property, it will automaticly call
+            // our addOutput method
+            this.outputActions = 0;
 
             if (!this.isNewMap) {
                 this.loadVectorLayer(target);
             }
 
         },
-        showGrid: function () {
-            this.grid.show();
-        },
         buildMenu: function () {
             return [
                 {
                     text: this.menuText,
-                    handler: function () {
-                        this.showGrid();
-                    },
                     scope: this
                 }
             ];
         },
         addOutput: function () {
-
+            alert('make a grid now');
         },
 
         addActions: function () {
