@@ -1,5 +1,5 @@
 /*jslint browser: true, nomen: true, indent: 4, maxlen: 80 */
-/*global gxp, OpenLayers, Ext, mapstory */
+/*global gxp, OpenLayers, Ext, GeoExt, mapstory */
 
 (function () {
     'use strict';
@@ -36,6 +36,23 @@
         map: null,
         layer: null,
         isNewMap: null,
+
+        createStore: function () {
+            this.store = new GeoExt.data.FeatureStore({
+                fields: [
+                    {name: 'geometry'},
+                    {name: 'name', type: 'string'},
+                    {name: 'type', type: 'string'}
+                ],
+                proxy: new GeoExt.data.ProtocolProxy({
+                    protocol: new OpenLayers.Protocol.HTTP({
+                        url: "http://demo.mapfish.org/mapfishsample/2.2/wsgi/pois",
+                        format: new OpenLayers.Format.GeoJSON()
+                    })
+                }),
+                autoLoad: true
+            });
+        },
 
         constructor: function (config) {
             mapstory.NotesManager.superclass.constructor.apply(
@@ -86,7 +103,7 @@
             // means its a new map, we want to suppress the notes
             // manager
             this.isNewMap = !target.id;
-            this.grid = mapstory.GridPanel;
+            this.createStore();
 
             if (!this.isNewMap) {
                 this.loadVectorLayer(target);
@@ -107,6 +124,10 @@
                 }
             ];
         },
+        addOutput: function () {
+
+        },
+
         addActions: function () {
             // if the map is a saved map, turn on the menu
             // otherwise do nothing
