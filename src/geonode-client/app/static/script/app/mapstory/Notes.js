@@ -46,9 +46,10 @@
                     {name: 'type', type: 'string'}
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
-                    protocol: new OpenLayers.Protocol.HTTP({
-                        url: "/map" + target.id + "/annotations",
-                        format: new OpenLayers.Format.GeoJSON()
+                    protocol: new mapstory.notes.Protocol({
+                        mapConfig: {
+                            id: target.id
+                        }
                     })
                 }),
                 autoLoad: true
@@ -92,9 +93,6 @@
             // our addOutput method
             this.outputAction = 0;
 
-            if (!this.isNewMap) {
-                this.loadVectorLayer(target);
-            }
 
         },
         buildMenu: function () {

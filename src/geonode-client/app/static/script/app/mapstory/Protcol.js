@@ -1,7 +1,12 @@
 /*jslint browser: true, nomen: true, indent: 4, */
 /*global Ext, jQuery, OpenLayers,mapstory */
 
-(function (global, Ext, $, OpenLayers, undefined) {
+/**
+ * @requires OpenLayers.Protocol
+ * 
+ */
+
+(function (window) {
     'use strict';
 
     // requires ie 8 and up
@@ -238,4 +243,4 @@
     });
 
 
-}(window, Ext, jQuery, OpenLayers));
+}(window));
