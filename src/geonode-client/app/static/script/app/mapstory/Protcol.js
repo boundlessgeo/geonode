@@ -2,7 +2,7 @@
 /*global Ext, jQuery, OpenLayers,mapstory */
 
 /**
- * @requires OpenLayers.Protocol
+ * @requires OpenLayers/Protocol.js
  * 
  */
 
