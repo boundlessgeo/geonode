@@ -63,10 +63,6 @@ mapstory.Viewer = Ext.extend(mapstory.LayerViewer, {
                 featureEditor: "annotations_editor",
                 outputTarget: "timeline-container",
                 playbackTool: "playback-tool"
-            }, {
-                ptype: "gxp_timelinelayers",
-                timelineTool: "timeline-tool",
-                actionTarget: "timeline-container.tbar"
             }];
         return tools;
     },

@@ -393,10 +393,6 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputTarget: "timeline-container",
                 featureEditor: "annotations_editor",
                 playbackTool: "playback-tool"
-            }, {
-                ptype: "gxp_timelinelayers",
-                timelineTool: "timeline-tool",
-                actionTarget: "timeline-container.tbar"
             },
 
                 {
