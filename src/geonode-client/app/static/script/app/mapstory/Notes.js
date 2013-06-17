@@ -39,7 +39,7 @@
                 arguments
             );
 
-            this.protocol = config.protocol || mapstory.notes.Protocol;
+            //this.protocol = config.protocol || mapstory.notes.Protocol;
             this.strategies = config.strategies || [
                 new OpenLayers.Strategy.Fixed()
             ];
