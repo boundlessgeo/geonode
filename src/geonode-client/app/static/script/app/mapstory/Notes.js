@@ -16,17 +16,16 @@
         isNewMap: null,
 
         createStore: function (target) {
-
             this.store = new GeoExt.data.FeatureStore({
                 fields: [
                     {name: 'geometry'},
-                    {name: 'name', type: 'string'},
-                    {name: 'type', type: 'string'}
+                    {name: 'title', type: 'string'},
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
-                    protocol: new OpenLayers.Protocol.HTTP({
-                        url: '/maps/' + target.id + '/annotations',
-                        format: new OpenLayers.Format.GeoJSON()
+                    protocol: new mapstory.notes.Protocol({
+                        mapConfig: {
+                            id: target.id
+                        }
                     })
                 }),
                 autoLoad: true
@@ -38,22 +37,12 @@
                 this,
                 arguments
             );
-
-            //this.protocol = config.protocol || mapstory.notes.Protocol;
-            this.strategies = config.strategies || [
-                new OpenLayers.Strategy.Fixed()
-            ];
         },
 
-
         init: function (target) {
-            var self = this;
-            mapstory.NotesManager.superclass.init.apply(this, arguments);
-
             // check if there is a target.id. if there is not that
             // means its a new map, we want to suppress the notes
             // manager
-
             this.isNewMap = !target.id;
 
             if (!this.isNewMap) {
@@ -66,7 +55,8 @@
             // if we give gxp this property, it will automatically call
             // our addOutput method
             this.outputAction = 0;
-
+            this.outputConfig = {width: 350, height: 300};
+            mapstory.NotesManager.superclass.init.apply(this, arguments);
 
         },
         buildMenu: function () {
@@ -78,7 +68,14 @@
             ];
         },
         addOutput: function () {
-            alert('make a grid now');
+            return mapstory.NotesManager.superclass.addOutput.call(this, {
+                xtype: 'gxp_featuregrid',
+                title: 'Mapstory Annotations',
+                store: this.store,
+                map:  this.map,
+                height: 300,
+                width: 350
+            });
         },
 
         addActions: function () {
