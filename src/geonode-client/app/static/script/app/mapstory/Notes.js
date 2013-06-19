@@ -11,7 +11,9 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         this.store = new GeoExt.data.FeatureStore({
             fields: [
                 {name: 'geometry'},
-                {name: 'title', type: 'string'}
+                {name: 'title', type: 'string'},
+                {name: 'in_map', type: 'boolean'},
+                {name: 'in_timeline', type: 'boolean'}
             ],
             proxy: new GeoExt.data.ProtocolProxy({
                 protocol: new mapstory.protocol.Notes({
@@ -34,6 +36,14 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     addOutput: function () {
         return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
+            ignoreFields: ['geometry'],
+            plugins: [{
+                ptype: 'gxp_georoweditor'
+            }],
+            customEditors: {
+                'in_map': {xtype: 'checkbox'},
+                'in_timeline': {xtype: 'checkbox'}
+            },
             title: this.gridTitle,
             store: this.store,
             map:  this.target.mapPanel.map,
