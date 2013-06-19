@@ -169,7 +169,7 @@
         initialize: function (options) {
             this.http = options.http || OpenLayers.Request;
             this.response = options.response || OpenLayers.Protocol.Response;
-            this.format   = new notes.Format();
+            this.format   = new OpenLayers.Format.GeoJSON(); //new notes.Format();
 
             if (!options.mapConfig) {
                 throw {
@@ -204,9 +204,10 @@
         },
 
         readFeatures: function (resp, options) {
-            resp.features = this.format.readArray(
+            resp.features = /*this.format.readArray(*/ this.format.read(
                 resp.priv.responseText
             );
+            resp.code = OpenLayers.Protocol.Response.SUCCESS;
             options.callback.call(options.scope, resp);
 
         },
