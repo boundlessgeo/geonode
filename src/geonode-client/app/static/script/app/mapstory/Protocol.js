@@ -28,7 +28,27 @@ mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
     },
 
     commit: function(features, options) {
-        var response = new OpenLayers.Protocol.Response({
+        var response;
+        // if delete, all features will be delete
+        if (features.length > 0 && features[0].state === OpenLayers.State.DELETE) {
+            var obj = {action: 'delete', ids: []};
+            for (var i = 0, ii = features.length; i<ii; ++i) {
+                obj.ids.push(features[i].fid);
+            }
+            response = new OpenLayers.Protocol.Response({
+                requestType: "delete",
+                reqFeatures: features
+            });
+            response.priv = OpenLayers.Request.POST({
+                url: this.baseUrl,
+                headers: options.headers,
+                data: new OpenLayers.Format.JSON().write(obj),
+                callback: this.createCallback(this.handleCommit, response, options)
+            });
+            return response;
+        }
+        // updates are normally a single feature
+        response = new OpenLayers.Protocol.Response({
             requestType: "commit",
             reqFeatures: features
         });

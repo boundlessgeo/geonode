@@ -39,6 +39,20 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     addOutput: function () {
         return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
+            tbar: [{
+                text: 'Delete',
+                handler: function() {
+                    var sm = this.output[0].getSelectionModel();
+                    var record = sm.getSelected();
+                    var feature = record.getFeature();
+                    feature.state = OpenLayers.State.DELETE;
+                    this.store.remove(record);
+                    this.store.save();
+                },
+                scope: this
+            }, {
+                text: 'Insert'
+            }],
             ignoreFields: ['geometry'],
             plugins: [{
                 ptype: 'gxp_georoweditor'
