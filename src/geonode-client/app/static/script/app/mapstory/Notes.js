@@ -9,13 +9,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     createStore: function () {
         this.store = new GeoExt.data.FeatureStore({
+            writer: new Ext.data.DataWriter({
+                write: Ext.emptyFn
+            }),
             fields: [
                 {name: 'geometry'},
                 {name: 'title', type: 'string'},
                 {name: 'in_map', type: 'boolean'},
                 {name: 'in_timeline', type: 'boolean'}
             ],
-            proxy: new GeoExt.data.ProtocolProxy({
+            proxy: new gxp.data.WFSProtocolProxy({
                 protocol: new mapstory.protocol.Notes({
                     format: new OpenLayers.Format.GeoJSON(),
                     baseUrl: '/maps/' + this.target.id + '/annotations'

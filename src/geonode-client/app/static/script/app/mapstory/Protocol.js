@@ -27,27 +27,28 @@ mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
         options.callback.call(options.scope, resp);
     },
 
-    create: function (feature) {
-        var resp = OpenLayers.Request.POST({
+    commit: function(features, options) {
+        var response = new OpenLayers.Protocol.Response({
+            requestType: "commit",
+            reqFeatures: features
+        });
+        response.priv = OpenLayers.Request.POST({
             url: this.baseUrl,
-            data: feature
+            headers: options.headers,
+            data: this.format.write(features, options),
+            callback: this.createCallback(this.handleCommit, response, options)
         });
-        return resp;
+        return response;
     },
 
-    update: function (feature) {
-        var resp = OpenLayers.Request.PUT({
-            url: this.baseUrl + '/' + feature.id,
-            data: feature
-        });
-        return resp;
-    },
-
-    'delete': function (feature) {
-        var resp = OpenLayers.Request.DELETE({
-            url: this.baseUrl + '/' + feature.id
-        });
-        return resp;
+    handleCommit: function(response, options) {
+        if (options.callback) {
+            var request = response.priv;
+            var data = request.responseText;
+            response.code = (data === 'OK') ? OpenLayers.Protocol.Response.SUCCESS : 
+                OpenLayers.Protocol.Response.FAILURE;
+            options.callback.call(options.scope, response);
+        }
     },
 
     CLASS_NAME: 'mapstory.protocol.Notes'
