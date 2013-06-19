@@ -19,13 +19,12 @@
             this.store = new GeoExt.data.FeatureStore({
                 fields: [
                     {name: 'geometry'},
-                    {name: 'title', type: 'string'},
+                    {name: 'title', type: 'string'}
                 ],
                 proxy: new GeoExt.data.ProtocolProxy({
-                    protocol: new mapstory.notes.Protocol({
-                        mapConfig: {
-                            id: target.id
-                        }
+                    format: new OpenLayers.Format.GeoJSON(),
+                    protocol: new mapstory.protocol.Notes({
+                        mapId: target.id
                     })
                 }),
                 autoLoad: true
