@@ -1,96 +1,52 @@
-/*jslint browser: true, nomen: true, indent: 4, maxlen: 80 */
-/*global gxp, OpenLayers, Ext, GeoExt, mapstory */
+Ext.ns('mapstory.plugins');
 
-(function () {
-    'use strict';
+mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
+    ptype: 'ms_notes_manager',
+    menuText: 'Manage annotations',
+    gridTitle: 'Mapstory Annotations',
+    isNewMap: null,
+    outputAction: 0,
 
-    Ext.ns('mapstory');
-
-    mapstory.NotesManager = Ext.extend(gxp.plugins.Tool, {
-        ptype: 'ms_notes_manager',
-        menuText: 'Manage annotations',
-        layerName: 'annotations',
-        // save a reference to the openlayers map
-        map: null,
-        layer: null,
-        isNewMap: null,
-
-        createStore: function (target) {
-            this.store = new GeoExt.data.FeatureStore({
-                fields: [
-                    {name: 'geometry'},
-                    {name: 'title', type: 'string'}
-                ],
-                proxy: new GeoExt.data.ProtocolProxy({
+    createStore: function () {
+        this.store = new GeoExt.data.FeatureStore({
+            fields: [
+                {name: 'geometry'},
+                {name: 'title', type: 'string'}
+            ],
+            proxy: new GeoExt.data.ProtocolProxy({
+                protocol: new mapstory.protocol.Notes({
                     format: new OpenLayers.Format.GeoJSON(),
-                    protocol: new mapstory.protocol.Notes({
-                        mapId: target.id
-                    })
-                }),
-                autoLoad: true
-            });
-        },
+                    baseUrl: '/maps/' + this.target.id + '/annotations'
+                })
+            }),
+            autoLoad: true
+        });
+    },
 
-        constructor: function (config) {
-            mapstory.NotesManager.superclass.constructor.apply(
-                this,
-                arguments
-            );
-        },
-
-        init: function (target) {
-            // check if there is a target.id. if there is not that
-            // means its a new map, we want to suppress the notes
-            // manager
-            this.isNewMap = !target.id;
-
-            if (!this.isNewMap) {
-                this.createStore(target);
-            }
-
-            // save a reference to the ol map object
-            this.map = target.mapPanel.map || null;
-
-            // if we give gxp this property, it will automatically call
-            // our addOutput method
-            this.outputAction = 0;
-            this.outputConfig = {width: 350, height: 300};
-            mapstory.NotesManager.superclass.init.apply(this, arguments);
-
-        },
-        buildMenu: function () {
-            return [
-                {
-                    text: this.menuText,
-                    scope: this
-                }
-            ];
-        },
-        addOutput: function () {
-            return mapstory.NotesManager.superclass.addOutput.call(this, {
-                xtype: 'gxp_featuregrid',
-                title: 'Mapstory Annotations',
-                store: this.store,
-                map:  this.map,
-                height: 300,
-                width: 350
-            });
-        },
-
-        addActions: function () {
-            // if the map is a saved map, turn on the menu
-            // otherwise do nothing
-            // check with bart about this
-            if (!this.isNewMap) {
-                return mapstory.NotesManager.superclass.addActions.apply(
-                    this,
-                    this.buildMenu()
-                );
-            }
+    init: function (target) {
+        this.outputConfig = {width: 350, height: 300};
+        mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
+        if (this.target.id >= 0) {
+            this.createStore();
         }
+    },
 
-    });
+    addOutput: function () {
+        return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
+            xtype: 'gxp_featuregrid',
+            title: this.gridTitle,
+            store: this.store,
+            map:  this.target.mapPanel.map,
+            height: 300,
+            width: 350
+        });
+    },
 
-    Ext.preg(mapstory.NotesManager.prototype.ptype, mapstory.NotesManager);
+    addActions: function () {
+        return mapstory.plugins.NotesManager.superclass.addActions.apply(
+            this, [{disabled: !(this.target.id >= 0), text: this.menuText}]);
+    }
 
-}());
+});
+
+Ext.preg(mapstory.plugins.NotesManager.prototype.ptype, mapstory.plugins.NotesManager);

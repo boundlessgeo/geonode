@@ -3,11 +3,9 @@ Ext.ns('mapstory.protocol');
 mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
 
     initialize: function (options) {
-        this.format = new OpenLayers.Format.GeoJSON();
-        if (!options.mapId) {
-            throw new Error('You must provide a mapId for mapstory.protocol.Notes');
+        if (!options.baseUrl) {
+            throw new Error('You must provide a baseUrl for mapstory.protocol.Notes');
         }
-        this.baseUrl = '/maps/' + options.mapId + '/annotations';
         OpenLayers.Protocol.prototype.initialize.apply(this, arguments);
     },
 
