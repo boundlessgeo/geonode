@@ -78,9 +78,12 @@ mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
     handleCommit: function(response, options) {
         if (options.callback) {
             var request = response.priv;
-            var data = request.responseText;
-            response.code = (data === 'OK') ? OpenLayers.Protocol.Response.SUCCESS : 
+            var data = Ext.decode(request.responseText);
+            response.code = (data.success) ? OpenLayers.Protocol.Response.SUCCESS : 
                 OpenLayers.Protocol.Response.FAILURE;
+            if (!data.success) {
+                response.error = data;
+            }
             options.callback.call(options.scope, response);
         }
     },
