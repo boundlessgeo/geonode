@@ -11,6 +11,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     createStore: function () {
         this.store = new GeoExt.data.FeatureStore({
+            autoSave: false,
             writer: new Ext.data.DataWriter({
                 write: Ext.emptyFn
             }),
