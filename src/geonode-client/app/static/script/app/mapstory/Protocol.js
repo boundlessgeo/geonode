@@ -47,9 +47,23 @@ mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
             });
             return response;
         }
-        // updates are normally a single feature
+        // insert
+        if (features.length > 0 && features[0].state === OpenLayers.State.INSERT) {
+            response = new OpenLayers.Protocol.Response({
+                requestType: "create",
+                reqFeatures: features
+            });
+            response.priv = OpenLayers.Request.POST({
+                url: this.baseUrl,
+                headers: options.headers,
+                data: this.format.write(features, options),
+                callback: this.createCallback(this.handleCommit, response, options)
+            });
+            return response; 
+        }
+        // update
         response = new OpenLayers.Protocol.Response({
-            requestType: "commit",
+            requestType: "update",
             reqFeatures: features
         });
         response.priv = OpenLayers.Request.POST({

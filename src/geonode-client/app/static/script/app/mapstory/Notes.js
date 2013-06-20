@@ -4,6 +4,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     menuText: 'Manage annotations',
     gridTitle: 'Mapstory Annotations',
+    insertText: 'Insert',
+    deleteText: 'Delete',
     isNewMap: null,
     outputAction: 0,
 
@@ -26,6 +28,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }),
             autoLoad: true
         });
+        // this is needed to get inserts to work
+        // otherwise we run into realize error of Ext.data.DataReader
+        this.store.reader.getId = function(rec) {
+            return Ext.isObject(rec) && rec.id;
+        };
     },
 
     init: function (target) {
@@ -40,7 +47,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
             tbar: [{
-                text: 'Delete',
+                text: this.deleteText,
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
                     var record = sm.getSelected();
@@ -51,7 +58,19 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 },
                 scope: this
             }, {
-                text: 'Insert'
+                text: this.insertText,
+                handler: function() {
+                    var editor = this.output[0].plugins[0];
+                    editor.stopEditing();
+                    var recordType = GeoExt.data.FeatureRecord.create([{name: 'title'}, {name: 'in_map'}, {name: 'in_timeline'}]);
+                    var feature = new OpenLayers.Feature.Vector();
+                    feature.state = OpenLayers.State.INSERT;
+                    this.store.insert(0, new recordType({feature: feature, 'in_map': true}));
+                    this.output[0].getView().refresh();
+                    this.output[0].getSelectionModel().selectRow(0);
+                    editor.startEditing(0);
+                },
+                scope: this
             }],
             ignoreFields: ['geometry'],
             plugins: [{
