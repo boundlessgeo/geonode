@@ -81,6 +81,14 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'}
             },
+            customRenderers: {
+                'in_map': function(value) {
+                    return "<input disabled='true' type='checkbox'" + (value ? "checked='checked'" : "") + ">";
+                },
+                'in_timeline': function(value) {
+                    return "<input disabled='true' type='checkbox'" + (value ? "checked='checked'" : "") + ">";
+                }
+            },
             title: this.gridTitle,
             store: this.store,
             map:  this.target.mapPanel.map,
