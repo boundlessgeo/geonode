@@ -154,8 +154,9 @@ def maps(request, mapid=None):
                 config = json.loads(request.raw_post_data)
                 map.update_from_viewer(config)
                 # make sure ids differ or it's not a successful copy
-                #if map.id != int(config['id']):
-                #    map_copied_signal.send_robust(sender=map, source_id=config['id'])
+                existing_id = config.get('id', None)
+                if existing_id and map.id != int(existing_id):
+                    map_copied_signal.send_robust(sender=map, source_id=existing_id)
                 response = HttpResponse('', status=201)
                 response['Location'] = map.id
                 return response
