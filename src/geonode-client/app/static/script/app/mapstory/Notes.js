@@ -6,6 +6,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     gridTitle: 'Mapstory Annotations',
     insertText: 'Insert',
     deleteText: 'Delete',
+    layerTitle: 'Annotations',
+    ruleTitle: 'Annotations',
     isNewMap: null,
     outputAction: 0,
 
@@ -45,6 +47,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     },
 
     addOutput: function () {
+        this.target.mapPanel.map.events.on({
+            'preaddlayer': function(evt) {
+                evt.layer.name = this.layerTitle;
+                evt.layer.styleMap.styles["default"].title = this.ruleTitle;
+                this.target.mapPanel.map.events.un({
+                    'preaddlayer': arguments.callee, scope: this
+                });
+            },
+            scope: this
+        });
         return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
             tbar: [{
