@@ -811,11 +811,11 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
             types = [
                 ("zip", _("Zipped Shapefile"), "SHAPE-ZIP", {'format_options': 'charset:UTF-8'}),
-                ("gml", _("GML 2.0"), "gml2", {}),
-                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1", {}),
+                ("gml", _("GML 2.0"), "gml2", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
+                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
                 ("csv", _("CSV"), "csv", {}),
                 ("excel", _("Excel"), "excel", {}),
-                ("json", _("GeoJSON"), "json", {})
+                ("json", _("GeoJSON"), "json", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.json' % self.name})
             ]
             links.extend((ext, name, wfs_link(mime, extra_params)) for ext, name, mime, extra_params in types)
         elif self.resource.resource_type == "coverage":
