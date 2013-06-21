@@ -49,8 +49,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     init: function (target) {
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
-        if (this.target.id >= 0) {
+        if (this.target.id !== null) {
             this.createStore();
+        } else {
+            this.target.on('saved', function() {
+                this.actions[0].enable();
+            }, this, {single: true});
         }
     },
 
@@ -136,7 +140,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     addActions: function () {
         return mapstory.plugins.NotesManager.superclass.addActions.apply(
-            this, [{disabled: !(this.target.id >= 0), text: this.menuText}]);
+            this, [{disabled: (this.target.id === null), text: this.menuText}]);
     }
 
 });
