@@ -18,7 +18,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     isNewMap: null,
     outputAction: 0,
 
-    createStore: function () {
+    createStore: function (id) {
         this.store = new GeoExt.data.FeatureStore({
             autoSave: false,
             writer: new Ext.data.DataWriter({
@@ -35,7 +35,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             proxy: new gxp.data.WFSProtocolProxy({
                 protocol: new mapstory.protocol.Notes({
                     format: new OpenLayers.Format.GeoJSON(),
-                    baseUrl: '/maps/' + this.target.id + '/annotations'
+                    baseUrl: '/maps/' + id + '/annotations'
                 })
             }),
             autoLoad: true
@@ -50,9 +50,10 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     init: function (target) {
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
         if (this.target.id !== null) {
-            this.createStore();
+            this.createStore(this.target.id);
         } else {
-            this.target.on('saved', function() {
+            this.target.on('saved', function(id) {
+                this.createStore(id);
                 this.actions[0].enable();
             }, this, {single: true});
         }
