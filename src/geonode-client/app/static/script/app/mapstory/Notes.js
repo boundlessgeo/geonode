@@ -88,10 +88,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
                     var record = sm.getSelected();
-                    var feature = record.getFeature();
-                    feature.state = OpenLayers.State.DELETE;
-                    this.store.remove(record);
-                    this.store.save();
+                    if (record) {
+                        var feature = record.getFeature();
+                        feature.state = OpenLayers.State.DELETE;
+                        this.store.remove(record);
+                        this.store.save();
+                    }
                 },
                 scope: this
             }, {
@@ -100,7 +102,13 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 handler: function() {
                     var editor = this.output[0].plugins[0];
                     editor.stopEditing();
-                    var recordType = GeoExt.data.FeatureRecord.create([{name: 'title'}, {name: 'in_map'}, {name: 'in_timeline'}]);
+                    var recordType = GeoExt.data.FeatureRecord.create([
+                        {name: 'title'}, 
+                        {name: 'in_map'}, 
+                        {name: 'in_timeline'},
+                        {name: 'start_time'},
+                        {name: 'end_time'}
+                    ]);
                     var feature = new OpenLayers.Feature.Vector();
                     feature.state = OpenLayers.State.INSERT;
                     this.store.insert(0, new recordType({feature: feature, 'in_map': true}));
