@@ -1,5 +1,12 @@
 Ext.ns('mapstory.plugins');
 
+// make sure row editor is visible on the last row
+Ext.override(Ext.grid.GridView, {
+    getEditorParent: function() {
+        return document.body;
+    }
+});
+
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     menuText: 'Manage annotations',
