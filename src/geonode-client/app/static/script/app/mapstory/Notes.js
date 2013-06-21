@@ -20,6 +20,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             fields: [
                 {name: 'geometry'},
                 {name: 'title', type: 'string'},
+                {name: 'start_time', type: 'integer'},
+                {name: 'end_time', type: 'integer'},
                 {name: 'in_map', type: 'boolean'},
                 {name: 'in_timeline', type: 'boolean'}
             ],
@@ -39,7 +41,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     },
 
     init: function (target) {
-        this.outputConfig = {width: 350, height: 300};
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
         if (this.target.id >= 0) {
             this.createStore();
@@ -59,8 +60,19 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         });
         return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
+            viewConfig: {
+                forceFit: true
+            },
+            propertyNames: {
+                'in_map': 'Show in map',
+                'in_timeline': 'Show in timeline',
+                'start_time': 'Start time',
+                'end_time': 'End time',
+                'title': 'Title'
+            },
             tbar: [{
                 text: this.deleteText,
+                iconCls: 'gxp-icon-removelayers',
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
                     var record = sm.getSelected();
@@ -72,6 +84,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 scope: this
             }, {
                 text: this.insertText,
+                iconCls: 'gxp-icon-addlayers',
                 handler: function() {
                     var editor = this.output[0].plugins[0];
                     editor.stopEditing();
@@ -91,9 +104,17 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }],
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
-                'in_timeline': {xtype: 'checkbox'}
+                'in_timeline': {xtype: 'checkbox'},
+                'start_time': {xtype: 'gxp_datefield'},
+                'end_time': {xtype: 'gxp_datefield'}
             },
             customRenderers: {
+                'start_time': function(value) {
+                    return gxp.form.ExtendedDateField.prototype.setValue(value).value;
+                },
+                'end_time': function(value) {
+                    return gxp.form.ExtendedDateField.prototype.setValue(value).value;
+                },
                 'in_map': function(value) {
                     return "<input disabled='true' type='checkbox'" + (value ? "checked='checked'" : "") + ">";
                 },
@@ -101,11 +122,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     return "<input disabled='true' type='checkbox'" + (value ? "checked='checked'" : "") + ">";
                 }
             },
-            title: this.gridTitle,
             store: this.store,
-            map:  this.target.mapPanel.map,
-            height: 300,
-            width: 350
+            map:  this.target.mapPanel.map
         });
     },
 
