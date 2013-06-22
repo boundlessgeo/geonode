@@ -579,7 +579,7 @@ def view(req, step):
         logger.exception('bad request')
         return _error_response(req, errors=e.args)
     except Exception, e:
-        unexpected_error(req, upload_session, e)
+        return unexpected_error(req, upload_session, e)
 
 
 @login_required
