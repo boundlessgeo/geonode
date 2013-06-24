@@ -811,8 +811,9 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
             types = [
                 ("zip", _("Zipped Shapefile"), "SHAPE-ZIP", {'format_options': 'charset:UTF-8'}),
-                ("gml", _("GML 2.0"), "gml2", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
-                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
+                ("gml", _("GML 2.1.2"), "gml2", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
+                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1",
+                  {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name, 'version': '1.1.0'}),
                 ("csv", _("CSV"), "csv", {}),
                 ("excel", _("Excel"), "excel", {}),
                 ("json", _("GeoJSON"), "json", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.json' % self.name})
