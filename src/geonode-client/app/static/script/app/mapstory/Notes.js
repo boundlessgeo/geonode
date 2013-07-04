@@ -135,9 +135,19 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 scope: this
             }],
             ignoreFields: ['geometry'],
-            plugins: [{
-                ptype: 'gxp_georoweditor'
-            }],
+            plugins: [new gxp.plugins.GeoRowEditor({listeners: {'beforeedit': function(editor, rowIndex) {
+                var record = this.grid.store.getAt(rowIndex);
+                if (!Ext.getCmp('start-time').rendered) {
+                    Ext.getCmp('start-time').value = record.get('start_time');
+                } else {
+                    Ext.getCmp('start-time').setValue(record.get('start_time'));
+                }
+                if (!Ext.getCmp('end-time').rendered) {
+                    Ext.getCmp('end-time').value = record.get('end_time');
+                } else {
+                    Ext.getCmp('end-time').setValue(record.get('end_time'));
+                }
+            }}, scope: this})],
             columnConfig: {
                 'in_timeline': {width: 75},
                 'in_map': {width: 50},
@@ -147,8 +157,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'},
-                'start_time': {xtype: 'gxp_datetimefield'},
-                'end_time': {xtype: 'gxp_datetimefield'},
+                'start_time': {id: 'start-time', xtype: 'gxp_datetimefield'},
+                'end_time': {id: 'end-time', xtype: 'gxp_datetimefield'},
                 'content': {xtype: 'textarea'},
                 'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: [
                     ['tl-tl?', 'Top left'],
