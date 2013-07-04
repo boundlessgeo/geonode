@@ -9,6 +9,7 @@ Ext.override(Ext.grid.GridView, {
 
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
+    timeline: null,
     menuText: 'Manage annotations',
     gridTitle: 'Mapstory Annotations',
     insertText: 'Insert',
@@ -27,10 +28,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             fields: [
                 {name: 'geometry'},
                 {name: 'title', type: 'string'},
+                {name: 'content', type: 'string'},
                 {name: 'start_time', type: 'integer'},
                 {name: 'end_time', type: 'integer'},
                 {name: 'in_map', type: 'boolean'},
-                {name: 'in_timeline', type: 'boolean'}
+                {name: 'in_timeline', type: 'boolean'},
+                {name: 'appearance', type: 'string'}
             ],
             proxy: new gxp.data.WFSProtocolProxy({
                 protocol: new mapstory.protocol.Notes({
@@ -45,9 +48,19 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         this.store.reader.getId = function(rec) {
             return Ext.isObject(rec) && rec.id;
         };
+        if (this.timelineTool) {
+            this.timelineTool.setAnnotationsStore(this.store);
+        }
     },
 
     init: function (target) {
+        for (var key in target.tools) {
+            var tool = target.tools[key];
+            if (tool.id === this.timeline) {
+                this.timelineTool = tool;
+                break;
+            }
+        }
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
         if (this.target.id !== null) {
             this.createStore(this.target.id);
@@ -76,11 +89,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 forceFit: true
             },
             propertyNames: {
-                'in_map': 'Show in map',
-                'in_timeline': 'Show in timeline',
+                'in_map': 'Map',
+                'in_timeline': 'Timeline',
                 'start_time': 'Start time',
                 'end_time': 'End time',
-                'title': 'Title'
+                'title': 'Title',
+                'content': 'Content'
             },
             tbar: [{
                 text: this.deleteText,
@@ -103,11 +117,13 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     var editor = this.output[0].plugins[0];
                     editor.stopEditing();
                     var recordType = GeoExt.data.FeatureRecord.create([
-                        {name: 'title'}, 
+                        {name: 'title'},
+                        {name: 'content'},
                         {name: 'in_map'}, 
                         {name: 'in_timeline'},
                         {name: 'start_time'},
-                        {name: 'end_time'}
+                        {name: 'end_time'},
+                        {name: 'appearance'}
                     ]);
                     var feature = new OpenLayers.Feature.Vector();
                     feature.state = OpenLayers.State.INSERT;
@@ -122,11 +138,29 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             plugins: [{
                 ptype: 'gxp_georoweditor'
             }],
+            columnConfig: {
+                'in_timeline': {width: 75},
+                'in_map': {width: 50},
+                'start_time': {width: 200},
+                'end_time': {width: 200}
+            },
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'},
-                'start_time': {xtype: 'gxp_datefield'},
-                'end_time': {xtype: 'gxp_datefield'}
+                'start_time': {xtype: 'gxp_datetimefield'},
+                'end_time': {xtype: 'gxp_datetimefield'},
+                'content': {xtype: 'textarea'},
+                'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: [
+                    ['tl-tl?', 'Top left'],
+                    ['t-t?', 'Top center'],
+                    ['tr-tr?', 'Top right'],
+                    ['l-l?', 'Center left'],
+                    ['c-c?', 'Center'],
+                    ['r-r?', 'Center right'],
+                    ['bl-bl?', 'Bottom left'],
+                    ['b-b?', 'Bottom center'],
+                    ['br-br?', 'Bottom right']
+                ]}
             },
             customRenderers: {
                 'start_time': function(value) {
