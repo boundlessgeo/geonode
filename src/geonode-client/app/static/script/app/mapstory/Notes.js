@@ -18,7 +18,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ruleTitle: 'Annotations',
     isNewMap: null,
     outputAction: 0,
-
+    outputConfig: {closeAction: 'hide'},
     createStore: function (id) {
         this.store = new GeoExt.data.FeatureStore({
             autoSave: false,
@@ -49,6 +49,20 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             return Ext.isObject(rec) && rec.id;
         };
         if (this.timelineTool) {
+            this.timelineTool.on('click', function(fid) {
+                if (this.output[0]) {
+                    this.output[0].ownerCt.ownerCt.show();
+                } else {
+                    this.addOutput();
+                }
+                var idx = this.store.findBy(function(record) {
+                    return record.getFeature().fid === fid;
+                });
+                var record = this.store.getAt(idx);
+                var me = this; window.setTimeout(function() {
+                  me.output[0].getSelectionModel().selectRecords([record]);
+                }, 250);
+            }, this);
             this.timelineTool.setAnnotationsStore(this.store);
         }
     },
