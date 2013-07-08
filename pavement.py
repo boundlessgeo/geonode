@@ -248,7 +248,8 @@ def geonode_client(options):
         opts = '-Djsdebug' 
     with pushd("src/geonode-client/"):
         sh("ant %s clean dist" % opts)
-    shutil.rmtree(static) 
+    if static.exists():
+        shutil.rmtree(static) 
     sh("cp -a src/geonode-client/build/geonode-client/WEB-INF/app/static %s" % static)
 
 @task

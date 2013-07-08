@@ -58,7 +58,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
      * api: config[cachedSourceMatch]
      * ``RegExp`` pattern to match the layer url to for adding extra subdomains
      */
-    cachedSourceMatch: /dev\.mapstory/,
+    cachedSourceMatch: /mapstory\.dev|mapstory\.org/,
 
     /**
      * api: config[cachedSubdomains]
@@ -111,9 +111,9 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
 
     //public variables for string literals needed for localization
     backgroundContainerText: "UT:Background",
-    connErrorTitleText: "UT:Connection Error",
-    connErrorText: "UT:The server returned an error",
-    connErrorDetailsText: "UT:Details...",
+    connErrorTitleText: "Communication error",
+    connErrorText: "The mapping server did not respond properly. It is likely temporarily down, but should be up soon. If this problem persists please let the administrators know.",
+    connErrorDetailsText: "Details...",
     layerContainerText: "UT:Map Layers",
     saveFailMessage: "UT: Sorry, your map could not be saved.",
     saveFailTitle: "UT: Error While Saving",
@@ -242,8 +242,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     expandMap: function () {
         var headerHeight =
             Ext.get('header').getHeight() +
-            Ext.get('top-crossbar').getHeight() +
-            Ext.get('crossbar').getHeight(),
+            Ext.get('top-crossbar').getHeight()/* +
+            Ext.get('crossbar').getHeight()*/,
             main = Ext.get('main'),
             newWidth = window.innerWidth,
             newHeight = window.innerHeight - headerHeight + 2; // why ?
@@ -253,7 +253,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         }
 
         this.portal.setSize(newWidth, newHeight);
-        this.portal.el.alignTo(main, 'tl-tl', [0, 0]);
+        this.portal.el.alignTo(main, 'tl-tl', [0, -Ext.get('crossbar').getHeight()]);
     },
 
     /**
@@ -266,7 +266,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         this.expandMap();
         // prevent the thumb nail images from showing through in full
         // screen mode
-        this.portal.el.setStyle({'z-index' : 1000});
+        this.portal.el.setStyle({'z-index' : 999});
         Ext.getBody().setStyle({
             overflow: 'hidden'
         });
@@ -337,6 +337,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     },
     applyConfig: function(config){
         var defaultTools = this.getDefaultTools(config, this.toggleGroup);
+        defaultTools.push({ptype: 'ms-tool-bar', suppressOutput: true});
         var origTools = config.tools || [];
         var ptypes = Ext.pluck(config.tools, 'ptype');
         config.tools = [];
@@ -392,40 +393,25 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                             singleTile: forceSingleTile,
                             transitionEffect: 'resize'
                         });
-                        if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
-                            var uparts = layer.url.split('://');
-                            var urls = [];
-                            for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
-                                urls.push(
-                                    (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
-                                );
+                        var url = layer.url;
+                        if (Ext.isString(url)) {
+                            if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
+                                url = this.localGeoServerBaseUrl + 'wms';
                             }
-                            layer.url = urls.concat([layer.url]);
+                            if (url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
+                                var uparts = url.split('://');
+                                var urls = [];
+                                for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
+                                    urls.push(
+                                        (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
+                                    );
+                                }
+                                layer.url = urls.concat([url]);
+                            }
                         }
                         if(layer.params) {
                             layer.params.TILED = true;
                         }
-                        /*layer.events.on({
-                            'tileloaded': function(evt) {
-                                var img = evt.tile.imgDiv;
-                                img.style.visibility = 'hidden';
-                                img.style.opacity = 0;
-                            },
-                            'loadend': function(evt) {
-                                var grid = evt.object.grid;
-                                var layer = evt.object;
-                                for(var i = 0, rlen = grid.length; i < rlen; i++) {
-                                    for(var j = 0, clen = grid[i].length; j < clen; j++) {
-                                        var img = grid[i][j].imgDiv;
-                                        if(img) {
-                                            img.style.visibility = 'inherit';
-                                            img.style.opacity = layer.opacity;
-                                        }
-                                    }
-                                }
-                            },
-                            scope: layer
-                        });*/
                     }
                 }
             },
@@ -521,30 +507,40 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
             "beforerequest": function(conn, options){
                 // use django's /geoserver endpoint when talking to the local
                 // GeoServer's RESTconfig API
-                var url = options.url.replace(this.urlPortRegEx, "$1/");
-                if (this.localGeoServerBaseUrl) {
-                    if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
-                        // replace local GeoServer url with /geoserver/
-                        options.url = url.replace(new RegExp("^" + this.localGeoServerBaseUrl), "/geoserver/");
-                        return;
+                var urls = (options.url instanceof Array) ? options.url.slice() : [options.url];
+                options.url = [];
+                for (var i = urls.length - 1; i >= 0; i--) {
+                    var url = urls[i].replace(this.urlPortRegEx, "$1/");
+                    if (this.localGeoServerBaseUrl) {
+                        if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
+                            // replace local GeoServer url with /geoserver/
+                            options.url.push(url.replace(
+                                new RegExp("^" + this.localGeoServerBaseUrl),
+                                "/geoserver/"
+                            ));
+                            return;
+                        }
+                        var localUrl = this.localGeoServerBaseUrl.replace(
+                            this.urlPortRegEx, "$1/");
+                        if(url.indexOf(localUrl + "rest/") === 0) {
+                            options.url.push(url.replace(new RegExp("^" +
+                                localUrl), "/geoserver/"));
+                            return;
+                        }
                     }
-                    var localUrl = this.localGeoServerBaseUrl.replace(this.urlPortRegEx, "$1/");
-                    if (url.indexOf(localUrl + "rest/") === 0) {
-                        options.url = url.replace(new RegExp("^" +
-                        localUrl), "/geoserver/");
-                        return;
+                    // use the proxy for all non-local requests
+                    if(this.proxy && url.indexOf(this.proxy) !== 0 &&
+                            url.indexOf(window.location.protocol) === 0) {
+                        var parts = url.replace(/&$/, "").split("?");
+                        var params = Ext.apply(parts[1] && Ext.urlDecode(
+                            parts[1]) || {}, options.params);
+                        url = Ext.urlAppend(parts[0], Ext.urlEncode(params));
+                        delete options.params;
+                        options.url.push(this.proxy + encodeURIComponent(url));
                     }
                 }
-                // use the proxy for all non-local requests
-                if (this.proxy && options.url.indexOf(this.proxy) !== 0 &&
-                options.url.indexOf(window.location.protocol) === 0) {
-                    var parts = options.url.replace(/&$/, "").split("?");
-                    var params = Ext.apply(parts[1] &&
-                    Ext.urlDecode(parts[1]) ||
-                    {}, options.params);
-                    url = Ext.urlAppend(parts[0], Ext.urlEncode(params));
-                    delete options.params;
-                    options.url = this.proxy + encodeURIComponent(url);
+                if(!options.url.length){
+                    options.url = (urls.length == 1) ? urls[0] : urls;
                 }
             },
             "requestexception": function(conn, response, options){
@@ -662,8 +658,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     displayXHRTrouble: function(response) {
         response.status && Ext.Msg.show({
             title: this.connErrorTitleText,
-            msg: this.connErrorText +
-                ": " + response.status + " " + response.statusText,
+            msg: this.connErrorText,
             icon: Ext.MessageBox.ERROR,
             buttons: {ok: this.connErrorDetailsText, cancel: true},
             fn: function(result) {

@@ -3,6 +3,18 @@ div.x-row-editor {
     padding-top: 4px;
     padding-bottom: 4px;
 }
+.gxp-icon-getfeatureinfo {
+  background-position: 0px 0px !important;
+}
+.x-btn.btn-timeline button {
+    font-weight: bold;
+    width: 80px !important;
+    color: white !important;
+}
+.x-btn-over.btn-timeline button {
+    color: #F46817 !important;
+    font-weight: bold;
+}
 .fade-all .olTileImage {
     display: none !important;
 }

@@ -15,6 +15,7 @@
                     handler: function () {
                         var search = new window.mapstory.LayerSearch({
                             geoExplorer: this.target,
+                            map: this.target.mapPanel.map,
                             searchUrl: '/search/api'
                         }).render();
                     }

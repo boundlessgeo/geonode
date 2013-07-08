@@ -548,7 +548,7 @@ _user, _password = settings.GEOSERVER_CREDENTIALS
 def _get_wms(typename=None):
     '''Get a WMS instance. If the typename is provided, use the geoserver
     virtual service for that layer, otherwise use the main WMS'''
-    base_url = settings.GEOSERVER_BASE_URL
+    base_url = settings.INTERNAL_GEOSERVER_BASE_URL
     if typename:
         base_url = base_url + "%s/%s/" % tuple(typename.split(':'))
     wms_url = base_url + "wms?request=GetCapabilities&version=1.1.0"
@@ -610,7 +610,7 @@ class LayerManager(models.Manager):
 
     def __init__(self):
         models.Manager.__init__(self)
-        url = "%srest" % settings.GEOSERVER_BASE_URL
+        url = "%srest" % settings.INTERNAL_GEOSERVER_BASE_URL
         user, password = settings.GEOSERVER_CREDENTIALS
         self.gs_catalog = Catalog(url, _user, _password)
         self.gs_uploader = Uploader(url, _user, _password)
@@ -811,11 +811,12 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
             types = [
                 ("zip", _("Zipped Shapefile"), "SHAPE-ZIP", {'format_options': 'charset:UTF-8'}),
-                ("gml", _("GML 2.0"), "gml2", {}),
-                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1", {}),
+                ("gml", _("GML 2.1.2"), "gml2", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name}),
+                ("gml", _("GML 3.1.1"), "text/xml; subtype=gml/3.1.1",
+                  {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.xml' % self.name, 'version': '1.1.0'}),
                 ("csv", _("CSV"), "csv", {}),
                 ("excel", _("Excel"), "excel", {}),
-                ("json", _("GeoJSON"), "json", {})
+                ("json", _("GeoJSON"), "json", {'CONTENT-DISPOSITION':'attachment','FILENAME':'%s.json' % self.name})
             ]
             links.extend((ext, name, wfs_link(mime, extra_params)) for ext, name, mime, extra_params in types)
         elif self.resource.resource_type == "coverage":
@@ -1047,7 +1048,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
             except AttributeError:
                 # Geoserver is not running
                 raise RuntimeError("Geoserver cannot be accessed, are you sure it is running in: %s" %
-                                    (settings.GEOSERVER_BASE_URL))
+                                    (settings.INTERNAL_GEOSERVER_BASE_URL))
             store = cat.get_store(self.store, ws)
             self._resource_cache = cat.get_resource(self.name, store)
         return self._resource_cache
@@ -1239,8 +1240,9 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
 
-    def get_virtual_wms_url(self):
-        return settings.GEOSERVER_BASE_URL + "%s/%s/wms" % tuple(self.typename.split(':'))
+    def get_virtual_wms_url(self, internal=False):
+        base = settings.INTERNAL_GEOSERVER_BASE_URL if internal else settings.GEOSERVER_BASE_URL
+        return base + "%s/%s/wms" % tuple(self.typename.split(':'))
 
     def __str__(self):
         return "%s Layer" % self.typename
@@ -1274,13 +1276,14 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 def describe_layer(typename):
     http = httplib2.Http()
     http.add_credentials(_user, _password)
-    url = settings.GEOSERVER_BASE_URL + "wms?request=describelayer&layers=%s&version=1.1.1" % typename
+    url = settings.INTERNAL_GEOSERVER_BASE_URL + "wms?request=describelayer&layers=%s&version=1.1.1" % typename
     response, body = http.request(url)
     if response['status'] != '200':
         raise Exception('Non OK response from describeLayer',body)
     return body
 
 map_changed_signal = Signal(providing_args=['what_changed','old','new'])
+map_copied_signal = Signal(providing_args=['source_id'])
 
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
@@ -1917,7 +1920,7 @@ class Thumbnail(models.Model):
         self._delete_thumb_image(old_path)
     def generate_thumbnail(self):
         http = httplib2.Http()
-        url = "%srest/printng/render.png" % settings.GEOSERVER_BASE_URL
+        url = "%srest/printng/render.png" % settings.INTERNAL_GEOSERVER_BASE_URL
         hostname = urlparse(settings.SITEURL).hostname
         user, passwd = settings.GEOSERVER_CREDENTIALS
         params = dict(width=256, height=128, auth="%s,%s,%s" % (hostname, user, passwd))

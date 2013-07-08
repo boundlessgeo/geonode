@@ -1,5 +1,6 @@
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole,Role, get_csw, Thumbnail
+from geonode.maps.models import map_copied_signal
 from geonode.maps.gs_helpers import fixup_style, cascading_delete, delete_from_postgis
 from geonode import geonetwork
 import geoserver
@@ -150,7 +151,12 @@ def maps(request, mapid=None):
                 map = Map(owner=request.user, zoom=0, center_x=0, center_y=0)
                 map.save()
                 map.set_default_permissions()
-                map.update_from_viewer(request.raw_post_data)
+                config = json.loads(request.raw_post_data)
+                map.update_from_viewer(config)
+                # make sure ids differ or it's not a successful copy
+                existing_id = config.get('id', None)
+                if existing_id and map.id != int(existing_id):
+                    map_copied_signal.send_robust(sender=map, source_id=existing_id)
                 response = HttpResponse('', status=201)
                 response['Location'] = map.id
                 return response
@@ -297,21 +303,23 @@ def newmapJSON(request):
     else:
         return HttpResponse(config)
 
-h = httplib2.Http()
-h.add_credentials(_user, _password)
-h.add_credentials(_user, _password)
-_netloc = urlparse(settings.GEOSERVER_BASE_URL).netloc
-h.authorizations.append(
-    httplib2.BasicAuthentication(
-        (_user, _password), 
-        _netloc,
-        settings.GEOSERVER_BASE_URL,
-        {},
-        None,
-        None, 
-        h
+def _get_http():
+    h = httplib2.Http()
+    h.add_credentials(_user, _password)
+    h.add_credentials(_user, _password)
+    _netloc = urlparse(settings.INTERNAL_GEOSERVER_BASE_URL).netloc
+    h.authorizations.append(
+        httplib2.BasicAuthentication(
+            (_user, _password),
+            _netloc,
+            settings.GEOSERVER_BASE_URL,
+            {},
+            None,
+            None,
+            h
+        )
     )
-)
+    return h
 
 
 @login_required
@@ -334,7 +342,7 @@ def map_download(request, mapid):
 
         mapJson = mapObject.json(perm_filter)
 
-        resp, content = h.request(url, 'POST', body=mapJson)
+        resp, content = _get_http().request(url, 'POST', body=mapJson)
 
         if resp.status not in (400, 404, 417):
             map_status = json.loads(content)
@@ -382,7 +390,7 @@ def check_download(request):
         layer = request.session["map_status"] 
         if type(layer) == dict:
             url = "%srest/process/batchDownload/status/%s" % (settings.GEOSERVER_BASE_URL,layer["id"])
-            resp,content = h.request(url,'GET')
+            resp,content = _get_http().request(url,'GET')
             status= resp.status
             if resp.status == 400:
                 return HttpResponse(content="Something went wrong",status=status)
@@ -435,7 +443,7 @@ Contents:
         }
 
         url = "%srest/process/batchDownload/launch/" % settings.GEOSERVER_BASE_URL
-        resp, content = h.request(url,'POST',body=json.dumps(fake_map))
+        resp, content = _get_http().request(url,'POST',body=json.dumps(fake_map))
         return HttpResponse(content, status=resp.status)
 
     
@@ -446,7 +454,7 @@ Contents:
             return HttpResponse(status=404)
 
         url = "%srest/process/batchDownload/status/%s" % (settings.GEOSERVER_BASE_URL, download_id)
-        resp,content = h.request(url,'GET')
+        resp,content = _get_http().request(url,'GET')
         return HttpResponse(content, status=resp.status)
 
 def set_layer_permissions(layer, perm_spec):

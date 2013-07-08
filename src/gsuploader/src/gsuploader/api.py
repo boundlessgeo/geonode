@@ -158,11 +158,14 @@ class Item(_UploadBase):
             self._transforms = list(self.transformChain['transforms'])
         self._transforms.extend(transforms)
     
-    def remove_transforms(self, transforms):
-        '''remove transforms by equality'''
+    def remove_transforms(self, transforms, by_type=False):
+        '''remove transforms by equality or list of types'''
         if not hasattr(self, '_transforms') and 'transforms' in self.transformChain:
             self._transforms = list(self.transformChain['transforms'])
-        self._transforms = [ t for t in self._transforms if t not in transforms ]
+        if by_type:
+            self._transforms = [ t for t in self._transforms if t['type'] not in transforms ]
+        else:
+            self._transforms = [ t for t in self._transforms if t not in transforms ]
 
     def get_progress(self):
         """Get a json object representing progress of this item"""

@@ -124,6 +124,8 @@ def scan_file(file_name):
     archive = None
     
     if zipfile.is_zipfile(file_name):
+        # rename this now
+        file_name = _rename_files([file_name])[0]
         zf = None
         try:
             zf = zipfile.ZipFile(file_name, 'r')
@@ -138,10 +140,17 @@ def scan_file(file_name):
         except:
             raise Exception('Unable to read zip file')
         zf.close()
-        
-    if files is None:
+
+    def dir_files():
         abs = lambda *p : os.path.abspath(os.path.join(*p))
-        files = [abs(dirname, f) for f in os.listdir(dirname)]
+        return [abs(dirname, f) for f in os.listdir(dirname)]
+
+    if files is None:
+        # not a zip, list the files
+        files = dir_files()
+    else:
+        # is a zip, add other files (sld if any)
+        files.extend(dir_files())
 
     files = _rename_files(files)
     

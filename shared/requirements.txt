@@ -14,7 +14,6 @@ django-registration
 django-profiles
 geonode-avatar==2.1.1
 -e git://github.com/thornomad/django-hitcount.git#egg=django-hitcount
-django-staticfiles
 -e git+git://github.com/ischneider/dialogos.git@threaded-comments#egg=dialogos
 django-mptt
 agon-ratings==0.2
@@ -31,4 +30,5 @@ docutils
 django-social-auth
 django-oauth2-provider
 -e git://github.com/worldcompany/djangoembed#egg=oembed
+python_openid
 
