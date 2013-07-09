@@ -1,3 +1,33 @@
+.x-btn .ms-icon-timeline {
+    background-image: url(img/ClockV4_Orange.png);
+    background-position: 0px 0px !important;
+}
+.x-btn .ms-icon-save {
+    background-image: url(img/SaveV4_Orange.png);
+    background-position: 0px 0px !important;
+}
+.x-btn .gxp-icon-note {
+    background-image: url(img/AnotationV4_Orange.png);
+    background-position: 0px 0px !important;
+    width: 24px !important;
+    height: 24px !important;
+}
+.x-btn .gxp-icon-addfeature {
+    background-image: url(img/AddFeatureV4_Orange.png);
+    background-position: 0px 0px !important;
+    width: 24px !important;
+    height: 24px !important;
+}
+.x-btn .gxp-icon-getfeatureinfo {
+   background-image: url(img/FeatureV4_Orange.png);
+   background-position: 0px 0px !important;
+    width: 24px !important;
+    height: 24px !important;
+}
+.x-btn .icon-removelayers, .x-menu-item .icon-removelayers {
+    background-image: url(img/silk/delete.png);
+}
+
 .gxp-icon-getfeatureinfo {
   background-position: 0px 0px !important;
 }

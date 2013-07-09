@@ -8,7 +8,6 @@
 
     mapstory.plugins.ToolBar = Ext.extend(gxp.plugins.Tool, {
         ptype: 'ms-tool-bar',
-        saveText: 'Save Map',
         publishText: 'Publish Map',
         zoomText: 'Number of zoom levels',
         wrapDateLineText: 'Wrap dateline',
@@ -191,9 +190,9 @@
                 items: [
                     {
                         xtype: 'button',
-                        text: this.saveText,
+                        iconCls: 'ms-icon-save',
+                        tooltip: "Save map",
                         scope: this,
-                        width: 100,
                         handler: function () {
                             if (!this.target.metadataForm) {
                                 this.target.metadataForm = this.buildSaveForm();
@@ -203,7 +202,8 @@
                     },
                     {
                         xtype: 'button',
-                        text: 'Timeline',
+                        iconCls: 'ms-icon-timeline',
+                        tooltip: "Show timeline",
                         scope: this,
                         handler: function () {
                             var tl = Ext.getCmp('timeline-container');
