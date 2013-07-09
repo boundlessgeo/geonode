@@ -41,6 +41,7 @@ from httplib import BadStatusLine
 
 import os
 import logging
+import re
 import traceback
 import uuid
 
@@ -143,18 +144,19 @@ def _next_step_response(req, upload_session, force_ajax=False):
 
 def _create_time_form(import_session, form_data):
     feature_type = import_session.tasks[0].items[0].resource
-    filter_type = lambda b : [ att.name for att in feature_type.attributes if att.binding == b]
-
-    args = dict(
-        time_names=filter_type('java.util.Date'),
-        text_names=filter_type('java.lang.String'),
-        year_names=filter_type('java.lang.Integer') +
-          filter_type('java.lang.Long') +
-          filter_type('java.lang.Double')
-    )
+    binding_names = {
+        'Integer': 'Whole Number',
+        'Long': 'Whole Number',
+        'Double': 'Real Number',
+        'String': 'Text',
+        'Date': 'Date'
+    }
+    keys = [ att.binding.split('.')[-1] for att in feature_type.attributes ]
+    atts = [ (att.name, binding_names[key]) for att, key in zip(feature_type.attributes, keys)
+             if key in binding_names ]
     if form_data:
-        return forms.TimeForm(form_data, **args)
-    return forms.TimeForm(**args)
+        return forms.TimeForm(form_data, attributes=atts)
+    return forms.TimeForm(attributes=atts)
 
 
 def save_step_view(req, session):
@@ -371,35 +373,34 @@ def time_step_view(request, upload_session):
 
     cleaned = form.cleaned_data
 
-    time_attribute, time_transform_type = None, None
-    end_time_attribute, end_time_transform_type = None, None
+    time_attribute_name, time_transform_type = None, None
+    end_time_attribute_name, end_time_transform_type = None, None
 
-    field_collectors = [
-        ('time_attribute', None),
-        ('text_attribute', 'DateFormatTransform'),
-        ('year_attribute', 'IntegerFieldToDateTransform')
-    ]
+    time_attribute = cleaned.get('attribute', None)
+    end_time_attribute = cleaned.get('end_attribute', None)
 
-    for field, transform_type in field_collectors:
-        time_attribute = cleaned.get(field, None)
-        if time_attribute:
-            time_transform_type = transform_type
-            break
-    for field, transform_type in field_collectors:
-        end_time_attribute = cleaned.get('end_' + field, None)
-        if end_time_attribute:
-            end_time_transform_type = transform_type
-            break
+    # submitted values will be in the form of '<name> [<type>]'
+    name_pat = re.compile('^\S+')
+    type_pat = re.compile('\[(.*)\]')
+
+    if time_attribute:
+        time_attribute_name = name_pat.search(time_attribute).group(0)
+        time_attribute_type = type_pat.search(time_attribute).group(1)
+        time_transform_type = None if time_attribute_type == 'Date' else 'DateFormatTransform'
+    if end_time_attribute:
+        end_time_attribute_name = name_pat.search(end_time_attribute).group(0)
+        end_time_attribute_type = type_pat.search(end_time_attribute).group(1)
+        end_time_transform_type = None if end_time_attribute_type == 'Date' else 'DateFormatTransform'
 
     if time_attribute:
         upload.time_step(
             upload_session,
-            time_attribute=time_attribute,
+            time_attribute=time_attribute_name,
             time_transform_type=time_transform_type,
-            time_format=cleaned.get('text_attribute_format', None),
-            end_time_attribute=end_time_attribute,
+            time_format=cleaned.get('attribute_format', None),
+            end_time_attribute=end_time_attribute_name,
             end_time_transform_type=end_time_transform_type,
-            end_time_format=cleaned.get('end_text_attribute_format', None),
+            end_time_format=cleaned.get('end_attribute_format', None),
             presentation_strategy=cleaned['presentation_strategy'],
             precision_value=cleaned['precision_value'],
             precision_step=cleaned['precision_step'],
@@ -516,7 +517,6 @@ def notify_error(req, upload_session, msg):
 @cache_control(no_cache=True, must_revalidate=True, private=True, max_age=0, no_store=True)
 def view(req, step):
     """Main uploader view"""
-
     upload_session = None
 
     if step is None:
