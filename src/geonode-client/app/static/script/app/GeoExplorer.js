@@ -11,7 +11,7 @@ gxp.TextSymbolizer.prototype.defaultSymbolizer = {
         'autoWrap': 40,
         'spaceAround': -3,
         'followLine': false,
-        'group': true
+        'group': 'yes'
     }
 };
 
