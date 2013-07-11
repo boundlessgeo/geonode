@@ -10,7 +10,8 @@ gxp.TextSymbolizer.prototype.defaultSymbolizer = {
         'maxDisplacement': 40,
         'autoWrap': 40,
         'spaceAround': -3,
-        'followLine': true
+        'followLine': false,
+        'group': true
     }
 };
 
