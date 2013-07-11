@@ -679,6 +679,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
                             );
                         source.store.proxy.setUrl(source.store.url);
+                        source.initialConfig.url = source.url = source.store.url;
                     }
                     this.createLayerRecord({
                         source: startSourceId,
