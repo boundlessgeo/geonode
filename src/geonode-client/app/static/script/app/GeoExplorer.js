@@ -4,6 +4,16 @@
  */
 var GeoExplorer;
 
+// set defaults for text symbolizer see https://github.com/MapStory/mapstory/issues/795
+gxp.TextSymbolizer.prototype.defaultSymbolizer = {
+    vendorOptions: {
+        'maxDisplacement': 40,
+        'autoWrap': 40,
+        'spaceAround': -3,
+        'followLine': true
+    }
+};
+
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
