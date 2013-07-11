@@ -1,3 +1,6 @@
+.x-tip {
+    white-space: normal !important;
+}
 .x-btn .ms-icon-timeline {
     background-image: url(img/ClockV4_Orange.png);
     background-position: 0px 0px !important;
