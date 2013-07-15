@@ -68,13 +68,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     },
 
     init: function (target) {
-        for (var key in target.tools) {
-            var tool = target.tools[key];
-            if (tool.id === this.timeline) {
-                this.timelineTool = tool;
-                break;
-            }
-        }
+        this.timelineTool = target.tools[this.timeline];
+        this.playback = target.tools[this.timelineTool.playbackTool];
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
         if (this.target.id !== null) {
             this.createStore(this.target.id);
@@ -97,7 +92,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             },
             scope: this
         });
-        return mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
+        var me = this;
+        // override to get date time picker to use current time in playback
+        gxp.form.ExtendedDateField.prototype.getPickerDate = function() {
+            return new Date(me.playback.playbackToolbar.control.currentValue);
+        };
+        var output = mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
             viewConfig: {
                 forceFit: true
@@ -203,6 +203,22 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             store: this.store,
             map:  this.target.mapPanel.map
         });
+        this.pos_ = output.ownerCt.ownerCt.getPosition();
+        output.ownerCt.ownerCt.on('hide', function() {
+            var editor = output.plugins[0];
+            editor.stopEditing();
+        }, this);
+        output.ownerCt.ownerCt.on('move', function(cmp, x, y) {
+            var editor = output.plugins[0];
+            if (editor && editor.rendered) {
+                var pos = editor.getPosition();
+                var deltaX = this.pos_[0] - x;
+                var deltaY = this.pos_[1] - y;
+                editor.setPosition([pos[0] - deltaX, pos[1] - deltaY]);
+            }
+            this.pos_ = [x, y];
+        }, this);
+        return output;
     },
 
     addActions: function () {
