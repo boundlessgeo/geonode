@@ -207,7 +207,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     addActions: function () {
         return mapstory.plugins.NotesManager.superclass.addActions.apply(
-            this, [{disabled: (this.target.id === null), text: this.menuText}]);
+            this, [{disabled: (this.target.id === null), iconCls: 'gxp-icon-note', tooltip: this.menuText}]);
     }
 
 });
