@@ -4,6 +4,21 @@
  */
 var GeoExplorer;
 
+// set defaults for text symbolizer see https://github.com/MapStory/mapstory/issues/795
+gxp.TextSymbolizer.prototype.defaultSymbolizer = {
+    vendorOptions: {
+        'maxDisplacement': 40,
+        'autoWrap': 40,
+        'spaceAround': 0,
+        'followLine': false,
+        'group': 'yes',
+        'goodnessOfFit': 0.2,
+        'conflictResolution': true,
+        'haloColor': '#FFFFFF',
+        'haloRadius': 1
+    }
+};
+
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
@@ -510,7 +525,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                         var url = layer.url;
                         if (Ext.isString(url)) {
                             if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
-                                url = this.localGeoServerBaseUrl + 'wms';
+                                url.replace('/geoserver/', this.localGeoServerBaseUrl);
                             }
                             if(url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                                 var uparts = url.split('://');
@@ -600,6 +615,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
                             );
                         source.store.proxy.setUrl(source.store.url);
+                        source.initialConfig.url = source.url = source.store.url;
                     }
                     this.createLayerRecord({
                         source: startSourceId,
