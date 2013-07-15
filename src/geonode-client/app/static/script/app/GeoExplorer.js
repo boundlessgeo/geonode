@@ -9,9 +9,13 @@ gxp.TextSymbolizer.prototype.defaultSymbolizer = {
     vendorOptions: {
         'maxDisplacement': 40,
         'autoWrap': 40,
-        'spaceAround': -3,
+        'spaceAround': 0,
         'followLine': false,
-        'group': 'yes'
+        'group': 'yes',
+        'goodnessOfFit': 0.2,
+        'conflictResolution': true,
+        'haloColor': '#FFFFFF',
+        'haloRadius': 1
     }
 };
 
