@@ -149,7 +149,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 scope: this
             }],
             ignoreFields: ['geometry'],
-            plugins: [new gxp.plugins.GeoRowEditor({listeners: {'beforeedit': function(editor, rowIndex) {
+            plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {'beforeedit': function(editor, rowIndex) {
                 var record = this.grid.store.getAt(rowIndex);
                 if (!Ext.getCmp('start-time').rendered) {
                     Ext.getCmp('start-time').value = record.get('start_time');
