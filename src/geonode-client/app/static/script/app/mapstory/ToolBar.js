@@ -108,6 +108,7 @@
                                 {
                                     xtype: 'checkbox',
                                     fieldLabel: this.wrapDateLineText,
+                                    hidden: true,
                                     checked: baseLayer.wrapDateLine,
                                     listeners: {
                                         check: function (cb, value) {
@@ -150,7 +151,7 @@
                 ptype: this.ptype,
                 bgColor: container.getColor('background-color'),
                 numZoomLevels: baseLayer.numZoomLevels,
-                wrapDateLine: baseLayer.wrapDateLine
+                wrapDateLine: false/*baseLayer.wrapDateLine*/
             };
         },
         addOutput: function () {
@@ -175,9 +176,9 @@
                     triggerEvent('changebaselayer', {layer: baseLayer});
             }
 
-            if (config.wrapDateLine) {
-                baseLayer.wrapDateLine = config.wrapDateLine;
-            }
+            //if (config.wrapDateLine) {
+                baseLayer.wrapDateLine = false /*config.wrapDateLine*/;
+            //}
 
             return !this.suppressOutput && mapstory.plugins.ToolBar.superclass.addOutput.call(this, {
                 xtype: 'toolbar',
