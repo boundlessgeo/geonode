@@ -206,7 +206,9 @@ def save_step_view(req, session):
 def data_upload_progress(req):
     """This would not be needed if geoserver REST did not require admin role
     and is an inefficient way of getting this information"""
-    upload_session = req.session[_SESSION_KEY]
+    upload_session = req.session.get(_SESSION_KEY, None)
+    if upload_session is None:
+        return json_response({'state' : 'Invalid Session'})
     import_session = upload_session.import_session
     progress = import_session.tasks[0].items[0].get_progress()
     #another hacky part - set completed step back if error occurs
