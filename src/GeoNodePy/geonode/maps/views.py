@@ -882,8 +882,8 @@ def _fixup_ows_url(thumb_spec):
     #@HACK - for whatever reason, a map's maplayers ows_url contains only /geoserver/wms
     # so rendering of thumbnails fails - replace those uri's with full geoserver URL
     import re
-    gspath = '"/geoserver/wms' # this should be in img src attributes
-    repl = '"' + settings.GEOSERVER_BASE_URL + "/wms" 
+    gspath = '"/geoserver/([^"]+)' # this should be in img src attributes
+    repl = '"%s\g<1>' % settings.GEOSERVER_BASE_URL
     return re.sub(gspath, repl, thumb_spec)
 
 GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your data. \
