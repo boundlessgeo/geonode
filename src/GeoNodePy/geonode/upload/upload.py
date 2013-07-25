@@ -210,13 +210,17 @@ def save_step(user, layer, spatial_files, overwrite=True):
         next_id = Upload.objects.all().aggregate(Max('import_id')).values()[0]
         next_id = next_id + 1 if next_id else 1
 
+        # save record of this whether valid or not - will help w/ debugging
+        upload = Upload.objects.create(user=user, state=Upload.STATE_INVALID,
+                                       upload_dir=spatial_files.dirname)
+
         # @todo settings for use_url or auto detection if geoserver is
         # on same host
         import_session = Layer.objects.gs_uploader.upload_files(
             spatial_files.all_files(), use_url=False, import_id=next_id, mosaic=len(spatial_files) > 1)
-            
-        # save record of this whether valid or not - will help w/ debugging
-        upload = Upload.objects.create_from_session(user, import_session)
+
+        upload.import_id = import_session.id
+        upload.save()
 
         # any unrecognized tasks/files must be deleted or we can't proceed
         import_session.delete_unrecognized_tasks()
@@ -580,6 +584,9 @@ def final_step(upload_session, user):
     if upload_session.tempdir and os.path.exists(upload_session.tempdir):
         shutil.rmtree(upload_session.tempdir)
 
+    upload = Upload.objects.get(import_id=import_session.id)
+    upload.layer = saved_layer
+    upload.save()
     signals.upload_complete.send(sender=final_step, layer=saved_layer)
 
     return saved_layer

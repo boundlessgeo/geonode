@@ -589,5 +589,5 @@ def delete(req, id):
     upload = get_object_or_404(Upload, import_id=id)
     if req.user != upload.user:
         raise PermissionDenied()
-    upload.delete()
+    upload.mark_deleted()
     return HttpResponse('OK')
