@@ -444,11 +444,18 @@ def final_step(upload_session, user):
     # @todo see above in save_step, regarding computed unique name
     name = import_session.tasks[0].items[0].layer.name
 
-    _log('Creating style for [%s]', name)
-    publishing = cat.get_layer(name)
-    if publishing is None:
-        raise Exception("Expected to find layer named '%s' in geoserver", name)
+    _log('Getting from catalog [%s]', name)
+    publishing = None
+    for i in xrange(60):
+        publishing = cat.get_layer(name)
+        if publishing: break
+        time.sleep(.5)
 
+    if publishing is None:
+        raise Exception("Expected to find layer named '%s' in geoserver, tried %s times" % (name, i))
+    _log('Had to try %s times to get layer from catalog' % (i+1))
+
+    _log('Creating style for [%s]', name)
     # get_files will not find the sld if it doesn't match the base name
     # so we've worked around that in the view - if provided, it will be here
     if upload_session.import_sld_file:
@@ -560,25 +567,21 @@ def final_step(upload_session, user):
         raise GeoNodeException(msg)
 
     # Verify it is correctly linked to GeoServer and GeoNetwork
-    verified = False
-    for i in range(10):
-        time.sleep(.5)
-        logger.info('Verifying layer in geoserver [%s]', (i+1))
-        try:
-            saved_layer.verify()
-            verified = True
-            break
-        except GeoNodeException, e:
-            msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
-            logger.exception(msg)
-    if not verified:
-        e.args = (msg,)
-        # Deleting the layer
+    logger.info('Verifying layer in geoserver [%s]', (i+1))
+    try:
+        saved_layer.verify()
+    except GeoNodeException, e:
+        msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
+        logger.exception(msg)
         saved_layer.delete()
         raise
 
     if upload_session.tempdir and os.path.exists(upload_session.tempdir):
         shutil.rmtree(upload_session.tempdir)
+
+    upload = Upload.objects.get(import_id=import_session.id)
+    upload.layer = saved_layer
+    upload.save()
 
     signals.upload_complete.send(sender=final_step, layer=saved_layer)
 
