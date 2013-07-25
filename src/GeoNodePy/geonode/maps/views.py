@@ -588,10 +588,23 @@ def mapdetail(request,mapid):
     config = json.dumps(config)
     # build unique set based on name and ows_url
     layers = {}
+    # check for geoserver running
+    gs_error = cache.get('gs_error') # will be False, None or str
+    if gs_error is None: # cache expired, check again
+        try:
+            Layer.objects.gs_catalog.get_xml(Layer.objects.gs_catalog.service_url + '/settings/contact.xml')
+            gs_error = False
+        except Exception, ex:
+            gs_error = str(ex)
+    # by this point, it will be newly computed or just recached
+    # we want to avoid this hit as much as possible
+    cache.set('gs_error', gs_error, 5)
+
     for layer in MapLayer.objects.filter(map=map.id):
         layers[(layer.ows_url,layer.name)] = layer
     
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
+        'gs_error' : gs_error,
         'config': config, 
         'map': map,
         'layers': layers.values(),
@@ -841,6 +854,13 @@ def layer_detail(request, layername):
     metadata = None
     if settings.USE_GEONETWORK:
         metadata = layer.metadata_csw()
+
+    gs_error = False
+    # attempt to resolve in the catalog, this will be cached
+    try:
+        layer.resource
+    except Exception, ex:
+        gs_error = str(ex)
     
     map_config = layer.map_config
     
@@ -855,6 +875,7 @@ def layer_detail(request, layername):
         # we could save the config, but for now...
 
     return render_to_response('maps/layer.html', RequestContext(request, {
+        "gs_error": gs_error,
         "layer": layer,
         "metadata": metadata,
         "viewer": map_config,
