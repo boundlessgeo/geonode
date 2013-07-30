@@ -17,6 +17,9 @@
 #
 #########################################################################
 import files
+from models import Upload
+
+from django.contrib.auth.models import User
 
 import contextlib
 import os
@@ -42,6 +45,19 @@ def create_files(names, zipped=False):
         names = [basefile]
     yield names
     shutil.rmtree(tmpdir)
+
+
+class UploadTests(unittest.TestCase):
+
+    def test_get_incomplete_uploads(self):
+        u = User.objects.create(username='joeuploader')
+        create = Upload.objects.create
+        create(user=u, name='incomplete', state='STATE_READY')
+        create(user=u, name='invalid', state=Upload.STATE_INVALID)
+        create(user=u, name='deleted', state=Upload.STATE_DELETED)
+        self.assertEqual(1, Upload.objects.get_incomplete_uploads(u).count())
+        self.assertEqual('incomplete', Upload.objects.get_incomplete_uploads(u)[0].name)
+
 
 class FilesTests(unittest.TestCase):
 
