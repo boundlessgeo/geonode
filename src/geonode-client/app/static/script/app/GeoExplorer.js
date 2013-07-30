@@ -397,7 +397,6 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             },
-
             {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
@@ -405,32 +404,13 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                     title: null
                 },
                 outputTarget: "timeline-container",
-                featureEditor: "annotations_editor",
                 playbackTool: "playback-tool"
-            }, {
-                ptype: "gxp_timelinelayers",
-                timelineTool: "timeline-tool",
-                actionTarget: "timeline-container.tbar"
             },
             {
-                ptype: "gxp_featuremanager",
-                id: "annotations_manager",
-                autoLoadFeatures: true,
-                autoSetLayer: false,
-                paging: false
-            },
-            {
-                ptype: "app_notes",
-                createLayerUrl: "/data/create_annotations_layer/{mapID}",
-                layerNameTpl: "_map_{mapID}_annotations",
-                workspacePrefix: "geonode",
-                featureEditor: "annotations_editor",
-                outputConfig: {
-                    id: 'notes_menu'
-                },
+                ptype: 'ms_notes_manager',
+                timeline: "timeline-tool",
                 actionTarget: {
-                    target: "map-bbar",
-                    index: 12
+                    target: 'map-bbar'
                 }
             },
             {
@@ -450,56 +430,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                     target: "map-bbar", 
                     index: 13
                 }
-            }, {
-                ptype: "gxp_featuremanager",
-                id: "annotations_manager",
-                autoLoadFeatures: true,
-                autoSetLayer: false,
-                paging: false
-            }, {
-                ptype: "gxp_featureeditor",
-                id: "annotations_editor",
-                closeOnSave: true,
-                toggleGroup: toggleGroup,
-                supportAbstractGeometry: true,
-                showSelectedOnly: false,
-                supportNoGeometry: true,
-                outputConfig: {
-                    allowDelete: true,
-                    width: 500,
-                    height: 350,
-                    editorPluginConfig: {
-                        ptype: "gxp_editorform",
-                        bodyStyle: "padding: 5px 5px 0",
-                        autoScroll: true,
-                        fieldConfig: {
-                            'title': {fieldLabel: "Title", allowBlank: false, width: '100%', anchor: '99%'},
-                            'content': {fieldLabel: "Description", xtype: "textarea", width: '100%', anchor: '99%', grow: true},
-                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false, msgTarget: 'under'},
-                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>", msgTarget: 'under'},
-                            'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
-                            'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
-                            'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
-                                ['tl-tl?', 'Top left'],
-                                ['t-t?', 'Top center'],
-                                ['tr-tr?', 'Top right'],
-                                ['l-l?', 'Center left'],
-                                ['c-c?', 'Center'],
-                                ['r-r?', 'Center right'],
-                                ['bl-bl?', 'Bottom left'],
-                                ['b-b?', 'Bottom center'],
-                                ['br-br?', 'Bottom right']
-                            ]}
-                        }
-                    }
-                },
-                featureManager: "annotations_manager",
-                actionTarget: "notes_menu",
-                createFeatureActionText: "Add note",
-                iconClsAdd: 'gxp-icon-addnote',
-                editFeatureActionText: "Edit note"
             }
-
             );
         }
 

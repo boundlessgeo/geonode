@@ -1,3 +1,8 @@
+div.x-row-editor {
+    background-color: #e5872c;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
 .x-tip {
     white-space: normal !important;
 }
@@ -30,7 +35,6 @@
 .x-btn .icon-removelayers, .x-menu-item .icon-removelayers {
     background-image: url(img/silk/delete.png);
 }
-
 .gxp-icon-getfeatureinfo {
   background-position: 0px 0px !important;
 }
