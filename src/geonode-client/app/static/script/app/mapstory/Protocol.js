@@ -81,6 +81,9 @@ mapstory.protocol.Notes = OpenLayers.Class(OpenLayers.Protocol, {
             var data = Ext.decode(request.responseText);
             response.code = (data.success) ? OpenLayers.Protocol.Response.SUCCESS : 
                 OpenLayers.Protocol.Response.FAILURE;
+            if (response.requestType === "create") {
+                response.insertIds = data.ids;
+            }
             if (!data.success) {
                 response.error = data;
             }
