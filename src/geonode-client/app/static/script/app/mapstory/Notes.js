@@ -29,8 +29,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 {name: 'geometry'},
                 {name: 'title', type: 'string'},
                 {name: 'content', type: 'string'},
-                {name: 'start_time', type: 'integer'},
-                {name: 'end_time', type: 'integer'},
+                {name: 'start_time', type: 'integer', useNull: true},
+                {name: 'end_time', type: 'integer', useNull: true},
                 {name: 'in_map', type: 'boolean'},
                 {name: 'in_timeline', type: 'boolean'},
                 {name: 'appearance', type: 'string'}
