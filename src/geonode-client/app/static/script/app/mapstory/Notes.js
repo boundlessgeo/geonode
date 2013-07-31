@@ -205,6 +205,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         });
         this.pos_ = output.ownerCt.ownerCt.getPosition();
         output.ownerCt.ownerCt.on('hide', function() {
+            output.getSelectionModel().clearSelections();
             var editor = output.plugins[0];
             editor.stopEditing();
         }, this);
