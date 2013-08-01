@@ -7,6 +7,74 @@ Ext.override(Ext.grid.GridView, {
     }
 });
 
+// http://www.sencha.com/forum/showthread.php?138260
+Ext.grid.GridView.override({    layout : function(initial) {
+        if (!this.mainBody) {
+            return; // not rendered
+        }
+
+
+        var grid       = this.grid,
+            gridEl     = grid.getGridEl(),
+            gridSize   = gridEl.getSize(true),
+            gridWidth  = gridSize.width,
+            gridHeight = gridSize.height,
+            scroller   = this.scroller,
+            scrollStyle, headerHeight, scrollHeight;
+        
+        if (gridWidth < 20 || gridHeight < 20) {
+            return;
+        }
+        
+        if (grid.autoHeight) {  
+            scrollStyle = scroller.dom.style;
+            // bartvde initially the gridHeight is very small
+            if (Ext.isNumber(grid.maxHeight) /*&& gridHeight > grid.maxHeight*/) {
+                gridHeight = grid.maxHeight;
+                this.el.setSize(gridWidth, gridHeight);
+                
+                headerHeight = this.mainHd.getHeight();
+                scrollHeight = gridHeight - headerHeight;
+                scroller.setSize(gridWidth, scrollHeight);
+                
+                scrollStyle.overflow = '';
+                scrollStyle.position = '';
+            } else {
+                this.el.setSize();
+                scroller.setSize();
+                
+                scrollStyle.overflow = 'visible';
+                if (Ext.isWebKit) {
+                    scrollStyle.position = 'static';
+                }
+            }
+        } else {
+            this.el.setSize(gridWidth, gridHeight);
+            
+            headerHeight = this.mainHd.getHeight();
+            scrollHeight = gridHeight - headerHeight;
+            
+            scroller.setSize(gridWidth, scrollHeight);
+            
+            if (this.innerHd) {
+                this.innerHd.style.width = (gridWidth) + "px";
+            }
+        }
+        
+        if (this.forceFit || (initial === true && this.autoFill)) {
+            if (this.lastViewWidth != gridWidth) {
+                this.fitColumns(false, false);
+                this.lastViewWidth = gridWidth;
+            }
+        } else {
+            this.autoExpand();
+            this.syncHeaderScroll();
+        }
+        
+        this.onLayout(gridWidth, scrollHeight);
+    }
+});
+
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     timeline: null,
@@ -102,6 +170,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         };
         var output = mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
+            maxHeight: 200,
             viewConfig: {
                 forceFit: true
             },
