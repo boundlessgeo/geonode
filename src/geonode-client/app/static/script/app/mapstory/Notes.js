@@ -188,7 +188,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
                     var records = sm.getSelections();
-                    if (records) {
+                    if (records && records.length > 0) {
                         var save = function(records) {
                             for (var i = 0, ii = records.length; i<ii; ++i) {
                                 var record = records[i];
