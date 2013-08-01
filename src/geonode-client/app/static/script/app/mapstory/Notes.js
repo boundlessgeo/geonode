@@ -83,7 +83,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     insertText: 'Insert',
     insertMsg: 'Another insert is in progress already',
     deleteText: 'Delete',
-    deleteMsg: 'Are you sure you want to delete the currently selected annotation?',
+    deleteMsg: 'Are you sure you want to delete the currently selected annotation(s)?',
     promptDeleteLabel: "Prompt on delete",
     layerTitle: 'Annotations',
     ruleTitle: 'Annotations',
@@ -187,12 +187,15 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 iconCls: 'gxp-icon-removelayers',
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
-                    var record = sm.getSelected();
-                    if (record) {
-                        var save = function() {
-                            var feature = record.getFeature();
-                            feature.state = OpenLayers.State.DELETE;
-                            this.store.remove(record);
+                    var records = sm.getSelections();
+                    if (records) {
+                        var save = function(records) {
+                            for (var i = 0, ii = records.length; i<ii; ++i) {
+                                var record = records[i];
+                                var feature = record.getFeature();
+                                feature.state = OpenLayers.State.DELETE;
+                                this.store.remove(record);
+                            }
                             this.store.save();
                         };
                         if (this.output[0].promptOnDelete.getValue()) {
@@ -202,13 +205,13 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                                 buttons: Ext.Msg.YESNOCANCEL,
                                 fn: function(btn) {
                                     if (btn === 'yes') {
-                                        save.call(this);
+                                        save.call(this, records);
                                     }
                                 },
                                 scope: this
                             });
                         } else {
-                            save.call(this);
+                            save.call(this, records);
                         }
                     }
                 },
