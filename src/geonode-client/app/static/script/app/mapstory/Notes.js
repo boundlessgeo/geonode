@@ -13,6 +13,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     menuText: 'Manage annotations',
     gridTitle: 'Mapstory Annotations',
     insertText: 'Insert',
+    insertMsg: 'Another insert is in progress already',
     deleteText: 'Delete',
     deleteMsg: 'Are you sure you want to delete the currently selected annotation?',
     promptDeleteLabel: "Prompt on delete",
@@ -147,6 +148,21 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 text: this.insertText,
                 iconCls: 'gxp-icon-addlayers',
                 handler: function() {
+                    var hasInsert = false;
+                    this.store.each(function(record) {
+                        if (record.getFeature().state === OpenLayers.State.INSERT) {
+                            hasInsert = true;
+                            return false;
+                        }
+                    });
+                    if (hasInsert === true) {
+                        Ext.Msg.show({
+                            title: this.insertText,
+                            msg: this.insertMsg,
+                            buttons: Ext.Msg.OK
+                        });
+                        return;
+                    }
                     var editor = this.output[0].plugins[0];
                     editor.stopEditing();
                     var recordType = GeoExt.data.FeatureRecord.create([
@@ -164,6 +180,9 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     this.output[0].getView().refresh();
                     this.output[0].getSelectionModel().selectRow(0);
                     editor.startEditing(0);
+                    editor.on('canceledit', function() {
+                        this.store.removeAt(0);
+                    }, this, {single: true});
                 },
                 scope: this
             }, {
