@@ -14,6 +14,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     gridTitle: 'Mapstory Annotations',
     insertText: 'Insert',
     deleteText: 'Delete',
+    deleteMsg: 'Are you sure you want to delete the currently selected annotation?',
+    promptDeleteLabel: "Prompt on delete",
     layerTitle: 'Annotations',
     ruleTitle: 'Annotations',
     isNewMap: null,
@@ -117,10 +119,27 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     var sm = this.output[0].getSelectionModel();
                     var record = sm.getSelected();
                     if (record) {
-                        var feature = record.getFeature();
-                        feature.state = OpenLayers.State.DELETE;
-                        this.store.remove(record);
-                        this.store.save();
+                        var save = function() {
+                            var feature = record.getFeature();
+                            feature.state = OpenLayers.State.DELETE;
+                            this.store.remove(record);
+                            this.store.save();
+                        };
+                        if (this.output[0].promptOnDelete.getValue()) {
+                            Ext.Msg.show({
+                                title: this.deleteText,
+                                msg: this.deleteMsg,
+                                buttons: Ext.Msg.YESNOCANCEL,
+                                fn: function(btn) {
+                                    if (btn === 'yes') {
+                                        save.call(this);
+                                    }
+                                },
+                                scope: this
+                            });
+                        } else {
+                            save.call(this);
+                        }
                     }
                 },
                 scope: this
@@ -147,6 +166,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     editor.startEditing(0);
                 },
                 scope: this
+            }, {
+                xtype: 'checkbox',
+                ref: '../promptOnDelete',
+                boxLabel: this.promptDeleteLabel,
+                checked: true
             }],
             ignoreFields: ['geometry'],
             plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {'beforeedit': function(editor, rowIndex) {
