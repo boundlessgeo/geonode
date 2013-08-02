@@ -11,6 +11,15 @@ STATE_COMPLETE = "COMPLETE"
 
 _logger = logging.getLogger("gsuploader")
 
+class BadRequest(Exception):
+    pass
+
+class RequestFailed(Exception):
+    pass
+
+class NotFound(Exception):
+    pass
+
 def parse_response(args):
     headers, response = args
     try:
@@ -185,7 +194,7 @@ class Item(_UploadBase):
                 return progress
             except ValueError,ex:
                 _logger.warn('invalid JSON response: %s',response)
-                raise ex
+                raise RequestFailed('invalid JSON')
         else:
             raise Exception("Item does not have a progress endpoint")
 

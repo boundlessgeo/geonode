@@ -1,6 +1,9 @@
 import httplib2
 import logging
 from gsuploader.api import parse_response
+from gsuploader.api import RequestFailed
+from gsuploader.api import BadRequest
+from gsuploader.api import NotFound
 from urlparse import urlparse
 from urllib import urlencode
 import os
@@ -79,14 +82,6 @@ class Uploader(object):
     def __setstate__(self,state):
         self.client = _Client(state['url'],state['username'],state['password'])
         
-class BadRequest(Exception):
-    pass
-            
-class RequestFailed(Exception):
-    pass
-
-class NotFound(Exception):
-    pass
         
 class _Client(object):
     """Lower level http client"""
