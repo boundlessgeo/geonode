@@ -7,15 +7,88 @@ Ext.override(Ext.grid.GridView, {
     }
 });
 
+// http://www.sencha.com/forum/showthread.php?138260
+Ext.grid.GridView.override({    layout : function(initial) {
+        if (!this.mainBody) {
+            return; // not rendered
+        }
+
+
+        var grid       = this.grid,
+            gridEl     = grid.getGridEl(),
+            gridSize   = gridEl.getSize(true),
+            gridWidth  = gridSize.width,
+            gridHeight = gridSize.height,
+            scroller   = this.scroller,
+            scrollStyle, headerHeight, scrollHeight;
+        
+        if (gridWidth < 20 || gridHeight < 20) {
+            return;
+        }
+        
+        if (grid.autoHeight) {  
+            scrollStyle = scroller.dom.style;
+            // bartvde initially the gridHeight is very small
+            if (Ext.isNumber(grid.maxHeight) /*&& gridHeight > grid.maxHeight*/) {
+                gridHeight = grid.maxHeight;
+                this.el.setSize(gridWidth, gridHeight);
+                
+                headerHeight = this.mainHd.getHeight();
+                scrollHeight = gridHeight - headerHeight;
+                scroller.setSize(gridWidth, scrollHeight);
+                
+                scrollStyle.overflow = '';
+                scrollStyle.position = '';
+            } else {
+                this.el.setSize();
+                scroller.setSize();
+                
+                scrollStyle.overflow = 'visible';
+                if (Ext.isWebKit) {
+                    scrollStyle.position = 'static';
+                }
+            }
+        } else {
+            this.el.setSize(gridWidth, gridHeight);
+            
+            headerHeight = this.mainHd.getHeight();
+            scrollHeight = gridHeight - headerHeight;
+            
+            scroller.setSize(gridWidth, scrollHeight);
+            
+            if (this.innerHd) {
+                this.innerHd.style.width = (gridWidth) + "px";
+            }
+        }
+        
+        if (this.forceFit || (initial === true && this.autoFill)) {
+            if (this.lastViewWidth != gridWidth) {
+                this.fitColumns(false, false);
+                this.lastViewWidth = gridWidth;
+            }
+        } else {
+            this.autoExpand();
+            this.syncHeaderScroll();
+        }
+        
+        this.onLayout(gridWidth, scrollHeight);
+    }
+});
+
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     timeline: null,
     menuText: 'Manage annotations',
     gridTitle: 'Mapstory Annotations',
     insertText: 'Insert',
+    insertMsg: 'Another insert is in progress already',
     deleteText: 'Delete',
+    deleteMsg: 'Are you sure you want to delete the currently selected annotation(s)?',
+    promptDeleteLabel: "Prompt on delete",
     layerTitle: 'Annotations',
     ruleTitle: 'Annotations',
+    saveTitle: 'Save',
+    saveMsg: 'You need to save your map first before you can add annotations to it. Use the Save map button.',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
@@ -76,12 +149,20 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         } else {
             this.target.on('saved', function(id) {
                 this.createStore(id);
-                this.actions[0].enable();
             }, this, {single: true});
         }
     },
 
     addOutput: function () {
+        if (this.target.id === null && this.target.mapID === null) {
+            Ext.Msg.show({
+                icon: Ext.Msg.WARNING,
+                title: this.saveTitle,
+                msg: this.saveMsg,
+                buttons: Ext.Msg.OK
+            });
+            return;
+        }
         this.target.mapPanel.map.events.on({
             'preaddlayer': function(evt) {
                 evt.layer.name = this.layerTitle;
@@ -99,6 +180,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         };
         var output = mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
             xtype: 'gxp_featuregrid',
+            maxHeight: 200,
             viewConfig: {
                 forceFit: true
             },
@@ -115,12 +197,32 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 iconCls: 'gxp-icon-removelayers',
                 handler: function() {
                     var sm = this.output[0].getSelectionModel();
-                    var record = sm.getSelected();
-                    if (record) {
-                        var feature = record.getFeature();
-                        feature.state = OpenLayers.State.DELETE;
-                        this.store.remove(record);
-                        this.store.save();
+                    var records = sm.getSelections();
+                    if (records && records.length > 0) {
+                        var save = function(records) {
+                            for (var i = 0, ii = records.length; i<ii; ++i) {
+                                var record = records[i];
+                                var feature = record.getFeature();
+                                feature.state = OpenLayers.State.DELETE;
+                                this.store.remove(record);
+                            }
+                            this.store.save();
+                        };
+                        if (this.output[0].promptOnDelete.getValue()) {
+                            Ext.Msg.show({
+                                title: this.deleteText,
+                                msg: this.deleteMsg,
+                                buttons: Ext.Msg.YESNOCANCEL,
+                                fn: function(btn) {
+                                    if (btn === 'yes') {
+                                        save.call(this, records);
+                                    }
+                                },
+                                scope: this
+                            });
+                        } else {
+                            save.call(this, records);
+                        }
                     }
                 },
                 scope: this
@@ -128,6 +230,21 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 text: this.insertText,
                 iconCls: 'gxp-icon-addlayers',
                 handler: function() {
+                    var hasInsert = false;
+                    this.store.each(function(record) {
+                        if (record.getFeature().state === OpenLayers.State.INSERT) {
+                            hasInsert = true;
+                            return false;
+                        }
+                    });
+                    if (hasInsert === true) {
+                        Ext.Msg.show({
+                            title: this.insertText,
+                            msg: this.insertMsg,
+                            buttons: Ext.Msg.OK
+                        });
+                        return;
+                    }
                     var editor = this.output[0].plugins[0];
                     editor.stopEditing();
                     var recordType = GeoExt.data.FeatureRecord.create([
@@ -145,8 +262,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     this.output[0].getView().refresh();
                     this.output[0].getSelectionModel().selectRow(0);
                     editor.startEditing(0);
+                    editor.on('canceledit', function() {
+                        this.store.removeAt(0);
+                    }, this, {single: true});
                 },
                 scope: this
+            }, {
+                xtype: 'checkbox',
+                ref: '../promptOnDelete',
+                boxLabel: this.promptDeleteLabel,
+                checked: true
             }],
             ignoreFields: ['geometry'],
             plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {'beforeedit': function(editor, rowIndex) {
@@ -224,7 +349,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     addActions: function () {
         return mapstory.plugins.NotesManager.superclass.addActions.apply(
-            this, [{disabled: (this.target.id === null), iconCls: 'gxp-icon-note', tooltip: this.menuText}]);
+            this, [{hidden: !this.target.isAuthorized(), iconCls: 'gxp-icon-note', tooltip: this.menuText}]);
     }
 
 });
