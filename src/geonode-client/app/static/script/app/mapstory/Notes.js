@@ -87,6 +87,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     promptDeleteLabel: "Prompt on delete",
     layerTitle: 'Annotations',
     ruleTitle: 'Annotations',
+    saveTitle: 'Save',
+    saveMsg: 'You need to save your map first before you can add annotations to it. Use the Save map button.',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
@@ -147,12 +149,20 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         } else {
             this.target.on('saved', function(id) {
                 this.createStore(id);
-                this.actions[0].enable();
             }, this, {single: true});
         }
     },
 
     addOutput: function () {
+        if (this.target.id === null && this.target.mapID === null) {
+            Ext.Msg.show({
+                icon: Ext.Msg.WARNING,
+                title: this.saveTitle,
+                msg: this.saveMsg,
+                buttons: Ext.Msg.OK
+            });
+            return;
+        }
         this.target.mapPanel.map.events.on({
             'preaddlayer': function(evt) {
                 evt.layer.name = this.layerTitle;
@@ -339,7 +349,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
 
     addActions: function () {
         return mapstory.plugins.NotesManager.superclass.addActions.apply(
-            this, [{hidden: !this.target.isAuthorized(), disabled: (this.target.id === null), iconCls: 'gxp-icon-note', tooltip: this.menuText}]);
+            this, [{hidden: !this.target.isAuthorized(), iconCls: 'gxp-icon-note', tooltip: this.menuText}]);
     }
 
 });
