@@ -43,6 +43,7 @@ from httplib import BadStatusLine
 import os
 import logging
 import re
+import time
 import traceback
 import uuid
 
@@ -215,7 +216,13 @@ def data_upload_progress(req):
     if upload_session is None:
         return json_response({'state' : 'Invalid Session'})
     import_session = upload_session.import_session
-    progress = import_session.tasks[0].items[0].get_progress()
+    for i in xrange(1,4):
+        try:
+            progress = import_session.tasks[0].items[0].get_progress()
+            break
+        except uploader.RequestFailed:
+            pass
+        time.sleep(.1 * i)
     #another hacky part - set completed step back if error occurs
     if progress.get('state', None) == 'ERROR':
         # back up before the run step
