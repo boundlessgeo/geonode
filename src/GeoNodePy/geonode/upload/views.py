@@ -15,6 +15,7 @@ This needs to be made more stateful by adding a model.
 """
 from geonode.maps.forms import NewLayerUploadForm
 from geonode.maps.views import json_response
+from geonode.maps.views import check_gs_error
 from geonode.upload import forms
 from geonode.upload.models import Upload
 from geonode.upload import upload
@@ -163,12 +164,14 @@ def save_step_view(req, session):
     if req.method == 'GET':
         s = os.statvfs('/')
         mb = s.f_bsize * s.f_bavail / (1024. * 1024)
+        gs_error = check_gs_error()
         return render_to_response('upload/layer_upload.html',
             RequestContext(req, {
             'storage_remaining': "%d MB" % mb,
             'enough_storage': mb > 64,
             'async_upload' : _ASYNC_UPLOAD,
-            'incomplete' : Upload.objects.get_incomplete_uploads(req.user)
+            'incomplete' : Upload.objects.get_incomplete_uploads(req.user),
+            'gs_error' : gs_error
         }))
 
     assert session is None

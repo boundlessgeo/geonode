@@ -294,7 +294,10 @@ def newmap(request):
     if isinstance(config, HttpResponse):
         return config
     else:
-        return render_to_response('maps/view.html', RequestContext(request))
+        gs_error = check_gs_error()
+        return render_to_response('maps/view.html', RequestContext(request, {
+            'gs_error': gs_error
+        }))
 
 def newmapJSON(request):
     config = newmap_config(request)
@@ -589,16 +592,7 @@ def mapdetail(request,mapid):
     # build unique set based on name and ows_url
     layers = {}
     # check for geoserver running
-    gs_error = cache.get('gs_error') # will be False, None or str
-    if gs_error is None: # cache expired, check again
-        try:
-            Layer.objects.gs_catalog.get_xml(Layer.objects.gs_catalog.service_url + '/settings/contact.xml')
-            gs_error = False
-        except Exception, ex:
-            gs_error = str(ex)
-    # by this point, it will be newly computed or just recached
-    # we want to avoid this hit as much as possible
-    cache.set('gs_error', gs_error, 5)
+    gs_error = check_gs_error()
 
     for layer in MapLayer.objects.filter(map=map.id):
         layers[(layer.ows_url,layer.name)] = layer
@@ -670,9 +664,11 @@ def view(request, mapid):
         return HttpResponse(loader.render_to_string('401.html', 
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)    
-    
+
+    gs_error = check_gs_error()
     return render_to_response('maps/view.html', RequestContext(request,{
-        'map' : map
+        'map' : map,
+        'gs_error' : gs_error
     }))
 
 def embed(request, mapid=None):
@@ -855,12 +851,8 @@ def layer_detail(request, layername):
     if settings.USE_GEONETWORK:
         metadata = layer.metadata_csw()
 
-    gs_error = False
-    # attempt to resolve in the catalog, this will be cached
-    try:
-        layer.resource
-    except Exception, ex:
-        gs_error = str(ex)
+    # check for geoserver running
+    gs_error = check_gs_error()
     
     map_config = layer.map_config
     
@@ -1979,3 +1971,18 @@ def _create_layer(user = None, **kwargs):
             logger.exception('Error cleaning up created_layer %s',gs_ftype.name)
 
     return respond()
+
+
+def check_gs_error():
+    gs_error = cache.get('gs_error') # will be False, None or str
+    if gs_error is None: # cache expired, check again
+        try:
+            # hit a fast endpoint, this most likely won't detect minor issues though
+            Layer.objects.gs_catalog.get_xml(settings.INTERNAL_GEOSERVER_BASE_URL + 'index.html')
+            gs_error = False
+        except Exception, ex:
+            gs_error = str(ex)
+    # by this point, it will be newly computed or just recached
+    # we want to avoid this hit as much as possible
+    cache.set('gs_error', gs_error, 10)
+    return gs_error
