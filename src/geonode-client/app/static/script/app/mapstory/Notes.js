@@ -145,6 +145,17 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     init: function (target) {
         this.timelineTool = target.tools[this.timeline];
         this.playback = target.tools[this.timelineTool.playbackTool];
+        this.appearanceData = [
+            ['tl-tl?', 'Top left'],
+            ['t-t?', 'Top center'],
+            ['tr-tr?', 'Top right'],
+            ['l-l?', 'Center left'],
+            ['c-c?', 'Center'],
+            ['r-r?', 'Center right'],
+            ['bl-bl?', 'Bottom left'],
+            ['b-b?', 'Bottom center'],
+            ['br-br?', 'Bottom right']
+        ];
         mapstory.plugins.NotesManager.superclass.init.apply(this, arguments);
         if (this.target.id !== null) {
             this.createStore(this.target.id);
@@ -304,17 +315,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 'start_time': {id: 'start-time', xtype: 'gxp_datetimefield'},
                 'end_time': {id: 'end-time', xtype: 'gxp_datetimefield'},
                 'content': {xtype: 'textarea'},
-                'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: [
-                    ['tl-tl?', 'Top left'],
-                    ['t-t?', 'Top center'],
-                    ['tr-tr?', 'Top right'],
-                    ['l-l?', 'Center left'],
-                    ['c-c?', 'Center'],
-                    ['r-r?', 'Center right'],
-                    ['bl-bl?', 'Bottom left'],
-                    ['b-b?', 'Bottom center'],
-                    ['br-br?', 'Bottom right']
-                ]}
+                'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: this.appearanceData}
             },
             customRenderers: {
                 'start_time': function(value) {
@@ -328,6 +329,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 },
                 'in_timeline': function(value) {
                     return "<input disabled='true' type='checkbox'" + (value ? "checked='checked'" : "") + ">";
+                },
+                'appearance': function(value) {
+                    if (Ext.isEmpty(value)) {
+                        value = Ext.Tip.prototype.defaultAlign;
+                    }
+                    for (var i = 0, ii = me.appearanceData.length; i<ii; ++i) {
+                        if (me.appearanceData[i][0] === value) {
+                            return me.appearanceData[i][1];
+                        }
+                    }
                 }
             },
             store: this.store,
