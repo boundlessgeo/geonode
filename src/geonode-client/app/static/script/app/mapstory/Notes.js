@@ -159,6 +159,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 icon: Ext.Msg.WARNING,
                 title: this.saveTitle,
                 msg: this.saveMsg,
+                width: 350,
                 buttons: Ext.Msg.OK
             });
             return;
