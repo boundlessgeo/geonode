@@ -88,7 +88,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     layerTitle: 'Annotations',
     ruleTitle: 'Annotations',
     saveTitle: 'Annotations',
-    saveMsg: 'In order to add annotations, please save your map first by clicking the "Save Map" button:<div class="x-btn"><div class="ms-icon-save msgbox-button"></div></div>.',
+    saveMsg: 'In order to add annotations, please save your map first by clicking the "Save Map" button:<div class="x-btn"><div class="ms-icon-save msgbox-button"></div></div>',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
