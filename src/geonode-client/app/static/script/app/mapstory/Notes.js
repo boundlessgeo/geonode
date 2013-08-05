@@ -187,10 +187,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             propertyNames: {
                 'in_map': 'Map',
                 'in_timeline': 'Timeline',
-                'start_time': 'Start time',
-                'end_time': 'End time',
+                'start_time': 'Start Time',
+                'end_time': 'End Time',
                 'title': 'Title',
-                'content': 'Content'
+                'content': 'Content',
+                'appearance': 'Annotation Location'
             },
             tbar: [{
                 text: this.deleteText,
@@ -291,7 +292,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 'in_timeline': {width: 75},
                 'in_map': {width: 50},
                 'start_time': {width: 200},
-                'end_time': {width: 200}
+                'end_time': {width: 200},
+                'appearance': {width: 115}
             },
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
