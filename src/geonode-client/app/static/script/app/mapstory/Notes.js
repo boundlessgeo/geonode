@@ -1,6 +1,6 @@
 Ext.ns('mapstory.plugins');
 
-Ext.Tip.prototype.defaultAlign = 'bl-bl?';
+Ext.Tip.prototype.defaultAlign = 'tr-tr?';
 
 // make sure row editor is visible on the last row
 Ext.override(Ext.grid.GridView, {
