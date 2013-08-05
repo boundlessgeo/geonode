@@ -62,7 +62,7 @@ img.olTileImage.olTileReplacing {
     display: inherit !important;
 }
 .gxp-annotations-tip {
-    z-index: 9011;
+    z-index: 20003;
 }
 .optional-form-label {
     color: #736F6E;
