@@ -79,7 +79,7 @@ class Upload(models.Model):
         
     def get_import_url(self):
         if self.import_id is None: return None
-        return "%srest/imports/%s" % (settings.INTERNAL_GEOSERVER_BASE_URL, self.import_id)
+        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
 
     def mark_deleted(self):
         self.state = Upload.STATE_DELETED
