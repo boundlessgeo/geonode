@@ -68,7 +68,7 @@ class Upload(models.Model):
         self.session = pickle.dumps(upload_session)
         if self.upload_dir is None:
             self.upload_dir = path.dirname(upload_session.base_file)
-            self.name = upload_session.layer_title or upload_session.name
+        self.name = upload_session.layer_title or upload_session.name
         self.save()
         
     def get_resume_url(self):
