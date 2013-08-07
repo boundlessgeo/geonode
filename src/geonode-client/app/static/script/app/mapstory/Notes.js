@@ -91,10 +91,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ruleTitle: 'Annotations',
     saveTitle: 'Annotations',
     saveMsg: 'In order to add annotations, please save your map first by clicking the "Save Map" button:<div class="x-btn"><div class="ms-icon-save msgbox-button"></div></div>',
+    downloadText: 'Download',
+    uploadText: 'Upload',
+    uploadWaitMsg: 'Uploading ...',
+    uploadEmptyText: 'Select a CSV file',
+    uploadFieldLabel: 'CSV',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
     createStore: function (id) {
+        this.annotationsEndPoint = '/maps/' + id + '/annotations';
         this.store = new GeoExt.data.FeatureStore({
             autoSave: false,
             writer: new Ext.data.DataWriter({
@@ -113,7 +119,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             proxy: new gxp.data.WFSProtocolProxy({
                 protocol: new mapstory.protocol.Notes({
                     format: new OpenLayers.Format.GeoJSON(),
-                    baseUrl: '/maps/' + id + '/annotations'
+                    baseUrl: this.annotationsEndPoint
                 })
             }),
             autoLoad: true
@@ -291,6 +297,72 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 ref: '../promptOnDelete',
                 boxLabel: this.promptDeleteLabel,
                 checked: true
+            }, {
+                text: this.uploadText,
+                hidden: true,
+                handler: function() {
+                    var fp = new Ext.FormPanel({
+                        width: 400,
+                        title: this.uploadText,
+                        bodyStyle: 'padding: 10px 10px 0 10px;',
+                        labelWidth: 50,
+                        defaults: {
+                            anchor: '95%',
+                            allowBlank: false,
+                            msgTarget: 'side'
+                        },
+                        fileUpload: true,
+                        items: [{
+                            xtype: "hidden",
+                            name: "csrfmiddlewaretoken",
+                            value: Ext.util.Cookies.get('csrftoken')
+                        }, {
+                            xtype: 'fileuploadfield',
+                            emptyText: this.uploadEmptyText,
+                            fieldLabel: this.uploadFieldLabel
+                        }],
+                        buttons: [{
+                            text: this.uploadText,
+                            handler: function() {
+                                if (fp.getForm().isValid()){
+	                                fp.getForm().submit({
+	                                    url: this.annotationsEndPoint,
+	                                    waitMsg: this.uploadWaitMsg,
+	                                    success: function(fp, o){
+                                            if (o.success) {
+                                                fp.ownerCt.close();
+                                            }
+	                                    },
+                                        failure: function(fp, o) {
+                                        },
+                                        scope: this
+                                    });
+                                }
+                            },
+                            scope: this
+                        }]
+                    });
+                    new Ext.Window({items: [fp]}).show();
+                },
+                scope: this
+            }, {
+                hidden: true,
+                text: this.downloadText,
+                handler: function() {
+                    Ext.Ajax.request({
+                        url: this.annotationsEndPoint + '?csv',
+                        method: "GET",
+                        disableCaching: true,
+                        success: function(response) {
+                            var uriContent = "data:text/csv," + encodeURIComponent(response.responseText);
+                            window.location.href = uriContent;
+                        },
+                        failure: function() {
+                        },
+                        scope: this
+                    });
+                },
+                scope: this
             }],
             ignoreFields: ['geometry'],
             plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {
