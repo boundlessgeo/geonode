@@ -96,6 +96,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     uploadWaitMsg: 'Uploading ...',
     uploadEmptyText: 'Select a CSV file',
     uploadFieldLabel: 'CSV',
+    failureTitle: 'Upload Error',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
@@ -299,7 +300,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 checked: true
             }, {
                 text: this.uploadText,
-                hidden: true,
                 handler: function() {
                     var fp = new Ext.FormPanel({
                         width: 400,
@@ -324,17 +324,30 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                         buttons: [{
                             text: this.uploadText,
                             handler: function() {
+                                var showUploadError = function(fp, o) {
+                                    Ext.Msg.show({
+                                        icon: Ext.Msg.ERROR,
+                                        title: this.failureTitle,
+                                        msg: o.response.responseText,
+                                        width: 350,
+                                        buttons: Ext.Msg.OK 
+                                    });
+                                };
                                 if (fp.getForm().isValid()){
 	                                fp.getForm().submit({
 	                                    url: this.annotationsEndPoint,
 	                                    waitMsg: this.uploadWaitMsg,
-	                                    success: function(fp, o){
-                                            if (o.success) {
-                                                fp.ownerCt.close();
+	                                    success: function(fp, o) {
+                                            var result = Ext.decode(o.response.responseText);
+                                            if (result.success) {
+                                                this.uploadWindow.close();
+                                                delete this.uploadWindow;
+                                                this.store.load();
+                                            } else {
+                                                showUploadError.call(this, fp, o);
                                             }
 	                                    },
-                                        failure: function(fp, o) {
-                                        },
+                                        failure: showUploadError,
                                         scope: this
                                     });
                                 }
@@ -342,11 +355,10 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                             scope: this
                         }]
                     });
-                    new Ext.Window({items: [fp]}).show();
+                    this.uploadWindow = new Ext.Window({items: [fp]}).show();
                 },
                 scope: this
             }, {
-                hidden: true,
                 text: this.downloadText,
                 handler: function() {
                     Ext.Ajax.request({
