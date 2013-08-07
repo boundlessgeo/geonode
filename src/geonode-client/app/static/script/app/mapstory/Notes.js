@@ -280,7 +280,9 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     this.output[0].getSelectionModel().selectRow(0);
                     editor.startEditing(0);
                     editor.on('canceledit', function() {
-                        this.store.removeAt(0);
+                        if (this.store.getAt(0).getFeature().state === OpenLayers.State.INSERT) {
+                            this.store.removeAt(0);
+                        }
                     }, this, {single: true});
                 },
                 scope: this
@@ -368,7 +370,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     return false;
                 }
             });
-            if (hasInsert === true) {
+            if (hasInsert === true && this.store.getAt(0).getFeature().state === OpenLayers.State.INSERT) {
                 this.store.removeAt(0);
             }
         }, this);
