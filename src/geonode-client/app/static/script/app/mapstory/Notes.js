@@ -294,11 +294,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 },
                 scope: this
             }, {
-                xtype: 'checkbox',
-                ref: '../promptOnDelete',
-                boxLabel: this.promptDeleteLabel,
-                checked: true
-            }, {
                 text: this.uploadText,
                 handler: function() {
                     var fp = new Ext.FormPanel({
@@ -375,6 +370,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     });
                 },
                 scope: this
+            }, '->', {                
+                xtype: 'checkbox',
+                ref: '../promptOnDelete',
+                boxLabel: this.promptDeleteLabel,
+                checked: true
             }],
             ignoreFields: ['geometry'],
             plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {
