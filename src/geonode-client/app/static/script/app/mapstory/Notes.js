@@ -257,6 +257,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                         Ext.Msg.show({
                             title: this.insertText,
                             msg: this.insertMsg,
+                            cls: 'row-editor-msg-box',
                             buttons: Ext.Msg.OK
                         });
                         return;
