@@ -404,6 +404,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: this.appearanceData}
             },
             customRenderers: {
+                'content': 'htmlEncode',
                 'start_time': function(value) {
                     return gxp.form.ExtendedDateField.prototype.setValue(value).value;
                 },
