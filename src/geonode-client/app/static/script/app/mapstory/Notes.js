@@ -361,6 +361,16 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             output.getSelectionModel().clearSelections();
             var editor = output.plugins[0];
             editor.stopEditing();
+            var hasInsert = false;
+            this.store.each(function(record) {
+                if (record.getFeature().state === OpenLayers.State.INSERT) {
+                    hasInsert = true;
+                    return false;
+                }
+            });
+            if (hasInsert === true) {
+                this.store.removeAt(0);
+            }
         }, this);
         output.ownerCt.ownerCt.on('move', function(cmp, x, y) {
             var editor = output.plugins[0];
