@@ -97,6 +97,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     uploadEmptyText: 'Select a CSV file',
     uploadFieldLabel: 'CSV',
     failureTitle: 'Upload Error',
+    mediaHtml: 'Use <a href="http://mapstory.org/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {closeAction: 'hide'},
@@ -378,6 +379,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }],
             ignoreFields: ['geometry'],
             plugins: [new gxp.plugins.GeoRowEditor({monitorValid: false, listeners: {
+                'buttonrender': function(editor, buttons) {
+                    buttons.width += 350;
+                    buttons.add({xtype: 'box', width: 350, style: 'text-align:right', html: me.mediaHtml});
+                    buttons.doLayout();
+                },
                 'beforeedit': function(editor, rowIndex) {
                     var record = this.grid.store.getAt(rowIndex);
                     if (!Ext.getCmp('start-time').rendered) {
