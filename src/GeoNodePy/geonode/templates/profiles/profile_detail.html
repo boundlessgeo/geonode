@@ -51,7 +51,7 @@ Ext.onReady(function() {
 
     var cb = new Ext.grid.CheckboxSelectionModel();
     var columns = [
-       { header: gettext('Type'), tpl: "<div class='data-type {type}'>&nbsp;</div>", width: 10 },
+       { header: gettext('Type'), tpl: "<div class='data-type {type}' title='{type}'></div>", width: 10 },
        { header: gettext('Title'), dataIndex: 'title', autoExpand: true, tpl: "<a href='{href}'> {title} </a>" },
        { header: gettext('Date'), dataIndex: 'date', width: 30, xtype: 'datecolumn' }
     ]
@@ -78,6 +78,7 @@ Ext.onReady(function() {
         sm: cb,
         colModel: new Ext.grid.ColumnModel({
             defaults: { xtype: 'templatecolumn' },
+            defaultSortable: true,
             columns: columns
         }),
         listeners: {

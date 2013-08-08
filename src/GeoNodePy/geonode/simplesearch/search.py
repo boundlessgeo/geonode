@@ -255,7 +255,8 @@ def _get_owner_results(results, query, kw):
         if added:
             rules = rules + _rank_rules(*added)
         q = _add_relevance(q, query, rules)
-    
+
+    q = q.distinct()
     results.extend( _process_results(map(OwnerNormalizer,q)))
         
 def _get_map_results(results, query, kw):
@@ -293,7 +294,8 @@ def _get_map_results(results, query, kw):
                 ['abstract',5, 2],
             )
             q = _add_relevance(q, query, rules)
-    
+
+    q = q.distinct()
     results.extend( _process_results( map(MapNormalizer,q) ))
     
     
@@ -436,6 +438,7 @@ def _get_layer_results(results, query, kw):
                 ['abstract',5, 2],
             )
             q = _add_relevance(q, query, rules)
+        q = q.distinct()
         normalizers = map(LayerNormalizer, q)
     _process_results(normalizers)
     results.extend(normalizers)

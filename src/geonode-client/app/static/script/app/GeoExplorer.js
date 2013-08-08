@@ -4,6 +4,21 @@
  */
 var GeoExplorer;
 
+// set defaults for text symbolizer see https://github.com/MapStory/mapstory/issues/795
+gxp.TextSymbolizer.prototype.defaultSymbolizer = {
+    vendorOptions: {
+        'maxDisplacement': 40,
+        'autoWrap': 40,
+        'spaceAround': 0,
+        'followLine': false,
+        'group': 'yes',
+        'goodnessOfFit': 0.2,
+        'conflictResolution': true,
+        'haloColor': '#FFFFFF',
+        'haloRadius': 1
+    }
+};
+
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
@@ -382,7 +397,6 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             },
-
             {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
@@ -390,32 +404,13 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                     title: null
                 },
                 outputTarget: "timeline-container",
-                featureEditor: "annotations_editor",
                 playbackTool: "playback-tool"
-            }, {
-                ptype: "gxp_timelinelayers",
-                timelineTool: "timeline-tool",
-                actionTarget: "timeline-container.tbar"
             },
             {
-                ptype: "gxp_featuremanager",
-                id: "annotations_manager",
-                autoLoadFeatures: true,
-                autoSetLayer: false,
-                paging: false
-            },
-            {
-                ptype: "app_notes",
-                createLayerUrl: "/data/create_annotations_layer/{mapID}",
-                layerNameTpl: "_map_{mapID}_annotations",
-                workspacePrefix: "geonode",
-                featureEditor: "annotations_editor",
-                outputConfig: {
-                    id: 'notes_menu'
-                },
+                ptype: 'ms_notes_manager',
+                timeline: "timeline-tool",
                 actionTarget: {
-                    target: "map-bbar",
-                    index: 12
+                    target: 'map-bbar'
                 }
             },
             {
@@ -435,56 +430,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                     target: "map-bbar", 
                     index: 13
                 }
-            }, {
-                ptype: "gxp_featuremanager",
-                id: "annotations_manager",
-                autoLoadFeatures: true,
-                autoSetLayer: false,
-                paging: false
-            }, {
-                ptype: "gxp_featureeditor",
-                id: "annotations_editor",
-                closeOnSave: true,
-                toggleGroup: toggleGroup,
-                supportAbstractGeometry: true,
-                showSelectedOnly: false,
-                supportNoGeometry: true,
-                outputConfig: {
-                    allowDelete: true,
-                    width: 500,
-                    height: 350,
-                    editorPluginConfig: {
-                        ptype: "gxp_editorform",
-                        bodyStyle: "padding: 5px 5px 0",
-                        autoScroll: true,
-                        fieldConfig: {
-                            'title': {fieldLabel: "Title", allowBlank: false, width: '100%', anchor: '99%'},
-                            'content': {fieldLabel: "Description", xtype: "textarea", width: '100%', anchor: '99%', grow: true},
-                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false, msgTarget: 'under'},
-                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>", msgTarget: 'under'},
-                            'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
-                            'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
-                            'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
-                                ['tl-tl?', 'Top left'],
-                                ['t-t?', 'Top center'],
-                                ['tr-tr?', 'Top right'],
-                                ['l-l?', 'Center left'],
-                                ['c-c?', 'Center'],
-                                ['r-r?', 'Center right'],
-                                ['bl-bl?', 'Bottom left'],
-                                ['b-b?', 'Bottom center'],
-                                ['br-br?', 'Bottom right']
-                            ]}
-                        }
-                    }
-                },
-                featureManager: "annotations_manager",
-                actionTarget: "notes_menu",
-                createFeatureActionText: "Add note",
-                iconClsAdd: 'gxp-icon-addnote',
-                editFeatureActionText: "Edit note"
             }
-
             );
         }
 
@@ -579,7 +525,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                         var url = layer.url;
                         if (Ext.isString(url)) {
                             if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
-                                url = this.localGeoServerBaseUrl + 'wms';
+                                url.replace('/geoserver/', this.localGeoServerBaseUrl);
                             }
                             if(url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                                 var uparts = url.split('://');
@@ -669,6 +615,7 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
                             );
                         source.store.proxy.setUrl(source.store.url);
+                        source.initialConfig.url = source.url = source.store.url;
                     }
                     this.createLayerRecord({
                         source: startSourceId,

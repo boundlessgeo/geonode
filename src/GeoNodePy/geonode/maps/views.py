@@ -156,7 +156,7 @@ def maps(request, mapid=None):
                 # make sure ids differ or it's not a successful copy
                 existing_id = config.get('id', None)
                 if existing_id and map.id != int(existing_id):
-                    map_copied_signal.send_robust(sender=map, source_id=existing_id)
+                    map_copied_signal.send_robust(map, source_id=existing_id)
                 response = HttpResponse('', status=201)
                 response['Location'] = map.id
                 return response
@@ -294,7 +294,10 @@ def newmap(request):
     if isinstance(config, HttpResponse):
         return config
     else:
-        return render_to_response('maps/view.html', RequestContext(request))
+        gs_error = check_gs_error()
+        return render_to_response('maps/view.html', RequestContext(request, {
+            'gs_error': gs_error
+        }))
 
 def newmapJSON(request):
     config = newmap_config(request)
@@ -588,10 +591,14 @@ def mapdetail(request,mapid):
     config = json.dumps(config)
     # build unique set based on name and ows_url
     layers = {}
+    # check for geoserver running
+    gs_error = check_gs_error()
+
     for layer in MapLayer.objects.filter(map=map.id):
         layers[(layer.ows_url,layer.name)] = layer
     
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
+        'gs_error' : gs_error,
         'config': config, 
         'map': map,
         'layers': layers.values(),
@@ -657,9 +664,11 @@ def view(request, mapid):
         return HttpResponse(loader.render_to_string('401.html', 
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)    
-    
+
+    gs_error = check_gs_error()
     return render_to_response('maps/view.html', RequestContext(request,{
-        'map' : map
+        'map' : map,
+        'gs_error' : gs_error
     }))
 
 def embed(request, mapid=None):
@@ -841,6 +850,9 @@ def layer_detail(request, layername):
     metadata = None
     if settings.USE_GEONETWORK:
         metadata = layer.metadata_csw()
+
+    # check for geoserver running
+    gs_error = check_gs_error()
     
     map_config = layer.map_config
     
@@ -855,6 +867,7 @@ def layer_detail(request, layername):
         # we could save the config, but for now...
 
     return render_to_response('maps/layer.html', RequestContext(request, {
+        "gs_error": gs_error,
         "layer": layer,
         "metadata": metadata,
         "viewer": map_config,
@@ -882,8 +895,8 @@ def _fixup_ows_url(thumb_spec):
     #@HACK - for whatever reason, a map's maplayers ows_url contains only /geoserver/wms
     # so rendering of thumbnails fails - replace those uri's with full geoserver URL
     import re
-    gspath = '"/geoserver/wms' # this should be in img src attributes
-    repl = '"' + settings.GEOSERVER_BASE_URL + "/wms" 
+    gspath = '"/geoserver/([^"]+)' # this should be in img src attributes
+    repl = '"%s\g<1>' % settings.GEOSERVER_BASE_URL
     return re.sub(gspath, repl, thumb_spec)
 
 GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your data. \
@@ -1958,3 +1971,18 @@ def _create_layer(user = None, **kwargs):
             logger.exception('Error cleaning up created_layer %s',gs_ftype.name)
 
     return respond()
+
+
+def check_gs_error():
+    gs_error = cache.get('gs_error') # will be False, None or str
+    if gs_error is None: # cache expired, check again
+        try:
+            # hit a fast endpoint, this most likely won't detect minor issues though
+            Layer.objects.gs_catalog.get_xml(settings.INTERNAL_GEOSERVER_BASE_URL + 'index.html')
+            gs_error = False
+        except Exception, ex:
+            gs_error = str(ex)
+    # by this point, it will be newly computed or just recached
+    # we want to avoid this hit as much as possible
+    cache.set('gs_error', gs_error, 10)
+    return gs_error

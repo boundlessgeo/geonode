@@ -17,7 +17,8 @@ xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
 
 class SpatialFiles(UserList):
 
-    def __init__(self, data, archive=None):
+    def __init__(self, dirname, data, archive=None):
+        self.dirname = dirname
         self.data = data
         self.archive = archive
 
@@ -171,4 +172,4 @@ def scan_file(file_name):
             raise Exception("One or more SLD files was provided, but no " +
                             "matching files were found for them.")
                 
-    return SpatialFiles(found, archive)
+    return SpatialFiles(dirname, found, archive)

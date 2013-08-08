@@ -210,13 +210,17 @@ def save_step(user, layer, spatial_files, overwrite=True):
         next_id = Upload.objects.all().aggregate(Max('import_id')).values()[0]
         next_id = next_id + 1 if next_id else 1
 
+        # save record of this whether valid or not - will help w/ debugging
+        upload = Upload.objects.create(user=user, state=Upload.STATE_INVALID,
+                                       upload_dir=spatial_files.dirname)
+
         # @todo settings for use_url or auto detection if geoserver is
         # on same host
         import_session = Layer.objects.gs_uploader.upload_files(
             spatial_files.all_files(), use_url=False, import_id=next_id, mosaic=len(spatial_files) > 1)
-            
-        # save record of this whether valid or not - will help w/ debugging
-        upload = Upload.objects.create_from_session(user, import_session)
+
+        upload.import_id = import_session.id
+        upload.save()
 
         # any unrecognized tasks/files must be deleted or we can't proceed
         import_session.delete_unrecognized_tasks()
@@ -264,13 +268,9 @@ def run_import(upload_session, async):
     import_session = upload_session.import_session
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
     if import_session.state == 'INCOMPLETE':
-        item = upload_session.import_session.tasks[0].items[0]
-        if item.state == 'NO_CRS':
-            err = 'No projection found'
-        else:
-            err = item.state or 'Session not ready for import.'
-        if err:
-            raise Exception(err)
+        item = import_session.tasks[0].items[0]
+        if item.state != 'ERROR':
+            raise Exception('unknown item state: %s' % item.state)
 
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
@@ -444,11 +444,18 @@ def final_step(upload_session, user):
     # @todo see above in save_step, regarding computed unique name
     name = import_session.tasks[0].items[0].layer.name
 
-    _log('Creating style for [%s]', name)
-    publishing = cat.get_layer(name)
-    if publishing is None:
-        raise Exception("Expected to find layer named '%s' in geoserver", name)
+    _log('Getting from catalog [%s]', name)
+    publishing = None
+    for i in xrange(60):
+        publishing = cat.get_layer(name)
+        if publishing: break
+        time.sleep(.5)
 
+    if publishing is None:
+        raise Exception("Expected to find layer named '%s' in geoserver, tried %s times" % (name, i))
+    _log('Had to try %s times to get layer from catalog' % (i+1))
+
+    _log('Creating style for [%s]', name)
     # get_files will not find the sld if it doesn't match the base name
     # so we've worked around that in the view - if provided, it will be here
     if upload_session.import_sld_file:
@@ -560,25 +567,21 @@ def final_step(upload_session, user):
         raise GeoNodeException(msg)
 
     # Verify it is correctly linked to GeoServer and GeoNetwork
-    verified = False
-    for i in range(10):
-        time.sleep(.5)
-        logger.info('Verifying layer in geoserver [%s]', (i+1))
-        try:
-            saved_layer.verify()
-            verified = True
-            break
-        except GeoNodeException, e:
-            msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
-            logger.exception(msg)
-    if not verified:
-        e.args = (msg,)
-        # Deleting the layer
+    logger.info('Verifying layer in geoserver [%s]', (i+1))
+    try:
+        saved_layer.verify()
+    except GeoNodeException, e:
+        msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
+        logger.exception(msg)
         saved_layer.delete()
         raise
 
     if upload_session.tempdir and os.path.exists(upload_session.tempdir):
         shutil.rmtree(upload_session.tempdir)
+
+    upload = Upload.objects.get(import_id=import_session.id)
+    upload.layer = saved_layer
+    upload.save()
 
     signals.upload_complete.send(sender=final_step, layer=saved_layer)
 

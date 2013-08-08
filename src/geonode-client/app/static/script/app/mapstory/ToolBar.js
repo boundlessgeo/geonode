@@ -8,7 +8,6 @@
 
     mapstory.plugins.ToolBar = Ext.extend(gxp.plugins.Tool, {
         ptype: 'ms-tool-bar',
-        saveText: 'Save Map',
         publishText: 'Publish Map',
         zoomText: 'Number of zoom levels',
         wrapDateLineText: 'Wrap dateline',
@@ -109,6 +108,7 @@
                                 {
                                     xtype: 'checkbox',
                                     fieldLabel: this.wrapDateLineText,
+                                    hidden: true,
                                     checked: baseLayer.wrapDateLine,
                                     listeners: {
                                         check: function (cb, value) {
@@ -151,7 +151,7 @@
                 ptype: this.ptype,
                 bgColor: container.getColor('background-color'),
                 numZoomLevels: baseLayer.numZoomLevels,
-                wrapDateLine: baseLayer.wrapDateLine
+                wrapDateLine: false/*baseLayer.wrapDateLine*/
             };
         },
         addOutput: function () {
@@ -176,9 +176,9 @@
                     triggerEvent('changebaselayer', {layer: baseLayer});
             }
 
-            if (config.wrapDateLine) {
-                baseLayer.wrapDateLine = config.wrapDateLine;
-            }
+            //if (config.wrapDateLine) {
+                baseLayer.wrapDateLine = false /*config.wrapDateLine*/;
+            //}
 
             return !this.suppressOutput && mapstory.plugins.ToolBar.superclass.addOutput.call(this, {
                 xtype: 'toolbar',
@@ -191,9 +191,9 @@
                 items: [
                     {
                         xtype: 'button',
-                        text: this.saveText,
+                        iconCls: 'ms-icon-save',
+                        tooltip: "Save map",
                         scope: this,
-                        width: 100,
                         handler: function () {
                             if (!this.target.metadataForm) {
                                 this.target.metadataForm = this.buildSaveForm();
@@ -203,7 +203,8 @@
                     },
                     {
                         xtype: 'button',
-                        text: 'Timeline',
+                        iconCls: 'ms-icon-timeline',
+                        tooltip: "Show timeline",
                         scope: this,
                         handler: function () {
                             var tl = Ext.getCmp('timeline-container');

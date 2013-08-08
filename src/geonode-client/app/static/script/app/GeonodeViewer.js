@@ -396,7 +396,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                         var url = layer.url;
                         if (Ext.isString(url)) {
                             if (url.charAt(0) === '/' && url.indexOf('geoserver') !== -1) {
-                                url = this.localGeoServerBaseUrl + 'wms';
+                                url.replace('/geoserver/', this.localGeoServerBaseUrl);
                             }
                             if (url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                                 var uparts = url.split('://');

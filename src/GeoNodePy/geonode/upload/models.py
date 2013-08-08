@@ -28,7 +28,9 @@ class UploadManager(models.Manager):
             state= import_session.state)
             
     def get_incomplete_uploads(self, user):
-        return self.filter(user=user, complete=False).exclude(state=Upload.STATE_INVALID)
+        incomplete = self.filter(user=user, complete=False)
+        incomplete = incomplete.exclude(state=Upload.STATE_INVALID)
+        return incomplete.exclude(state=Upload.STATE_DELETED)
     
         
 class Upload(models.Model):
@@ -52,6 +54,7 @@ class Upload(models.Model):
         ordering = ['-date']
     
     STATE_INVALID = 'INVALID'
+    STATE_DELETED = 'DELETED'
     
     def get_session(self):
         if self.session:
@@ -62,11 +65,10 @@ class Upload(models.Model):
         if "COMPLETE" == self.state:
             self.complete = True
             self.session = None
-        self.date = datetime.now()
         self.session = pickle.dumps(upload_session)
         if self.upload_dir is None:
             self.upload_dir = path.dirname(upload_session.base_file)
-            self.name = upload_session.layer_title or upload_session.name
+        self.name = upload_session.layer_title or upload_session.name
         self.save()
         
     def get_resume_url(self):
@@ -76,7 +78,12 @@ class Upload(models.Model):
         return reverse('data_upload_delete', args=[self.import_id])
         
     def get_import_url(self):
-        return "%srest/imports/%s" % (settings.INTERNAL_GEOSERVER_BASE_URL, self.import_id)
+        if self.import_id is None: return None
+        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
+
+    def mark_deleted(self):
+        self.state = Upload.STATE_DELETED
+        self.save()
     
     def delete(self, cascade=True):
         models.Model.delete(self)

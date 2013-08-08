@@ -101,7 +101,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
             scope: this
         });
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
-            text: this.notesText,
+            tooltip: "Annotations - notes",
             disabled: !id,
             id: 'notes-button',
             iconCls: this.iconCls,

@@ -34,6 +34,8 @@ man
 /webapps/
 /src/GeoNodePy/capra/development.db
 /src/django-hitcount/
+/src/django-flag/
+/src/oembed/
 
 # Directory created by collectstatic
 src/GeoNodePy/geonode/site_media/
