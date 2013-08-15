@@ -75,7 +75,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 }
             }
             if (this.btnTimeline) {
-                if (app.fullScreen) {
+                if (app.fullScreen || app.embed) {
                     this.btnTimeline.show();
                 } else {
                     this.btnTimeline.hide();
