@@ -1,3 +1,6 @@
+.annotations-manager {
+    z-index: 21000 !important;
+}
 .row-editor-msg-box {
     z-index: 12000 !important;
 }
