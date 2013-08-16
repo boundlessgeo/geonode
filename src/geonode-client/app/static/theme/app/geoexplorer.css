@@ -1,3 +1,6 @@
+.gxp-timeslider-tip {
+    z-index: 9010;
+}
 .row-editor-msg-box {
     z-index: 12000 !important;
 }
@@ -65,7 +68,7 @@ img.olTileImage.olTileReplacing {
     display: inherit !important;
 }
 .gxp-annotations-tip {
-    z-index: 20003;
+    z-index: 9011;
 }
 .optional-form-label {
     color: #736F6E;
