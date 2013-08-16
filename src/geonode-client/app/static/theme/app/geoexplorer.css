@@ -10,7 +10,6 @@ div.x-row-editor {
     background-color: #e5872c;
     padding-top: 4px;
     padding-bottom: 4px;
-    z-index: 21001 !important;
 }
 .x-tip {
     white-space: normal !important;
