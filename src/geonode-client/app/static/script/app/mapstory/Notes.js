@@ -416,8 +416,14 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'},
-                'start_time': {id: 'start-time', xtype: 'gxp_datetimefield'},
-                'end_time': {id: 'end-time', xtype: 'gxp_datetimefield'},
+                'start_time': {id: 'start-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() { 
+                    this.setValue(new Date(me.playback.playbackToolbar.control.currentValue).clearTime());
+                    this.fireEvent('select', this, this.value);
+                }},
+                'end_time': {id: 'end-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() {
+                    this.setValue(new Date(me.playback.playbackToolbar.control.currentValue).clearTime());
+                    this.fireEvent('select', this, this.value);
+                }},
                 'content': {xtype: 'textarea'},
                 'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: this.appearanceData}
             },
