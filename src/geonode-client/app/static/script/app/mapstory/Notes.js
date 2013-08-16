@@ -100,7 +100,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     mediaHtml: 'Use <a href="http://mapstory.org/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
     isNewMap: null,
     outputAction: 0,
-    outputConfig: {constrain: true, closeAction: 'hide', cls: 'annotations-manager'},
+    outputConfig: {constrain: true, closeAction: 'hide'},
     createStore: function (id) {
         this.annotationsEndPoint = '/maps/' + id + '/annotations';
         this.store = new GeoExt.data.FeatureStore({
