@@ -654,6 +654,7 @@ def map_controller(request, mapid):
     else:
         return mapdetail(request, mapid)
 
+@login_required
 def view(request, mapid):
     """  
     The view that returns the map composer opened to
