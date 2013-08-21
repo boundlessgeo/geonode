@@ -317,6 +317,18 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                             emptyText: this.uploadEmptyText,
                             fieldLabel: this.uploadFieldLabel
                         }],
+                        footerCfg : {
+                            tag: 'div',
+                            children : [
+                                {
+                                    tag: 'div',
+                                    style: 'position:absolute; margin: 5px 0 0 10px;',
+                                    children : [
+                                        { html: '<a href="http://mapstory.org/mapstory/manual/#bulk-upload-of-annotations" target="_blank">Learn More</a>' }
+                                    ]
+                                }
+                            ]
+                        },
                         buttons: [{
                             text: this.uploadText,
                             handler: function() {
