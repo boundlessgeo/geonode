@@ -97,7 +97,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     uploadEmptyText: 'Select a CSV file',
     uploadFieldLabel: 'CSV',
     failureTitle: 'Upload Error',
-    mediaHtml: 'Use <a href="http://mapstory.org/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
+    mediaHtml: 'Use <a href="/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
     isNewMap: null,
     outputAction: 0,
     outputConfig: {constrain: true, closeAction: 'hide'},
@@ -324,7 +324,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                                     tag: 'div',
                                     style: 'position:absolute; margin: 5px 0 0 10px;',
                                     children : [
-                                        { html: '<a href="http://mapstory.org/mapstory/manual/#bulk-upload-of-annotations" target="_blank">Learn More</a>' }
+                                        { html: '<a href="/mapstory/manual/#bulk-upload-of-annotations" target="_blank">Learn More</a>' }
                                     ]
                                 }
                             ]
