@@ -26,7 +26,7 @@ django-activity-stream==0.4.4
 django-announcements==1.0.2
 django-flatblocks==0.6.0
 docutils
--e git://github.com/pinax/django-flag.git#egg=django-flag
+-e git://github.com/ischneider/django-flag.git@add_flag_type#egg=django-flag
 django-social-auth
 django-oauth2-provider
 -e git://github.com/worldcompany/djangoembed#egg=oembed
