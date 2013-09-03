@@ -186,6 +186,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             });
             return;
         }
+        this.outputConfig.x = this.target.mapPanel.body.getLeft() + 20;
         this.target.mapPanel.map.events.on({
             'preaddlayer': function(evt) {
                 evt.layer.name = this.layerTitle;
