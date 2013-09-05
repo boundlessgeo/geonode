@@ -20,6 +20,7 @@ from geonode.simplesearch.models import MapIndex
 from geonode.simplesearch.models import filter_by_period
 
 from avatar.util import get_default_avatar_url
+from avatar.templatetags.avatar_tags import avatar_url
 
 import re
 import operator
@@ -198,7 +199,7 @@ class OwnerNormalizer(Normalizer):
         contact = self.o
         user = contact.user
         try:
-            doc['thumb'] = user.avatar_set.all()[0].avatar_url(80)
+            doc['thumb'] = avatar_url(user, 80)
         except IndexError:
             doc['thumb'] = _default_avatar_url
         doc['id'] = user.username
