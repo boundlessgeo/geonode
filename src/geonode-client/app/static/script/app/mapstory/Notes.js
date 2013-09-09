@@ -9,74 +9,6 @@ Ext.override(Ext.grid.GridView, {
     }
 });
 
-// http://www.sencha.com/forum/showthread.php?138260
-Ext.grid.GridView.override({    layout : function(initial) {
-        if (!this.mainBody) {
-            return; // not rendered
-        }
-
-
-        var grid       = this.grid,
-            gridEl     = grid.getGridEl(),
-            gridSize   = gridEl.getSize(true),
-            gridWidth  = gridSize.width,
-            gridHeight = gridSize.height,
-            scroller   = this.scroller,
-            scrollStyle, headerHeight, scrollHeight;
-        
-        if (gridWidth < 20 || gridHeight < 20) {
-            return;
-        }
-        
-        if (grid.autoHeight) {  
-            scrollStyle = scroller.dom.style;
-            // bartvde initially the gridHeight is very small
-            if (Ext.isNumber(grid.maxHeight) /*&& gridHeight > grid.maxHeight*/) {
-                gridHeight = grid.maxHeight;
-                this.el.setSize(gridWidth, gridHeight);
-                
-                headerHeight = this.mainHd.getHeight();
-                scrollHeight = gridHeight - headerHeight;
-                scroller.setSize(gridWidth, scrollHeight);
-                
-                scrollStyle.overflow = '';
-                scrollStyle.position = '';
-            } else {
-                this.el.setSize();
-                scroller.setSize();
-                
-                scrollStyle.overflow = 'visible';
-                if (Ext.isWebKit) {
-                    scrollStyle.position = 'static';
-                }
-            }
-        } else {
-            this.el.setSize(gridWidth, gridHeight);
-            
-            headerHeight = this.mainHd.getHeight();
-            scrollHeight = gridHeight - headerHeight;
-            
-            scroller.setSize(gridWidth, scrollHeight);
-            
-            if (this.innerHd) {
-                this.innerHd.style.width = (gridWidth) + "px";
-            }
-        }
-        
-        if (this.forceFit || (initial === true && this.autoFill)) {
-            if (this.lastViewWidth != gridWidth) {
-                this.fitColumns(false, false);
-                this.lastViewWidth = gridWidth;
-            }
-        } else {
-            this.autoExpand();
-            this.syncHeaderScroll();
-        }
-        
-        this.onLayout(gridWidth, scrollHeight);
-    }
-});
-
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     timeline: null,
@@ -100,7 +32,9 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     mediaHtml: 'Use <a href="/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
     isNewMap: null,
     outputAction: 0,
-    outputConfig: {constrain: true, closeAction: 'hide'},
+    /* dummy outputTarget is needed so that action->click in gxp.plugins.Tool does the right thing */
+    outputTarget: 'foo',
+    outputConfig: {layout: 'fit', height: 200, constrain: true, closeAction: 'hide'},
     createStore: function (id) {
         this.annotationsEndPoint = '/maps/' + id + '/annotations';
         this.store = new GeoExt.data.FeatureStore({
@@ -186,7 +120,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             });
             return;
         }
-        this.outputConfig.x = this.target.mapPanel.body.getLeft() + 20;
         this.target.mapPanel.map.events.on({
             'preaddlayer': function(evt) {
                 evt.layer.name = this.layerTitle;
@@ -202,9 +135,10 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         gxp.form.ExtendedDateField.prototype.getPickerDate = function() {
             return new Date(me.playback.playbackToolbar.control.currentValue);
         };
-        var output = mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
+        var outputConfig = Ext.apply({}, this.outputConfig);
+        outputConfig.x = this.target.mapPanel.body.getLeft() + 20;
+        outputConfig.items = [{
             xtype: 'gxp_featuregrid',
-            maxHeight: 200,
             viewConfig: {
                 forceFit: true
             },
@@ -467,9 +401,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             },
             store: this.store,
             map:  this.target.mapPanel.map
-        });
-        this.pos_ = output.ownerCt.ownerCt.getPosition();
-        output.ownerCt.ownerCt.on('hide', function() {
+        }];
+        var win = new Ext.Window(outputConfig).show();
+        var output = win.items.get(0);
+        this.output = [output];
+        this.pos_ = win.getPosition();
+        win.on('hide', function() {
             output.getSelectionModel().clearSelections();
             var editor = output.plugins[0];
             editor.stopEditing();
@@ -484,7 +421,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 this.store.removeAt(0);
             }
         }, this);
-        output.ownerCt.ownerCt.on('move', function(cmp, x, y) {
+        win.on('move', function(cmp, x, y) {
             var editor = output.plugins[0];
             if (editor && editor.rendered) {
                 var pos = editor.getPosition();
@@ -494,7 +431,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }
             this.pos_ = [x, y];
         }, this);
-        return output;
+        return win;
     },
 
     addActions: function () {
