@@ -68,7 +68,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         if (this.timelineTool) {
             this.timelineTool.on('click', function(fid) {
                 if (this.output[0]) {
-                    this.output[0].ownerCt.ownerCt.show();
+                    this.output[0].ownerCt.show();
                 } else {
                     this.addOutput();
                 }
