@@ -2,6 +2,45 @@ Ext.ns('mapstory.plugins');
 
 Ext.Tip.prototype.defaultAlign = 'tr-tr?';
 
+
+Ext.ns('Ext.ux.util');
+Ext.ux.util.HiddenForm = function(url,fields){
+window.console.log(url);
+    if (!Ext.isArray(fields))
+        return;
+    var body = Ext.getBody(),
+        frame = body.createChild({
+            tag:'iframe',
+            cls:'x-hidden',
+            id:'hiddenform-iframe',
+            name:'iframe'
+        }),
+        form = body.createChild({
+            tag:'form',
+            cls:'x-hidden',
+            method: 'GET',
+            id:'hiddenform-form',
+            action: url,
+            target:'iframe'
+        });
+    Ext.each(fields, function(el,i){
+        if (!Ext.isArray(el))
+            return false;
+        form.createChild({
+            tag:'input',
+            type:'text',
+            cls:'x-hidden',
+            id: 'hiddenform-' + el[0],
+            name: el[0],
+            value: el[1]
+        });
+    });
+
+    form.dom.submit();
+
+    return frame;
+};
+
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     timeline: null,
@@ -299,18 +338,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }, {
                 text: this.downloadText,
                 handler: function() {
-                    Ext.Ajax.request({
-                        url: this.annotationsEndPoint + '?csv',
-                        method: "GET",
-                        disableCaching: true,
-                        success: function(response) {
-                            var uriContent = "data:text/csv," + encodeURIComponent(response.responseText);
-                            window.location.href = uriContent;
-                        },
-                        failure: function() {
-                        },
-                        scope: this
-                    });
+                    Ext.ux.util.HiddenForm(this.annotationsEndPoint, [['csv', '']]);
                 },
                 scope: this
             }, '->', {                
