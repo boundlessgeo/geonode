@@ -133,7 +133,9 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         var me = this;
         // override to get date time picker to use current time in playback
         gxp.form.ExtendedDateField.prototype.getPickerDate = function() {
-            return new Date(me.playback.playbackToolbar.control.currentValue);
+            var d = new Date(me.playback.playbackToolbar.control.currentValue);
+            d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+            return d;
         };
         var outputConfig = Ext.apply({}, this.outputConfig);
         outputConfig.x = this.target.mapPanel.body.getLeft() + 20;
@@ -364,11 +366,15 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'},
                 'start_time': {id: 'start-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() {
-                    this.setValue(new Date(me.playback.playbackToolbar.control.currentValue));
+                    var d = new Date(me.playback.playbackToolbar.control.currentValue);
+                    d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+                    this.setValue(d);
                     this.fireEvent('select', this, this.value);
                 }},
                 'end_time': {id: 'end-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() {
-                    this.setValue(new Date(me.playback.playbackToolbar.control.currentValue));
+                    var d = new Date(me.playback.playbackToolbar.control.currentValue);
+                    d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+                    this.setValue(d);
                     this.fireEvent('select', this, this.value);
                 }},
                 'content': {xtype: 'textarea'},
