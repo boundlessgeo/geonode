@@ -2,13 +2,6 @@ Ext.ns('mapstory.plugins');
 
 Ext.Tip.prototype.defaultAlign = 'tr-tr?';
 
-// make sure row editor is visible on the last row
-Ext.override(Ext.grid.GridView, {
-    getEditorParent: function() {
-        return document.body;
-    }
-});
-
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
     timeline: null,
@@ -411,7 +404,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         var win = new Ext.Window(outputConfig).show();
         var output = win.items.get(0);
         this.output = [output];
-        this.pos_ = win.getPosition();
         win.on('hide', function() {
             output.getSelectionModel().clearSelections();
             var editor = output.plugins[0];
@@ -426,16 +418,6 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             if (hasInsert === true && this.store.getAt(0).getFeature().state === OpenLayers.State.INSERT) {
                 this.store.removeAt(0);
             }
-        }, this);
-        win.on('move', function(cmp, x, y) {
-            var editor = output.plugins[0];
-            if (editor && editor.rendered) {
-                var pos = editor.getPosition();
-                var deltaX = this.pos_[0] - x;
-                var deltaY = this.pos_[1] - y;
-                editor.setPosition([pos[0] - deltaX, pos[1] - deltaY]);
-            }
-            this.pos_ = [x, y];
         }, this);
         return win;
     },
