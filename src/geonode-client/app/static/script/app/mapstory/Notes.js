@@ -79,8 +79,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 {name: 'content', type: 'string'},
                 {name: 'start_time', type: 'integer', useNull: true},
                 {name: 'end_time', type: 'integer', useNull: true},
-                {name: 'in_map', type: 'boolean'},
-                {name: 'in_timeline', type: 'boolean'},
+                {name: 'in_map', type: 'boolean', defaultValue: true},
+                {name: 'in_timeline', type: 'boolean', defaultValue: true},
                 {name: 'appearance', type: 'string'}
             ],
             proxy: new gxp.data.WFSProtocolProxy({
@@ -251,7 +251,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     ]);
                     var feature = new OpenLayers.Feature.Vector();
                     feature.state = OpenLayers.State.INSERT;
-                    this.store.insert(0, new recordType({feature: feature, 'in_map': true}));
+                    this.store.insert(0, new recordType({feature: feature, 'in_map': true, 'in_timeline': true}));
                     this.output[0].getView().refresh();
                     this.output[0].getSelectionModel().selectRow(0);
                     editor.startEditing(0);
