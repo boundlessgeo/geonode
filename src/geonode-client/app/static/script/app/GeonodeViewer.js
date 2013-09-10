@@ -280,6 +280,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
 
         window.scrollTo(0, 0);
         this.setHashUrl("#full");
+        Ext.getBody().addClass('ms-fullscreen');
         this.fullScreen = true;
         this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
     },
@@ -307,6 +308,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         // we need to set the value of the hash url to be empty
         this.setHashUrl("");
         this.fullScreen = false;
+        Ext.getBody().removeClass('ms-fullscreen');
         this.fireEvent('togglesize', this.fullScreen, this.isAuthorized());
 
     },
