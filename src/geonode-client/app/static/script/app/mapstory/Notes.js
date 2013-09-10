@@ -79,8 +79,8 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 {name: 'content', type: 'string'},
                 {name: 'start_time', type: 'integer', useNull: true},
                 {name: 'end_time', type: 'integer', useNull: true},
-                {name: 'in_map', type: 'boolean', defaultValue: true},
-                {name: 'in_timeline', type: 'boolean', defaultValue: true},
+                {name: 'in_map', type: 'boolean'},
+                {name: 'in_timeline', type: 'boolean'},
                 {name: 'appearance', type: 'string'}
             ],
             proxy: new gxp.data.WFSProtocolProxy({
@@ -243,7 +243,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     var recordType = GeoExt.data.FeatureRecord.create([
                         {name: 'title'},
                         {name: 'content'},
-                        {name: 'in_map'}, 
+                        {name: 'in_map'},
                         {name: 'in_timeline'},
                         {name: 'start_time'},
                         {name: 'end_time'},
@@ -306,7 +306,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                                         title: this.failureTitle,
                                         msg: o.response.responseText,
                                         width: 350,
-                                        buttons: Ext.Msg.OK 
+                                        buttons: Ext.Msg.OK
                                     });
                                 };
                                 if (fp.getForm().isValid()){
