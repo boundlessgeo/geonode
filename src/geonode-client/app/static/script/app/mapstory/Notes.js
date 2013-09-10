@@ -2,10 +2,9 @@ Ext.ns('mapstory.plugins');
 
 Ext.Tip.prototype.defaultAlign = 'tr-tr?';
 
-
+// see http://stackoverflow.com/questions/13601124/downloading-image-text-file-using-iframe
 Ext.ns('Ext.ux.util');
 Ext.ux.util.HiddenForm = function(url,fields){
-window.console.log(url);
     if (!Ext.isArray(fields))
         return;
     var body = Ext.getBody(),
