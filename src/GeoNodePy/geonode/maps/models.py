@@ -1042,15 +1042,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     @property
     def resource(self):
         if not hasattr(self, "_resource_cache"):
-            cat = Layer.objects.gs_catalog
-            try:
-                ws = cat.get_workspace(self.workspace)
-            except AttributeError:
-                # Geoserver is not running
-                raise RuntimeError("Geoserver cannot be accessed, are you sure it is running in: %s" %
-                                    (settings.INTERNAL_GEOSERVER_BASE_URL))
-            store = cat.get_store(self.store, ws)
-            self._resource_cache = cat.get_resource(self.name, store)
+            self._resource_cache = self.publishing.resource
         return self._resource_cache
 
     def _get_metadata_links(self):
@@ -1062,18 +1054,24 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     metadata_links = property(_get_metadata_links, _set_metadata_links)
 
     def _get_default_style(self):
-        return self.publishing.default_style
+        if not hasattr(self, '_cached_default_style'):
+            self._cached_default_style = self.publishing.default_style
+        return self._cached_default_style
 
     def _set_default_style(self, style):
         self.publishing.default_style = style
+        self._cached_default_style = style
 
     default_style = property(_get_default_style, _set_default_style)
 
     def _get_styles(self):
-        return self.publishing.styles
+        if not hasattr(self, '_cached_styles'):
+            self._cached_styles = getattr(self, '_cached_styles', self.publishing.styles)
+        return self._cached_styles
 
     def _set_styles(self, styles):
         self.publishing.styles = styles
+        self._cached_styles = styles
 
     def _thumbnail_updated(self, thumb, created):
         if created:

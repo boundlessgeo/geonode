@@ -317,12 +317,12 @@ def csv_step_view(request, upload_session):
     # try to guess the lat/lng fields from the candidates
     lat_candidate = None
     lng_candidate = None
-    non_str_in_headers = False
+    non_str_in_headers = []
     for candidate in attributes:
+        if not isinstance(candidate.name, basestring):
+            non_str_in_headers.append(str(candidate.name))
         if candidate.name in point_candidates:
-            if not isinstance(candidate.name, basestring):
-                non_str_in_headers = True
-            elif is_latitude(candidate.name):
+            if is_latitude(candidate.name):
                 lat_candidate = candidate.name
             elif is_longitude(candidate.name):
                 lng_candidate = candidate.name
@@ -338,7 +338,10 @@ def csv_step_view(request, upload_session):
     possible_data_problems = None
     if non_str_in_headers:
         possible_data_problems = "There are some suspicious column names in \
-                                 your data. Did you provide column names in the header?"
+                                 your data. Did you provide column names in the header? \
+                                 The following names look wrong: "
+        possible_data_problems += ','.join(non_str_in_headers)
+
     context = dict(present_choices=present_choices,
                    point_candidates=point_candidates,
                    async_upload=_is_async_step(upload_session),
@@ -360,7 +363,7 @@ def time_step_view(request, upload_session):
         # check for invalid attribute names
         feature_type = import_session.tasks[0].items[0].resource
         if feature_type.resource_type == 'featureType':
-            invalid = filter(lambda a: a.name.find(' ') >= 0, feature_type.attributes)
+            invalid = filter(lambda a: str(a.name).find(' ') >= 0, feature_type.attributes)
             if invalid:
                 att_list = "<pre>%s</pre>" % '. '.join([a.name for a in invalid])
                 msg = "Attributes with spaces are not supported : %s" % att_list

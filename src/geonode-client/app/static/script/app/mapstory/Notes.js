@@ -2,80 +2,43 @@ Ext.ns('mapstory.plugins');
 
 Ext.Tip.prototype.defaultAlign = 'tr-tr?';
 
-// make sure row editor is visible on the last row
-Ext.override(Ext.grid.GridView, {
-    getEditorParent: function() {
-        return document.body;
-    }
-});
+// see http://stackoverflow.com/questions/13601124/downloading-image-text-file-using-iframe
+Ext.ns('Ext.ux.util');
+Ext.ux.util.HiddenForm = function(url,fields){
+    if (!Ext.isArray(fields))
+        return;
+    var body = Ext.getBody(),
+        frame = body.createChild({
+            tag:'iframe',
+            cls:'x-hidden',
+            id:'hiddenform-iframe',
+            name:'iframe'
+        }),
+        form = body.createChild({
+            tag:'form',
+            cls:'x-hidden',
+            method: 'GET',
+            id:'hiddenform-form',
+            action: url,
+            target:'iframe'
+        });
+    Ext.each(fields, function(el,i){
+        if (!Ext.isArray(el))
+            return false;
+        form.createChild({
+            tag:'input',
+            type:'text',
+            cls:'x-hidden',
+            id: 'hiddenform-' + el[0],
+            name: el[0],
+            value: el[1]
+        });
+    });
 
-// http://www.sencha.com/forum/showthread.php?138260
-Ext.grid.GridView.override({    layout : function(initial) {
-        if (!this.mainBody) {
-            return; // not rendered
-        }
+    form.dom.submit();
 
-
-        var grid       = this.grid,
-            gridEl     = grid.getGridEl(),
-            gridSize   = gridEl.getSize(true),
-            gridWidth  = gridSize.width,
-            gridHeight = gridSize.height,
-            scroller   = this.scroller,
-            scrollStyle, headerHeight, scrollHeight;
-        
-        if (gridWidth < 20 || gridHeight < 20) {
-            return;
-        }
-        
-        if (grid.autoHeight) {  
-            scrollStyle = scroller.dom.style;
-            // bartvde initially the gridHeight is very small
-            if (Ext.isNumber(grid.maxHeight) /*&& gridHeight > grid.maxHeight*/) {
-                gridHeight = grid.maxHeight;
-                this.el.setSize(gridWidth, gridHeight);
-                
-                headerHeight = this.mainHd.getHeight();
-                scrollHeight = gridHeight - headerHeight;
-                scroller.setSize(gridWidth, scrollHeight);
-                
-                scrollStyle.overflow = '';
-                scrollStyle.position = '';
-            } else {
-                this.el.setSize();
-                scroller.setSize();
-                
-                scrollStyle.overflow = 'visible';
-                if (Ext.isWebKit) {
-                    scrollStyle.position = 'static';
-                }
-            }
-        } else {
-            this.el.setSize(gridWidth, gridHeight);
-            
-            headerHeight = this.mainHd.getHeight();
-            scrollHeight = gridHeight - headerHeight;
-            
-            scroller.setSize(gridWidth, scrollHeight);
-            
-            if (this.innerHd) {
-                this.innerHd.style.width = (gridWidth) + "px";
-            }
-        }
-        
-        if (this.forceFit || (initial === true && this.autoFill)) {
-            if (this.lastViewWidth != gridWidth) {
-                this.fitColumns(false, false);
-                this.lastViewWidth = gridWidth;
-            }
-        } else {
-            this.autoExpand();
-            this.syncHeaderScroll();
-        }
-        
-        this.onLayout(gridWidth, scrollHeight);
-    }
-});
+    return frame;
+};
 
 mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     ptype: 'ms_notes_manager',
@@ -97,10 +60,12 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
     uploadEmptyText: 'Select a CSV file',
     uploadFieldLabel: 'CSV',
     failureTitle: 'Upload Error',
-    mediaHtml: 'Use <a href="http://mapstory.org/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
+    mediaHtml: 'Use <a href="/mapstory/manual/#using-media-in-annotations" target="_blank">media</a> in your annotations',
     isNewMap: null,
     outputAction: 0,
-    outputConfig: {closeAction: 'hide'},
+    /* dummy outputTarget is needed so that action->click in gxp.plugins.Tool does the right thing */
+    outputTarget: 'foo',
+    outputConfig: {layout: 'fit', height: 200, constrain: true, closeAction: 'hide'},
     createStore: function (id) {
         this.annotationsEndPoint = '/maps/' + id + '/annotations';
         this.store = new GeoExt.data.FeatureStore({
@@ -134,7 +99,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         if (this.timelineTool) {
             this.timelineTool.on('click', function(fid) {
                 if (this.output[0]) {
-                    this.output[0].ownerCt.ownerCt.show();
+                    this.output[0].ownerCt.show();
                 } else {
                     this.addOutput();
                 }
@@ -199,11 +164,14 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
         var me = this;
         // override to get date time picker to use current time in playback
         gxp.form.ExtendedDateField.prototype.getPickerDate = function() {
-            return new Date(me.playback.playbackToolbar.control.currentValue);
+            var d = new Date(me.playback.playbackToolbar.control.currentValue);
+            d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+            return d;
         };
-        var output = mapstory.plugins.NotesManager.superclass.addOutput.call(this, {
+        var outputConfig = Ext.apply({}, this.outputConfig);
+        outputConfig.x = this.target.mapPanel.body.getLeft() + 20;
+        outputConfig.items = [{
             xtype: 'gxp_featuregrid',
-            maxHeight: 200,
             viewConfig: {
                 forceFit: true
             },
@@ -275,7 +243,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     var recordType = GeoExt.data.FeatureRecord.create([
                         {name: 'title'},
                         {name: 'content'},
-                        {name: 'in_map'}, 
+                        {name: 'in_map'},
                         {name: 'in_timeline'},
                         {name: 'start_time'},
                         {name: 'end_time'},
@@ -283,7 +251,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                     ]);
                     var feature = new OpenLayers.Feature.Vector();
                     feature.state = OpenLayers.State.INSERT;
-                    this.store.insert(0, new recordType({feature: feature, 'in_map': true}));
+                    this.store.insert(0, new recordType({feature: feature, 'in_map': true, 'in_timeline': true}));
                     this.output[0].getView().refresh();
                     this.output[0].getSelectionModel().selectRow(0);
                     editor.startEditing(0);
@@ -317,6 +285,18 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                             emptyText: this.uploadEmptyText,
                             fieldLabel: this.uploadFieldLabel
                         }],
+                        footerCfg : {
+                            tag: 'div',
+                            children : [
+                                {
+                                    tag: 'div',
+                                    style: 'position:absolute; margin: 5px 0 0 10px;',
+                                    children : [
+                                        { html: '<a href="/mapstory/manual/#bulk-upload-of-annotations" target="_blank">Learn More</a>' }
+                                    ]
+                                }
+                            ]
+                        },
                         buttons: [{
                             text: this.uploadText,
                             handler: function() {
@@ -326,7 +306,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                                         title: this.failureTitle,
                                         msg: o.response.responseText,
                                         width: 350,
-                                        buttons: Ext.Msg.OK 
+                                        buttons: Ext.Msg.OK
                                     });
                                 };
                                 if (fp.getForm().isValid()){
@@ -357,18 +337,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             }, {
                 text: this.downloadText,
                 handler: function() {
-                    Ext.Ajax.request({
-                        url: this.annotationsEndPoint + '?csv',
-                        method: "GET",
-                        disableCaching: true,
-                        success: function(response) {
-                            var uriContent = "data:text/csv," + encodeURIComponent(response.responseText);
-                            window.location.href = uriContent;
-                        },
-                        failure: function() {
-                        },
-                        scope: this
-                    });
+                    Ext.ux.util.HiddenForm(this.annotationsEndPoint, [['csv', '']]);
                 },
                 scope: this
             }, '->', {                
@@ -416,8 +385,18 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             customEditors: {
                 'in_map': {xtype: 'checkbox'},
                 'in_timeline': {xtype: 'checkbox'},
-                'start_time': {id: 'start-time', xtype: 'gxp_datetimefield'},
-                'end_time': {id: 'end-time', xtype: 'gxp_datetimefield'},
+                'start_time': {id: 'start-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() {
+                    var d = new Date(me.playback.playbackToolbar.control.currentValue);
+                    d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+                    this.setValue(d);
+                    this.fireEvent('select', this, this.value);
+                }},
+                'end_time': {id: 'end-time', xtype: 'gxp_datetimefield', todayText: 'Now', selectToday: function() {
+                    var d = new Date(me.playback.playbackToolbar.control.currentValue);
+                    d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+                    this.setValue(d);
+                    this.fireEvent('select', this, this.value);
+                }},
                 'content': {xtype: 'textarea'},
                 'appearance': {xtype: 'combo', mode: 'local', triggerAction: 'all', store: this.appearanceData}
             },
@@ -448,9 +427,11 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
             },
             store: this.store,
             map:  this.target.mapPanel.map
-        });
-        this.pos_ = output.ownerCt.ownerCt.getPosition();
-        output.ownerCt.ownerCt.on('hide', function() {
+        }];
+        var win = new Ext.Window(outputConfig).show();
+        var output = win.items.get(0);
+        this.output = [output];
+        win.on('hide', function() {
             output.getSelectionModel().clearSelections();
             var editor = output.plugins[0];
             editor.stopEditing();
@@ -465,17 +446,7 @@ mapstory.plugins.NotesManager = Ext.extend(gxp.plugins.Tool, {
                 this.store.removeAt(0);
             }
         }, this);
-        output.ownerCt.ownerCt.on('move', function(cmp, x, y) {
-            var editor = output.plugins[0];
-            if (editor && editor.rendered) {
-                var pos = editor.getPosition();
-                var deltaX = this.pos_[0] - x;
-                var deltaY = this.pos_[1] - y;
-                editor.setPosition([pos[0] - deltaX, pos[1] - deltaY]);
-            }
-            this.pos_ = [x, y];
-        }, this);
-        return output;
+        return win;
     },
 
     addActions: function () {

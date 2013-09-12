@@ -185,7 +185,10 @@ GeoExplorer = Ext.extend(gxp.Viewer, {
              */
             "beforeunload"
         );
-        
+
+        this.on('portalready', function() {
+            Ext.getCmp('map-bbar').add('->', {xtype: 'container', html: '<a href="http://help.mapstory.org">Help</a> | <a href="http://wiki.mapstory.org/index.php?title=How_To">How-To</a> | <a href="http://mapstory.org/mapstory/manual/">Manual</a>'});
+        }, this, {delay: 500});
         // Common tools for viewer and composer go here. Note that this
         // modifies the viewer's initialConfig.
         if (config.useToolbar !== false) {

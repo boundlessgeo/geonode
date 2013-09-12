@@ -654,6 +654,7 @@ def map_controller(request, mapid):
     else:
         return mapdetail(request, mapid)
 
+@login_required
 def view(request, mapid):
     """  
     The view that returns the map composer opened to
@@ -1148,6 +1149,8 @@ def user_name(request):
         elif _get_basic_auth_info(request) == settings.GEOSERVER_CREDENTIALS:
             geoserver = True
             superuser = True
+        else:
+            return HttpResponse(_("Bad HTTP Authorization Credentials."), status=401)
     if not any([user, geoserver, superuser]) and not request.user.is_anonymous():
         user = request.user.username
         superuser = request.user.is_superuser
