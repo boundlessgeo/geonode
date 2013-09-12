@@ -9,7 +9,7 @@ Django==1.4.5
 django-extensions
 httplib2
 psycopg2
--e git+https://github.com/opengeo/gsconfig.py.git#egg=gsconfig.py
+-e git+https://github.com/opengeo/gsconfig.git#egg=gsconfig
 django-registration
 django-profiles
 geonode-avatar==2.1.1
