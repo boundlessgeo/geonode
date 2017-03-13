@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import shutil
+import logging
 
 import json
 
@@ -37,18 +38,26 @@ STATIC_ROOT = 'static_root'
 STATICFILES_DIRS = 'static_dirs'
 TEMPLATE_DIRS = 'template_dirs'
 LOCALE_PATHS = 'locale_dirs'
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(name)-15s %(levelname)-8s %(lineno)d %(message)s',
+    datefmt='%m-%d-%Y %H:%M:%S',
+    filename="/var/log/geonode_restore.log",
+    filemode='a'
+)
+
+console_logger = logging.StreamHandler()
+console_logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(name)-10s: %(levelname)-8s %(message)s')
+console_logger.setFormatter(formatter)
+logging.getLogger('').addHandler(console_logger)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logger = logging.getLogger('logger')
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'settings.ini'))
 
-PG_DUMP_CMD = config.get('database', 'pgdump')
-PG_RESTORE_CMD = config.get('database', 'pgrestore')
-GS_DATA_DIR = config.get('geoserver', 'datadir')
-GS_DUMP_VECTOR_DATA = config.getboolean('geoserver', 'dumpvectordata')
-GS_DUMP_RASTER_DATA = config.getboolean('geoserver', 'dumprasterdata')
-
-app_names = config.get('fixtures', 'apps').split(',')
-dump_names = config.get('fixtures', 'dumps').split(',')
 migrations = config.get('fixtures', 'migrations').split(',')
 manglers = config.get('fixtures', 'manglers').split(',')
 
@@ -65,14 +74,14 @@ def get_db_conn(db_name, db_user, db_port, db_host, db_passwd):
     return conn
 
 
-def patch_db(db_name, db_user, db_port, db_host, db_passwd):
+def patch_db(db_name, db_user, db_port, db_host, db_passwd, schema='public'):
     """Apply patch to GeoNode DB"""
     conn = get_db_conn(db_name, db_user, db_port, db_host, db_passwd)
     curs = conn.cursor()
 
     try:
-        curs.execute("ALTER TABLE base_contactrole ALTER COLUMN resource_id DROP NOT NULL")
-        curs.execute("ALTER TABLE base_link ALTER COLUMN resource_id DROP NOT NULL")
+        curs.execute("ALTER TABLE {}.base_contactrole ALTER COLUMN resource_id DROP NOT NULL".format(schema))
+        curs.execute("ALTER TABLE {}.base_link ALTER COLUMN resource_id DROP NOT NULL".format(schema))
     except Exception:
         try:
             conn.rollback()
@@ -84,14 +93,14 @@ def patch_db(db_name, db_user, db_port, db_host, db_passwd):
     conn.commit()
 
 
-def cleanup_db(db_name, db_user, db_port, db_host, db_passwd):
+def cleanup_db(db_name, db_user, db_port, db_host, db_passwd, schema='public'):
     """Remove spurious records from GeoNode DB"""
     conn = get_db_conn(db_name, db_user, db_port, db_host, db_passwd)
     curs = conn.cursor()
 
     try:
-        curs.execute("DELETE FROM base_contactrole WHERE resource_id is NULL;")
-        curs.execute("DELETE FROM base_link WHERE resource_id is NULL;")
+        curs.execute("DELETE FROM {}.base_contactrole WHERE resource_id is NULL;".format(schema))
+        curs.execute("DELETE FROM {}.base_link WHERE resource_id is NULL;".format(schema))
     except Exception:
         try:
             conn.rollback()
@@ -103,61 +112,67 @@ def cleanup_db(db_name, db_user, db_port, db_host, db_passwd):
     conn.commit()
 
 
-def dump_db(db_name, db_user, db_port, db_host, db_passwd, target_folder):
+def dump_db(db_name, db_user, db_passwd, target_folder, db_port=5432,
+            db_host='localhost', db_schemas=['public'], pg_dump_cmd='pg_dump'):
     """Dump Full DB into target folder"""
-    db_host = db_host if db_host is not None else 'localhost'
-    db_port = db_port if db_port is not None else 5432
     conn = get_db_conn(db_name, db_user, db_port, db_host, db_passwd)
     curs = conn.cursor()
 
-    try:
-        curs.execute("""SELECT tablename from pg_tables where tableowner = 'geonode'""")
-        pg_tables = curs.fetchall()
-        for table in pg_tables:
-            print "Dumping GeoServer Vectorial Data : " + table[0]
-            os.system('PGPASSWORD="' + db_passwd + '" ' + PG_DUMP_CMD + ' -i -h ' + db_host +
-                      ' -p ' + db_port + ' -U ' + db_user + ' -F c -b -d ' + db_name +
-                      ' -t ' + table[0] + ' -f ' +
-                      os.path.join(target_folder, table[0] + '.dump'))
-
-    except Exception:
+    for schema in db_schemas:
         try:
-            conn.rollback()
-        except:
-            pass
+            # Limiting tables by owner is probably not the right thing.
+            # Dumping the entire schema would probably be easier/safer
+            curs.execute("""SELECT tablename from pg_tables where tableowner = '{db_user}'
+                               and schemaname = '{schema}'""".format(db_user=db_user, schema=schema))
+            tables = curs.fetchall()
 
-        traceback.print_exc()
+            curs.execute("""select viewname from pg_views where schemaname = '{schema}'
+                               and viewowner = '{db_user}'""".format(db_user=db_user, schema=schema))
+            views = curs.fetchall()
 
-    conn.commit()
+            curs.execute("""select sequence_name from information_schema.sequences where
+                               sequence_schema = '{schema}'""".format(schema=schema))
+            sequences = curs.fetchall()
+        except Exception:
+            try:
+                conn.rollback()
+            except:
+                pass
+
+            traceback.print_exc()
+
+        conn.commit()
+
+        base_cmd = "PGPASSWORD='{passwd}' {pg_dump} -h {host} -p {port} -U {user} -Fc -b -d {db_name}".format(
+                           passwd=db_passwd, pg_dump=pg_dump_cmd, host=db_host,
+                           port=db_port, user=db_user, db_name=db_name)
+
+        tables_cmd = ["-t {schema}.'\"{table}\"'".format(table=t[0], schema=schema) for t in tables]
+        if views:
+            views_cmd = ["-t {schema}.'\"{view}\"'".format(view=v[0], schema=schema) for v in views]
+            [tables_cmd.append(v) for v in views_cmd]
+        if sequences:
+            sequences_cmd = ["-t {schema}.'\"{sequence}\"'".format(sequence=s[0], schema=schema) for s in sequences]
+            [tables_cmd.append(s) for s in sequences_cmd]
+
+        print "Dumping GeoServer vector data from postgres"
+        backup_path = os.path.join(target_folder, "postgres_backup_{}.dump".format(schema))
+        os.system("{base_cmd}  {backup_tables} -f {backup_path}".format(
+                           base_cmd=base_cmd, backup_tables=" ".join(tables_cmd), backup_path=backup_path))
 
 
-def restore_db(db_name, db_user, db_port, db_host, db_passwd, source_folder):
+def restore_db(db_name, db_user, db_passwd, backup_files, pg_restore_cmd,
+               db_port=5432, db_host='localhost', clean=True):
     """Restore Full DB into target folder"""
-    db_host = db_host if db_host is not None else 'localhost'
-    db_port = db_port if db_port is not None else 5432
-    conn = get_db_conn(db_name, db_user, db_port, db_host, db_passwd)
-    # curs = conn.cursor()
+    for f in backup_files:
+        print "Restoring GeoServer vector data : {}".format(f)
+        base_cmd = "PGPASSWORD='{passwd}' {pg_restore} -h {host} -p {port} -U {user} -Fc -d {db_name}".format(
+                           passwd=db_passwd, pg_restore=pg_restore_cmd, host=db_host,
+                           port=db_port, user=db_user, db_name=db_name)
+        if clean:
+            base_cmd += ' -c'
 
-    try:
-        included_extenstions = ['dump', 'sql']
-        file_names = [fn for fn in os.listdir(source_folder)
-                      if any(fn.endswith(ext) for ext in included_extenstions)]
-        for table in file_names:
-            print "Restoring GeoServer Vectorial Data : " + os.path.splitext(table)[0]
-            os.system('PGPASSWORD="' + db_passwd + '" ' + PG_RESTORE_CMD + ' -c -h ' + db_host +
-                      ' -p ' + db_port + ' -U ' + db_user + ' -F c -d ' + db_name +
-                      ' -t ' + table[0] + ' ' +
-                      os.path.join(source_folder, table))
-
-    except Exception:
-        try:
-            conn.rollback()
-        except:
-            pass
-
-        traceback.print_exc()
-
-    conn.commit()
+        os.system("{base_cmd} {backup_file}".format(base_cmd=base_cmd, backup_file=f))
 
 
 def load_fixture(apps, fixture_file, mangler=None, basepk=-1, owner="admin", datastore='', siteurl=''):
@@ -192,7 +207,8 @@ def zip_dir(basedir, archivename):
             for fn in files:
                 absfn = os.path.join(root, fn)
                 zfn = absfn[len(basedir)+len(os.sep):]  # XXX: relative path
-                z.write(absfn, zfn)
+                if absfn != archivename:
+                    z.write(absfn, zfn)
 
 
 def copy_tree(src, dst, symlinks=False, ignore=None):
