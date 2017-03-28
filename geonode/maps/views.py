@@ -138,10 +138,15 @@ def map_detail(request, mapid, snapshot=None, template='maps/map_detail.html'):
         "documents": get_related_documents(map_obj),
     }
 
-    context_dict["preview"] = getattr(
-        settings,
-        'LAYER_PREVIEW_LIBRARY',
-        '')
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+    context_dict["preview"] = preview
     context_dict["crs"] = getattr(
         settings,
         'DEFAULT_MAP_CRS',
@@ -345,13 +350,18 @@ def map_view(request, mapid, snapshot=None, template='maps/map_view.html'):
     else:
         config = snapshot_config(snapshot, map_obj, request.user, access_token)
 
-    return render_to_response(template, RequestContext(request, {
-        'config': json.dumps(config),
-        'map': map_obj,
-        'preview': getattr(
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
             settings,
             'LAYER_PREVIEW_LIBRARY',
             '')
+
+    return render_to_response(template, RequestContext(request, {
+        'config': json.dumps(config),
+        'map': map_obj,
+        'preview': preview
     }))
 
 
@@ -429,14 +439,20 @@ def map_edit(request, mapid, snapshot=None, template='maps/map_edit.html'):
     else:
         config = snapshot_config(snapshot, map_obj, request.user, access_token)
 
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+
     return render_to_response(template, RequestContext(request, {
         'mapId': mapid,
         'config': json.dumps(config),
         'map': map_obj,
-        'preview': getattr(
-            settings,
-            'LAYER_PREVIEW_LIBRARY',
-            '')
+        'preview': preview
     }))
 
 
@@ -470,6 +486,7 @@ def new_map(request, template='maps/map_new.html'):
     context_dict = {
         'config': config,
     }
+    #TODO: Override preview somehow, pass it from the context?
     context_dict["preview"] = getattr(
         settings,
         'LAYER_PREVIEW_LIBRARY',

@@ -9,6 +9,8 @@
 		{% include 'maps/map_geoexplorer.js' %}
 	{% elif preview == 'react' %}
 		{% include 'geonode-client/map_new.html' %}
+    {% elif preview == 'maploom' %}
+        {% include 'maps/maploom.html' %}
 	{% else %}
 		{% include 'maps/map_geoexplorer.js' %}
 	{% endif %}

@@ -81,6 +81,10 @@ class Map(ResourceBase, GXPMapBase):
     # Alphanumeric alternative to referencing maps by id, appended to end of
     # URL instead of id, ie http://domain/maps/someview
 
+    renderer = models.CharField(_('renderer'), max_length=32, choices=(('maploom', 'Maploom'), ('geoext', 'GeoEXT'),
+                                    ('react', 'React')),
+                                    default=getattr(settings, 'LAYER_PREVIEW_LIBRARY', ''))
+
     featuredurl = models.CharField(
         _('Featured Map URL'),
         max_length=255,
@@ -237,6 +241,7 @@ class Map(ResourceBase, GXPMapBase):
         self.zoom = 0
         self.center_x = 0
         self.center_y = 0
+        self.renderer = None
         bbox = None
         index = 0
 
