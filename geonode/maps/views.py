@@ -486,11 +486,19 @@ def new_map(request, template='maps/map_new.html'):
     context_dict = {
         'config': config,
     }
-    #TODO: Override preview somehow, pass it from the context?
-    context_dict["preview"] = getattr(
-        settings,
-        'LAYER_PREVIEW_LIBRARY',
-        '')
+
+    #Cleaner to do it in two statements than nesting gets and defaults
+    context_dict['preview'] = request.GET.get('renderer', None)
+    if context_dict['preview'] is None:
+        context_dict['preview'] = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+    #For some reason, doing this in the map_new.html doesn't work
+    if context_dict['preview'] == 'maploom':
+        template = 'maps/maploom.html'
+
     if isinstance(config, HttpResponse):
         return config
     else:
