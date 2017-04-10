@@ -358,6 +358,10 @@ def map_view(request, mapid, snapshot=None, template='maps/map_view.html'):
             'LAYER_PREVIEW_LIBRARY',
             '')
 
+    #For some reason, doing this in the map_new.html doesn't work
+    if preview == 'maploom':
+        template = 'maps/maploom.html'
+
     return render_to_response(template, RequestContext(request, {
         'config': json.dumps(config),
         'map': map_obj,
