@@ -32,6 +32,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
+import urlparse
 try:
     # Django >= 1.7
     import json
@@ -526,7 +527,14 @@ def new_map_json(request):
                 status=401
             )
 
-        map_obj = Map(owner=request.user, zoom=0,
+        referer_dict = urlparse.parse_qs(urlparse.urlparse(request.META['HTTP_REFERER']).query)
+
+        if 'renderer' in referer_dict:
+            map_obj = Map(owner=request.user, zoom=0,
+                      center_x=0, center_y=0,
+                      renderer=referer_dict['renderer'][0])
+        else:
+            map_obj = Map(owner=request.user, zoom=0,
                       center_x=0, center_y=0)
         map_obj.save()
         map_obj.set_default_permissions()
