@@ -28,6 +28,7 @@ try:
     import json
 except ImportError:
     from django.utils import simplejson as json
+import os
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ObjectDoesNotExist
@@ -48,6 +49,7 @@ from geonode.security.models import remove_object_permissions
 from agon_ratings.models import OverallRating
 
 logger = logging.getLogger("geonode.maps.models")
+
 
 
 class Map(ResourceBase, GXPMapBase):
@@ -81,8 +83,20 @@ class Map(ResourceBase, GXPMapBase):
     # Alphanumeric alternative to referencing maps by id, appended to end of
     # URL instead of id, ie http://domain/maps/someview
 
-    renderer = models.CharField(_('renderer'), max_length=32, choices=(('maploom', 'Maploom'), ('geoext', 'GeoEXT'),
-                                    ('react', 'React')),
+    def str2bool(v):
+        if v and len(v) > 0:
+            return v.lower() in ("yes", "true", "t", "1")
+        else:
+            return False
+
+    GEONODE_CLIENT_ENABLED = str2bool(os.getenv('GEONODE_CLIENT_ENABLED', 'True'))
+
+    available_renderers = (('geoext', 'GeoEXT'), ('maploom', 'MapLoom'))
+
+    if GEONODE_CLIENT_ENABLED:
+        available_renderers = (('geoext', 'GeoEXT'), ('react', 'React'), ('maploom', 'MapLoom'))
+
+    renderer = models.CharField(_('renderer'), max_length=32, choices=available_renderers,
                                     default=getattr(settings, 'LAYER_PREVIEW_LIBRARY', ''))
 
     featuredurl = models.CharField(
