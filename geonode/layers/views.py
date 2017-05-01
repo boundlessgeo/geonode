@@ -262,9 +262,6 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
     # center/zoom don't matter; the viewer will center on the layer bounds
     map_obj = GXPMap(projection=getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913'))
 
-    NON_WMS_BASE_LAYERS = [
-        la for la in default_map_config(request)[1] if la.ows_url is None]
-
     metadata = layer.link_set.metadata().filter(
         name__in=settings.DOWNLOAD_FORMATS_METADATA)
 
@@ -313,7 +310,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         access_token = u.hex
 
     context_dict["viewer"] = json.dumps(
-        map_obj.viewer_json(request.user, access_token, * (NON_WMS_BASE_LAYERS + [maplayer])))
+        map_obj.viewer_json(request.user, access_token, * (default_map_config(request)[1] + [maplayer])))
+
     context_dict["preview"] = getattr(
         settings,
         'LAYER_PREVIEW_LIBRARY',
@@ -746,6 +744,7 @@ def get_layer(request, layername):
     logger.debug('Call get layer')
     if request.method == 'GET':
         layer_obj = _resolve_layer(request, layername)
+        visible_attributes = layer_obj.attribute_set.visible()
         logger.debug(layername)
         response = {
             'typename': layername,
@@ -757,7 +756,7 @@ def get_layer(request, layername):
             'bbox_x1': layer_obj.bbox_x1,
             'bbox_y0': layer_obj.bbox_y0,
             'bbox_y1': layer_obj.bbox_y1,
-            'attributes': attributes_as_json(layer_obj),
+            'attributes': dict([(l.attribute, l.attribute_label) for l in visible_attributes]),
         }
         return HttpResponse(json.dumps(
             response,
