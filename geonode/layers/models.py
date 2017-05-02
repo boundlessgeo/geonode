@@ -369,6 +369,14 @@ class Attribute(models.Model):
         _('display order'),
         help_text=_('specifies the order in which attribute should be displayed in identify results'),
         default=1)
+    required = models.BooleanField(
+        _('required?'),
+        help_text=_('specifies if the attribute should be required in editing views'),
+        default=False)
+    readonly = models.BooleanField(
+        _('readonly?'),
+        help_text=_('specifies if the attribute should be readonly in editing views'),
+        default=False)
 
     # statistical derivations
     count = models.IntegerField(
