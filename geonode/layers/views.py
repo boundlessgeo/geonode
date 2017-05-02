@@ -756,7 +756,7 @@ def get_layer(request, layername):
             'bbox_x1': layer_obj.bbox_x1,
             'bbox_y0': layer_obj.bbox_y0,
             'bbox_y1': layer_obj.bbox_y1,
-            'attributes': dict([(l.attribute, l.attribute_label) for l in visible_attributes]),
+            'attributes': attributes_as_json(layer_obj)
         }
         return HttpResponse(json.dumps(
             response,
@@ -786,5 +786,5 @@ def attribute_as_json(attribute):
         'attribute_label': attribute.attribute_label,
         'attribute_type': attribute.attribute_type,
         'visible': attribute.visible,
-        'display_order': attribute.display_order,
+        'display_order': attribute.display_order
     }
