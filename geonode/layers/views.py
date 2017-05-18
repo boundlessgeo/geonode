@@ -51,7 +51,7 @@ from geonode.tasks.deletion import delete_layer
 from geonode.services.models import Service
 from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
 from geonode.base.forms import CategoryForm
-from geonode.layers.models import Layer, Attribute, UploadSession
+from geonode.layers.models import Layer, Attribute, AttributeOption, UploadSession
 from geonode.base.enumerations import CHARSETS
 from geonode.base.models import TopicCategory
 from geonode.maps.models import Map
@@ -790,5 +790,15 @@ def attribute_as_json(attribute):
         'visible': attribute.visible,
         'display_order': attribute.display_order,
         'required': attribute.required,
-        'readonly': attribute.readonly
+        'readonly': attribute.readonly,
+        'options': attribute_options_as_json(attribute),
     }
+
+def attribute_options_as_json(attribute):
+    options = []
+    for option in attribute.options.all():
+        options.append({
+            'value': option.value,
+            'label': option.label,
+            })
+    return options
