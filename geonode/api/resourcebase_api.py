@@ -576,6 +576,7 @@ class LayerResource(CommonModelApi):
             formatted_obj = model_to_dict(obj, fields=self.VALUES)
             # add the geogig link
             formatted_obj['geogig_link'] = obj.geogig_link
+            formatted_obj['available_renderers'] = Map._meta.get_field('renderer').choices
             # put the object on the response stack
             formatted_objects.append(formatted_obj)
         return formatted_objects
