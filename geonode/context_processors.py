@@ -69,6 +69,10 @@ def resource_urls(request):
             settings,
             'HAYSTACK_SEARCH',
             False),
+        GEONODE_CLIENT_ENABLED=getattr(
+            settings,
+            'GEONODE_CLIENT_ENABLED',
+            True),
         SKIP_PERMS_FILTER=getattr(
             settings,
             'SKIP_PERMS_FILTER',

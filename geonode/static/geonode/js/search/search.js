@@ -246,11 +246,12 @@
   * Load data from api and defines the multiple and single choice handlers
   * Syncs the browser url with the selections
   */
-  module.controller('geonode_search_controller', function($injector, $scope, $location, $http, Configs){
+  module.controller('geonode_search_controller', function($injector, $scope, $location, $http, Configs, $window){
     $scope.query = $location.search();
     $scope.query.limit = $scope.query.limit || CLIENT_RESULTS_LIMIT;
     $scope.query.offset = $scope.query.offset || 0;
     $scope.page = Math.round(($scope.query.offset / $scope.query.limit) + 1);
+    $scope.availableRenderers = $window.AVAILABLE_RENDERERS;
    
     //Get data from apis and make them available to the page
     function query_api(data){
