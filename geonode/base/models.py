@@ -967,7 +967,7 @@ def do_login(sender, user, request, **kwargs):
 
             AccessToken.objects.get_or_create(user=user,
                                               application=app,
-                                              expires=datetime.datetime.now() + datetime.timedelta(days=1),
+                                              expires=datetime.datetime.now() + datetime.timedelta(days=3),
                                               token=token)
         except:
             u = uuid.uuid1()
