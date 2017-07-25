@@ -17,6 +17,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
+try:
+    import json
+except ImportError:
+    from django.utils import simplejson as json
 import logging
 import traceback
 import requests
@@ -253,16 +257,51 @@ def set_geofence_all(instance):
     resource = instance.get_self_resource()
 
     if hasattr(resource, "layer"):
-        """
-        curl -X POST -u admin:geoserver -H "Content-Type: text/xml" -d \
-        "<Rule><workspace>geonode</workspace><layer>{layer}</layer><access>ALLOW</access></Rule>" \
-        http://<host>:<port>/geoserver/geofence/rest/rules
-        """
+        try:
+            url = settings.OGC_SERVER['default']['LOCATION']
+            user = settings.OGC_SERVER['default']['USER']
+            passwd = settings.OGC_SERVER['default']['PASSWORD']
+            # Check first that the rules does not exist already
+            """
+            curl -X GET -u admin:geoserver -H "Content-Type: application/json" \
+                  http://<host>:<port>/geoserver/geofence/rest/rules.json?layer=<layer_name>
+            """
+            headers = {'Content-type': 'application/json'}
+            r = requests.get(url + 'geofence/rest/rules.json?layer=' + resource.layer.name,
+                             headers=headers,
+                             auth=HTTPBasicAuth(user, passwd))
 
-        payload = "<Rule><workspace>{}</workspace><layer>".format(resource.layer.workspace)
-        payload = payload + resource.layer.name
-        payload = payload + "</layer><access>ALLOW</access></Rule>"
-        create_geofence_rule(payload)
+            rules_already_present = False
+            if (r.status_code != 200):
+                logger.warning("Could not GET GeoServer Rules for Layer " + str(resource.layer.name))
+            else:
+                try:
+                    rules_objs = json.loads(r.text)
+                    rules_count = rules_objs['count']
+                    rules = rules_objs['rules']
+                    if rules_count > 1:
+                        for rule in rules:
+                            if rule['userName'] is None and rule['access'] == 'ALLOW':
+                                rules_already_present = True
+                except:
+                    tb = traceback.format_exc()
+                    logger.debug(tb)
+
+            # Create GeoFence Rules for ANONYMOUS to the Layer
+            """
+            curl -X POST -u admin:geoserver -H "Content-Type: text/xml" -d \
+            "<Rule><workspace>geonode</workspace><layer>{layer}</layer><access>ALLOW</access></Rule>" \
+            http://<host>:<port>/geoserver/geofence/rest/rules
+            """
+
+            if not rules_already_present:
+                payload = "<Rule><workspace>{}</workspace><layer>".format(resource.layer.workspace)
+                payload = payload + resource.layer.name
+                payload = payload + "</layer><access>ALLOW</access></Rule>"
+                create_geofence_rule(payload)
+        except:
+            tb = traceback.format_exc()
+            logger.debug(tb)
 
 
 def set_geofence_user(instance, username, view_perms=False, download_perms=False):
@@ -317,7 +356,7 @@ def set_owner_permissions(resource):
     """assign all admin permissions to the owner"""
     if resource.polymorphic_ctype:
         if resource.polymorphic_ctype.name == 'layer':
-            # TODO: Assign GeoFence Layer Access to Owner
+            # Assign GeoFence Layer Access to Owner
             for perm in LAYER_ADMIN_PERMISSIONS:
                 assign_perm(perm, resource.owner, resource.layer)
 
