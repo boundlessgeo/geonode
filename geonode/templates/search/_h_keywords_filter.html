@@ -1,5 +1,14 @@
 {% load i18n %}
-<nav class="filter">
+<nav class="filter" ng-init="select_keyword_filter('trending')">
   <h4><a href="#" class="toggle toggle-nav"><i class="fa fa-chevron-right"></i> {% trans "Keywords" %}</a></h4>
-    <div id="treeview" class="nav" style="display: none;"></div>
+  <div class="nav" aria-label="tools" style="display: none;">
+    <button ng-if="keywordFilter != 'hierarchical'" type="button" class="btn btn-default" style="width: 100%" ng-click="select_keyword_filter('hierarchical')">show all (hierarchical)</button>
+    <button ng-if="keywordFilter != 'trending-all'" type="button" class="btn btn-default" style="width: 100%" ng-click="select_keyword_filter('trending-all')">show all (trending)</button>
+    <button ng-if="keywordFilter == 'trending-all'" type="button" class="btn btn-default" style="width: 100%" ng-click="select_keyword_filter('trending')">show less</button>
+  </div>
+  <br class="nav" style="display: none;">
+  <div class="nav" style="display: none;">
+    {% include "search/_hierarchical_keywords.html" %}
+    {% include "search/_trending_keywords.html" %}
+  </div>
 </nav>

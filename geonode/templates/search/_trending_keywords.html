@@ -1,0 +1,14 @@
+<ul class="list-group" id="trending" style="width: 100%;">
+  {% verbatim %}
+  <div ng-if="keywordFilter == 'trending-all'">
+    <li class="list-group-item" ng-repeat="kword in keywords" data-filter="keywords__slug__in" data-value="{{kword.slug}}" ng-click="multiple_choice_listener($event); toggle_text_color($event)" style="border-color: #ddd">
+      {{ kword.slug }}
+    </li>
+  </div>
+  <div ng-if="keywordFilter == 'trending'">
+    <li class="list-group-item" ng-repeat="kword in keywords | limitTo:15" data-filter="keywords__slug__in" data-value="{{kword.slug}}" ng-click="multiple_choice_listener($event); toggle_text_color($event)" style="border-color: #ddd">
+      {{ kword.slug }}
+    </li>
+  </div>
+  {% endverbatim %}
+</ul>
