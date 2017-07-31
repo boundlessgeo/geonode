@@ -4,7 +4,7 @@
   
   document.addEventListener("DOMContentLoaded", function(event) {
 
-  	document.getElementById('preview_map').setAttribute("style", "height:600px");
+    document.getElementById('preview_map').setAttribute("style", "height:600px");
 
     {% if resource.bbox_string %}
     var bbox = [{{ resource.bbox_string }}];
@@ -56,6 +56,8 @@
             	projection: crs
             })	
     	});
+
+    	window.MAP = map;
 
     	if (bbox != null) {
     	    if (crs != 'EPSG:4326') {
