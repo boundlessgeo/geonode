@@ -32,6 +32,7 @@ class Migration(migrations.Migration):
                 ('urlsuffix', models.CharField(max_length=255, verbose_name='Site URL', blank=True)),
                 ('renderer',  models.CharField(max_length=32, verbose_name='Renderer', blank=True)),
                 ('featuredurl', models.CharField(max_length=255, verbose_name='Featured Map URL', blank=True)),
+                ('public', models.BooleanField(default=False, blank=True)),
             ],
             options={
                 'abstract': False,

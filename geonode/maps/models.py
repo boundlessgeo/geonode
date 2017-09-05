@@ -99,6 +99,8 @@ class Map(ResourceBase, GXPMapBase):
     renderer = models.CharField(_('renderer'), max_length=32, choices=available_renderers,
                                     default=getattr(settings, 'LAYER_PREVIEW_LIBRARY', ''))
 
+    public = models.BooleanField(_('public'), default=False)
+
     featuredurl = models.CharField(
         _('Featured Map URL'),
         max_length=255,
@@ -187,6 +189,7 @@ class Map(ResourceBase, GXPMapBase):
 
         self.title = conf['about']['title']
         self.abstract = conf['about']['abstract']
+        self.public = conf['map']['public']
 
         self.set_bounds_from_center_and_zoom(
             conf['map']['center'][0],
@@ -256,6 +259,7 @@ class Map(ResourceBase, GXPMapBase):
         self.center_x = 0
         self.center_y = 0
         self.renderer = None
+        self.public = False
         bbox = None
         index = 0
 

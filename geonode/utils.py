@@ -336,6 +336,7 @@ class GXPMapBase(object):
                 'layers': [layer_config(l, user=user) for l in layers],
                 'center': [self.center_x, self.center_y],
                 'projection': self.projection,
+                'public': self.public,
                 'zoom': self.zoom
             }
         }
@@ -375,6 +376,7 @@ class GXPMap(GXPMapBase):
             1]
         self.zoom = zoom if zoom is not None else settings.DEFAULT_MAP_ZOOM
         self.layers = []
+        self.public = False
 
 
 class GXPLayerBase(object):
