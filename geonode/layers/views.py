@@ -54,6 +54,7 @@ from geonode.base.forms import CategoryForm
 from geonode.layers.models import Layer, Attribute, UploadSession
 from geonode.base.enumerations import CHARSETS
 from geonode.base.models import TopicCategory
+from geonode.maps.models import Map
 
 from geonode.utils import default_map_config
 from geonode.utils import GXPLayer
@@ -319,6 +320,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         settings,
         'DEFAULT_MAP_CRS',
         'EPSG:900913')
+
+    context_dict["available_renderers"] = Map._meta.get_field('renderer').choices
 
     if layer.storeType == 'dataStore':
         links = layer.link_set.download().filter(
