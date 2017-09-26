@@ -13,10 +13,10 @@
       geogigCommand: function(url) {
         var deferred = new $q.defer();
         if (url) {
-          var request = url + '&callback=JSON_CALLBACK';
-          $http.jsonp(request).success(function(data, status) {
+          var request = url;
+          $http.jsonp(request, {jsonpCallbackParam: 'callback'}).then(function(data, status) {
             deferred.resolve(data);
-          }).error(function(error) {
+          },function(error) {
             deferred.reject(error);
           });
           return deferred.promise;
@@ -42,9 +42,9 @@
 
     if ($scope.statisticsURL) {
       geoGigService.geogigCommand($scope.statisticsURL).then(
-          function(data) {
-            if (data.response.success) {
-              $scope.stats = data.response.Statistics;
+          function(result) {
+            if (result.data.response.success) {
+              $scope.stats = result.data.response.Statistics;
               $('#geogig-message').hide();
               $('#geogig-stats').show();
             }
@@ -58,20 +58,26 @@
 
     if ($scope.logURL) {
       geoGigService.geogigCommand($scope.logURL).then(
-          function(data) {
-            if (data.response.success) {
+          function(result) {
+            if (result.data.response.success) {
               $('#geogig-message').hide();
               $('#geogig-stats').show();
-              var response = data.response.commit;
+              var response = result.data.response.commit;
               if (!Array.isArray(response)) {
                 $scope.commits = [response];
               } else {
                 $scope.commits = response;
               }
+              //set initial commit message here for display
+              var firstCommit = $scope.commits[$scope.commits.length-1];
+
+              if (firstCommit.message == "") {
+                firstCommit.message ='Imported this geographic data for use as Layer.';
+              } 
               for (var i = 0; i < $scope.commits.length; i++) {
                 var commit = $scope.commits[i];
-                if (commit.author) {
-                  commit.commitTimeSince = moment().calendar(commit.author.timestamp);
+                if (commit.committer) {
+                  commit.commitTimeSince = moment(commit.committer.timestamp).calendar();
                 }
               }
             }

@@ -234,6 +234,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         else llbbox_to_mercator([float(coord) for coord in bbox])
     config["title"] = layer.title
     config["queryable"] = True
+    if layer.default_style:
+        config["styles"] = layer.default_style.name
 
     if layer.storeType == "remoteStore":
         service = layer.service
@@ -261,9 +263,6 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
 
     # center/zoom don't matter; the viewer will center on the layer bounds
     map_obj = GXPMap(projection=getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913'))
-
-    NON_WMS_BASE_LAYERS = [
-        la for la in default_map_config(request)[1] if la.ows_url is None]
 
     metadata = layer.link_set.metadata().filter(
         name__in=settings.DOWNLOAD_FORMATS_METADATA)
@@ -313,7 +312,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         access_token = u.hex
 
     context_dict["viewer"] = json.dumps(
-        map_obj.viewer_json(request.user, access_token, * (NON_WMS_BASE_LAYERS + [maplayer])))
+        map_obj.viewer_json(request.user, access_token, * (default_map_config(request)[1] + [maplayer])))
+
     context_dict["preview"] = getattr(
         settings,
         'LAYER_PREVIEW_LIBRARY',
@@ -720,7 +720,7 @@ def layer_thumbnail(request, layername):
             )
     else:
         if(layer_obj.has_thumbnail()):
-            #layer_obj.get_thumbnail_url() 
+            #layer_obj.get_thumbnail_url()
 
             return HttpResponse(
                 content=layer_obj.get_thumbnail_url(),
@@ -746,6 +746,7 @@ def get_layer(request, layername):
     logger.debug('Call get layer')
     if request.method == 'GET':
         layer_obj = _resolve_layer(request, layername)
+        visible_attributes = layer_obj.attribute_set.visible()
         logger.debug(layername)
         response = {
             'typename': layername,
@@ -757,6 +758,8 @@ def get_layer(request, layername):
             'bbox_x1': layer_obj.bbox_x1,
             'bbox_y0': layer_obj.bbox_y0,
             'bbox_y1': layer_obj.bbox_y1,
+            'type': slugify(layer_obj.display_type),
+            'attributes': attributes_as_json(layer_obj)
         }
         return HttpResponse(json.dumps(
             response,
@@ -772,3 +775,19 @@ def layer_metadata_detail(request, layername, template='layers/layer_metadata_de
         "resource": layer,
         'SITEURL': settings.SITEURL[:-1]
     }))
+
+def attributes_as_json(layer):
+    attributes = []
+    for attribute in layer.attributes:
+        attributes.append(attribute_as_json(attribute))
+    return attributes
+
+def attribute_as_json(attribute):
+    return {
+        'attribute': attribute.attribute,
+        'description': attribute.description,
+        'attribute_label': attribute.attribute_label,
+        'attribute_type': attribute.attribute_type,
+        'visible': attribute.visible,
+        'display_order': attribute.display_order
+    }

@@ -23,6 +23,28 @@ import taggit
 from geonode.services.models import Service, ServiceLayer
 from geonode.services.enumerations import SERVICE_TYPES
 from django.utils.translation import ugettext_lazy as _
+from geonode.base.models import TopicCategory, License
+from geonode.base.enumerations import UPDATE_FREQUENCIES
+from django.conf import settings
+
+
+def get_classifications():
+        return [(x, str(x)) for x in getattr(settings, 'CLASSIFICATION_LEVELS', [])]
+
+
+def get_caveats():
+        return [(x, str(x)) for x in getattr(settings, 'CAVEATS', [])]
+
+
+def get_provenances():
+        default = [('Commodity', 'Commodity'), ('Crowd-sourced data', 'Crowd-sourced data'),
+                   ('Derived by trusted agents ', 'Derived by trusted agents '),
+                   ('Open Source', 'Open Source'), ('Structured Observations (SOM)',
+                                                    'Structured Observations (SOM)'), ('Unknown', 'Unknown')]
+
+        provenance_choices = [(x, str(x)) for x in getattr(settings, 'REGISTRY_PROVENANCE_CHOICES', [])]
+
+        return provenance_choices + default
 
 
 class CreateServiceForm(forms.Form):
@@ -41,17 +63,40 @@ class CreateServiceForm(forms.Form):
 
 
 class ServiceForm(forms.ModelForm):
+    classification = forms.ChoiceField(
+        label=_("Classification"), choices=get_classifications(), 
+        widget=forms.Select(attrs={'cols': 60, 'class': 'inputText'}))
+    caveat = forms.ChoiceField(
+        label=_("Caveat"), choices=get_caveats(), 
+        widget=forms.Select(attrs={'cols': 60, 'class': 'inputText'}))
+    provenance = forms.ChoiceField(
+        label=_("Provenance"), choices=get_provenances(), 
+        widget=forms.Select(attrs={'cols': 60, 'class': 'inputText'}))
     title = forms.CharField(label=_('Title'), max_length=255, widget=forms.TextInput(
         attrs={'size': '60', 'class': 'inputText'}))
-    description = forms.CharField(
-        label=_('Description'), widget=forms.Textarea(attrs={'cols': 60}))
+    category = forms.ModelChoiceField(
+        label=_('Category'),
+        queryset=TopicCategory.objects.filter(
+            is_choice=True) .extra(
+            order_by=['description']))    
     abstract = forms.CharField(
         label=_("Abstract"), widget=forms.Textarea(attrs={'cols': 60}))
     keywords = taggit.forms.TagField(required=False)
+    license = forms.ModelChoiceField(
+        label=_('License'),
+        queryset=License.objects.filter())
+    maintenance_frequency = forms.ChoiceField(
+        label=_("Maintenance Frequency"), choices=UPDATE_FREQUENCIES,
+        widget=forms.Select(attrs={'cols': 60, 'class': 'inputText'}))
+    fees = forms.CharField(label=_('Fees'), max_length=1000, widget=forms.TextInput(
+        attrs={'size': '60', 'class': 'inputText'}))
+
 
     class Meta:
         model = Service
-        fields = ('title', 'description', 'abstract', 'keywords', )
+        labels = {'description': _('Short Name'),}
+        fields = ('classification', 'caveat', 'title', 'category',
+        'description', 'abstract', 'keywords', 'license', 'maintenance_frequency', 'provenance', 'fees', )
 
 
 class ServiceLayerFormSet(forms.ModelForm):

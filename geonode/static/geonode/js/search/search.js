@@ -189,6 +189,8 @@
               }
           }
       }
+
+      $rootScope.has_time_count = data.meta.facets.has_time.T;
   }
 
   /*
@@ -469,6 +471,22 @@
       }
     }
 
+    $scope.filterTime = function($event) {
+        var element = $($event.target);
+        var on = (element[0].checked === true);
+
+        if(on) {
+            $scope.query['has_time'] = 'true';
+        } else {
+            if($scope.query['has_time']) {
+                delete $scope.query['has_time'];
+            }
+        }
+
+        query_api($scope.query);
+    }
+
+
     /*
     * Text search management
     */
@@ -614,6 +632,9 @@
           map = leafletData.getMap('filter-map');
 
       map.then(function(map){
+        /* prevent the user from wrapping around the world. */
+        map.setMaxBounds([[-180, -90], [180, 90]]);
+
         map.on('moveend', function(){
           $scope.query['extent'] = map.getBounds().toBBoxString();
           query_api($scope.query);
@@ -622,12 +643,16 @@
     
       var showMap = false;
       $('#_extent_filter').click(function(evt) {
-     	  showMap = !showMap
+     	showMap = !showMap
         if (showMap){
           leafletData.getMap().then(function(map) {
             map.invalidateSize();
           });
-        } 
+        } else {
+            /* clear the extent filter when the map is hidden */
+            delete $scope.query['extent'];
+            query_api($scope.query);
+        }
       });
     }
   });

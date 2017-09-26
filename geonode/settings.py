@@ -316,7 +316,9 @@ INSTALLED_APPS = (
     'autocomplete_light',
     'mptt',
     # 'modeltranslation',
+    # 'djkombu',
     'djcelery',
+    # 'kombu.transport.django',
     'storages',
 
     # Theme
@@ -972,15 +974,12 @@ CELERY_IMPORTS = (
     'geonode.tasks.email'
 )
 
-
 CELERY_QUEUES = [
     Queue('default', routing_key='default'),
     Queue('cleanup', routing_key='cleanup'),
     Queue('update', routing_key='update'),
-    Queue('email', routing_key='email'),
+    Queue('email', routing_key='email')
 ]
-
-
 # AWS S3 Settings
 
 S3_STATIC_ENABLED = os.environ.get('S3_STATIC_ENABLED', False)

@@ -39,6 +39,7 @@ from geonode.base.models import Link
 from geonode.people.models import Profile
 
 from geoserver.layer import Layer as GsLayer
+import geoserver
 
 logger = logging.getLogger("geonode.geoserver.signals")
 
@@ -67,13 +68,9 @@ def geoserver_pre_save(instance, sender, **kwargs):
         * Point of Contact name and url
     """
 
-    # Don't run this signal if is a Layer from a remote service
-    if getattr(instance, "service", None) is not None:
-        return
-
-    # Don't run this signal handler if it is a tile layer
+    # Don't run this signal handler if it is a tile layer or a remote store (Service)
     #    Currently only gpkg files containing tiles will have this type & will be served via MapProxy.
-    if hasattr(instance, 'storeType') and getattr(instance, 'storeType') == 'tileStore':
+    if hasattr(instance, 'storeType') and getattr(instance, 'storeType') in ['tileStore', 'remoteStore']:
         return
 
     gs_resource = None
@@ -125,7 +122,11 @@ def geoserver_pre_save(instance, sender, **kwargs):
     if gs_resource and getattr(ogc_server_settings, "BACKEND_WRITE_ENABLED", True):
         gs_catalog.save(gs_resource)
 
-    gs_layer = gs_catalog.get_layer(instance.name)
+    if instance.storeType and instance.storeType == 'layerGroup':
+        gs_layer = gs_catalog.get_layergroup(name=instance.name, workspace=instance.workspace)
+    else:
+        gs_layer = gs_catalog.get_layer(instance.name)
+
 
     if instance.poc and instance.poc:
         # gsconfig now utilizes an attribution dictionary
@@ -141,7 +142,11 @@ def geoserver_pre_save(instance, sender, **kwargs):
         # gs_layer should only be called if
         # ogc_server_settings.BACKEND_WRITE_ENABLED == True
         if getattr(ogc_server_settings, "BACKEND_WRITE_ENABLED", True):
-            gs_catalog.save(gs_layer)
+            try:
+                # Some geogig layers will return a 500 on save
+                gs_catalog.save(gs_layer)
+            except geoserver.catalog.FailedRequestError:
+                pass
 
     """Get information from geoserver.
 
@@ -180,7 +185,7 @@ def geoserver_post_save(instance, sender, **kwargs):
     """
     # Don't run this signal handler if it is a tile layer
     #    Currently only gpkg files containing tiles will have this type & will be served via MapProxy.
-    if hasattr(instance, 'storeType') and getattr(instance, 'storeType') == 'tileStore':
+    if hasattr(instance, 'storeType') and getattr(instance, 'storeType') in ['tileStore', 'remoteStore']:
         return
 
     if type(instance) is ResourceBase:
@@ -188,6 +193,10 @@ def geoserver_post_save(instance, sender, **kwargs):
             instance = instance.layer
         else:
             return
+
+    if instance.storeType == 'layerGroup':
+        set_attributes_from_geoserver(instance)
+        return
 
     if instance.storeType == "remoteStore":
         # Save layer attributes
@@ -466,9 +475,9 @@ def geoserver_post_save(instance, sender, **kwargs):
     set_styles(instance, gs_catalog)
     # NOTTODO by simod: we should not do this!
     # need to be removed when fixing #2015
-    from geonode.catalogue.models import catalogue_post_save
+    # from geonode.catalogue.models import catalogue_post_save
+    # catalogue_post_save(instance, Layer)
     from geonode.layers.models import Layer
-    catalogue_post_save(instance, Layer)
 
 
 def geoserver_pre_save_maplayer(instance, sender, **kwargs):

@@ -34,6 +34,10 @@ class LayerIndex(indexes.SearchIndex, indexes.Indexable):
     csw_wkt_geometry = indexes.CharField(model_attr="csw_wkt_geometry")
     detail_url = indexes.CharField(model_attr="get_absolute_url")
     owner__username = indexes.CharField(model_attr="owner", faceted=True, null=True)
+    owner__first_name = indexes.CharField(model_attr="owner__first_name", faceted=True, null=True)
+    owner__last_name = indexes.CharField(model_attr="owner__last_name", faceted=True, null=True)
+    is_published = indexes.BooleanField(model_attr="is_published")
+    featured = indexes.BooleanField(model_attr="featured")
     popular_count = indexes.IntegerField(
         model_attr="popular_count",
         default=0,
@@ -88,6 +92,7 @@ class LayerIndex(indexes.SearchIndex, indexes.Indexable):
     num_ratings = indexes.IntegerField(stored=False)
     num_comments = indexes.IntegerField(stored=False)
     geogig_link = indexes.CharField(null=True)
+    has_time = indexes.BooleanField(faceted=True, null=True)
 
     def get_model(self):
         return Layer
@@ -141,4 +146,14 @@ class LayerIndex(indexes.SearchIndex, indexes.Indexable):
             return obj.geogig_link
         except:
             return None
-        
+
+    # Check to see if either time extent is set on the object,
+    # if so, then it is time enabled.
+    def prepare_has_time(self, obj):
+        try:
+            # if either time field is set to a value then time is enabled.
+            if(obj.temporal_extent_start is not None or obj.temporal_extent_end is not None):
+                return True
+        except:
+            # when in doubt, it's false.
+            return False

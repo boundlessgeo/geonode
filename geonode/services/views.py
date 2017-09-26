@@ -109,9 +109,6 @@ def register_service(request):
         if service_form.is_valid():
             url = _clean_url(service_form.cleaned_data['url'])
 
-        # method = request.POST.get('method')
-        # type = request.POST.get('type')
-        # name = slugify(request.POST.get('name'))
             name = service_form.cleaned_data['name']
             type = service_form.cleaned_data["type"]
             server = None
@@ -165,9 +162,9 @@ def register_service_by_type(request):
     type, server = _verify_service_type(url, type)
 
     if type == "WMS" or type == "OWS":
-        return _process_wms_service(url, type, None, None, wms=server)
+        return _process_wms_service(url, '{} Service '.format(type), type, None, None, wms=server, owner=request.user)
     elif type == "REST":
-        return _register_arcgis_url(url, None, None, None)
+        return _register_arcgis_url(url, None, None, None, owner=request.user)
 
 
 def _is_unique(url):
@@ -267,7 +264,7 @@ def _verify_service_type(base_url, service_type=None):
     return [None, None]
 
 
-def _process_wms_service(url, name, type, username, password, wms=None, owner=None, parent=None):
+def _process_wms_service(url, name, type, username, password, wms=None, owner=None, parent=None, cascade=False):
     """
     Create a new WMS/OWS service, cascade it if necessary (i.e. if Web Mercator not available)
     """
@@ -304,14 +301,11 @@ def _process_wms_service(url, name, type, username, password, wms=None, owner=No
             name = _get_valid_name(title)
         else:
             name = _get_valid_name(urlsplit(url).netloc)
-    try:
-        supported_crs = ','.join(wms.contents.itervalues().next().crsOptions)
-    except:
-        supported_crs = None
-    if supported_crs and re.search('EPSG:900913|EPSG:3857|EPSG:102100|EPSG:102113', supported_crs):
-        return _register_indexed_service(type, url, name, username, password, wms=wms, owner=owner, parent=parent)
-    else:
+
+    if cascade:
         return _register_cascaded_service(url, type, name, username, password, wms=wms, owner=owner, parent=parent)
+    else:
+        return _register_indexed_service(type, url, name, username, password, wms=wms, owner=owner, parent=parent)
 
 
 def _register_cascaded_service(url, type, name, username, password, wms=None, owner=None, parent=None):
@@ -517,6 +511,11 @@ def _register_cascaded_layers(service, owner=None):
     else:
         return HttpResponse('Invalid Service Type', status=400)
 
+def limit_text(text):
+    if text and len(text) > 400:
+        return text[:390]
+    else:
+        return text
 
 def _register_indexed_service(type, url, name, username, password, verbosity=False, wms=None, owner=None, parent=None):
     """
@@ -542,6 +541,7 @@ def _register_indexed_service(type, url, name, username, password, verbosity=Fal
 
         service = Service.objects.create(base_url=url,
                                          type=type,
+                                         uuid=str(uuid.uuid1()),
                                          method='I',
                                          name=name,
                                          version=wms.identification.version,
@@ -554,12 +554,11 @@ def _register_indexed_service(type, url, name, username, password, verbosity=Fal
 
         service.keywords = ','.join(wms.identification.keywords)
         service.save()
-        service.set_default_permissions()
+        #service.set_default_permissions()
 
         available_resources = []
         for layer in list(wms.contents):
             available_resources.append([wms[layer].name, wms[layer].title])
-
         if settings.USE_QUEUE:
             # Create a layer import job
             WebServiceHarvestLayersJob.objects.get_or_create(service=service)
@@ -636,50 +635,56 @@ def _register_indexed_layers(service, wms=None, verbosity=False):
 
             # Need to check if layer already exists??
             existing_layer = None
-            for layer in Layer.objects.filter(typename=wms_layer.name):
-                if layer.service == service:
-                    existing_layer = layer
+            #for layer in Layer.objects.filter(typename=wms_layer.name):
+            #    if layer.service == service:
+            #        existing_layer = layer
 
             if not existing_layer:
-                signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
-                signals.post_save.disconnect(catalogue_post_save, sender=Layer)
-                saved_layer = Layer.objects.create(
-                    typename=wms_layer.name,
-                    name=wms_layer.name,
-                    store=service.name,  # ??
-                    storeType="remoteStore",
-                    workspace="remoteWorkspace",
-                    title=wms_layer.title or wms_layer.name,
-                    abstract=abstract or _("Not provided"),
-                    uuid=layer_uuid,
-                    owner=None,
-                    srid=srid,
-                    bbox_x0=bbox[0],
-                    bbox_x1=bbox[2],
-                    bbox_y0=bbox[1],
-                    bbox_y1=bbox[3]
-                )
+                #signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
+                #signals.post_save.disconnect(catalogue_post_save, sender=Layer)
+                #saved_layer = Layer.objects.create(
+                #    typename=wms_layer.name,
+                #    name=wms_layer.name,
+                #    store=service.name,  # ??
+                #    storeType="remoteStore",
+                #    workspace="remoteWorkspace",
+                #    title=wms_layer.title or wms_layer.name,
+                #    abstract=abstract or _("Not provided"),
+                #    uuid=layer_uuid,
+                #    owner=None,
+                #    srid=srid,
+                #    bbox_x0=bbox[0],
+                #    bbox_x1=bbox[2],
+                #    bbox_y0=bbox[1],
+                #    bbox_y1=bbox[3]
+                #)
 
-                saved_layer.save()
-                saved_layer.set_default_permissions()
-                saved_layer.keywords.add(*keywords)
+                #saved_layer.set_default_permissions()
+                #saved_layer.keywords.add(*keywords)
 
                 service_layer, created = ServiceLayer.objects.get_or_create(
                     typename=wms_layer.name,
                     service=service
                 )
-                service_layer.layer = saved_layer
+                #service_layer.layer = saved_layer
+                service_layer.uuid = layer_uuid
                 service_layer.title = wms_layer.title
-                service_layer.description = wms_layer.abstract
-                service_layer.styles = wms_layer.styles
+                service_layer.description = abstract
+                #service_layer.styles = wms_layer.styles
+                service_layer.bbox_x0 = bbox[0]
+                service_layer.bbox_x1 = bbox[2]
+                service_layer.bbox_y0 = bbox[1]
+                service_layer.bbox_y1 = bbox[3]
+                service_layer.srid = srid
+                service_layer.keywords = limit_text(','.join(wms_layer.keywords))
                 service_layer.save()
 
-                resourcebase_post_save(saved_layer, Layer)
-                catalogue_post_save(saved_layer, Layer)
-                set_attributes_from_geoserver(saved_layer)
+                #resourcebase_post_save(saved_layer, Layer)
+                #catalogue_post_save(saved_layer, Layer)
+                #set_attributes_from_geoserver(saved_layer)
 
-                signals.post_save.connect(resourcebase_post_save, sender=Layer)
-                signals.post_save.connect(catalogue_post_save, sender=Layer)
+                #signals.post_save.connect(resourcebase_post_save, sender=Layer)
+                #signals.post_save.connect(catalogue_post_save, sender=Layer)
             count += 1
         message = "%d Layers Registered" % count
         return_dict = {'status': 'ok', 'msg': message}
@@ -824,8 +829,8 @@ def _register_arcgis_url(url, name, username, password, owner=None, parent=None)
             arcserver = ArcMapService(baseurl)
         except Exception, e:
             logger.exception(e)
-        if isinstance(arcserver, ArcMapService) and arcserver.spatialReference.wkid in [
-                102100, 102113, 3785, 3857, 900913]:
+        if isinstance(arcserver, ArcMapService):# and arcserver.spatialReference.wkid in [
+                #102100, 102113, 3785, 3857, 900913]:
             return_json = [_process_arcgis_service(arcserver, name, owner=owner, parent=parent)]
         else:
             return_json = [{'msg':  _("Could not find any layers in a compatible projection.")}]
@@ -851,66 +856,70 @@ def _register_arcgis_layers(service, arc=None):
         valid_name = slugify(layer.name)
         count = 0
         layer_uuid = str(uuid.uuid1())
+        srs = layer.extent.spatialReference.wkid
         bbox = [layer.extent.xmin, layer.extent.ymin,
                 layer.extent.xmax, layer.extent.ymax]
         typename = layer.id
 
         existing_layer = None
         logger.info("Registering layer  %s" % layer.name)
-        try:
-            for layer in Layer.objects.filter(typename=typename):
-                if layer.service == service:
-                    existing_layer = layer
-        except Layer.DoesNotExist:
-            pass
+        #try:
+        #    for layer in Layer.objects.filter(typename=typename):
+        #        if layer.service == service:
+        #            existing_layer = layer
+        #except Layer.DoesNotExist:
+        #    pass
 
         llbbox = mercator_to_llbbox(bbox)
 
         if existing_layer is None:
 
-            signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
-            signals.post_save.disconnect(catalogue_post_save, sender=Layer)
+            #signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
+            #signals.post_save.disconnect(catalogue_post_save, sender=Layer)
 
             # Need to check if layer already exists??
-            logger.info("Importing layer  %s" % layer.name)
-            saved_layer = Layer.objects.create(
-                typename=typename,
-                name=valid_name,
-                store=service.name,  # ??
-                storeType="remoteStore",
-                workspace="remoteWorkspace",
-                title=layer.name,
-                abstract=layer._json_struct[
-                    'description'] or _("Not provided"),
-                uuid=layer_uuid,
-                owner=None,
-                srid="EPSG:%s" % layer.extent.spatialReference.wkid,
-                bbox_x0=llbbox[0],
-                bbox_x1=llbbox[2],
-                bbox_y0=llbbox[1],
-                bbox_y1=llbbox[3],
-            )
+            #logger.info("Importing layer  %s" % layer.name)
+            #saved_layer = Layer.objects.create(
+            #    typename=typename,
+            #    name=valid_name,
+            #    store=service.name,  # ??
+            #    storeType="remoteStore",
+            #    workspace="remoteWorkspace",
+            #    title=layer.name,
+            #    abstract=layer._json_struct[
+            #        'description'] or _("Not provided"),
+            #    uuid=layer_uuid,
+            #    owner=None,
+            #    srid="EPSG:%s" % layer.extent.spatialReference.wkid,
+            #    bbox_x0=llbbox[0],
+            #    bbox_x1=llbbox[2],
+            #    bbox_y0=llbbox[1],
+            #    bbox_y1=llbbox[3],
+            #)
 
-            saved_layer.set_default_permissions()
-            saved_layer.save()
+            #saved_layer.set_default_permissions()
+            #saved_layer.save()
 
             service_layer, created = ServiceLayer.objects.get_or_create(
                 service=service,
-                typename=layer.id
+                typename=typename
             )
-            service_layer.layer = saved_layer
-            service_layer.title = layer.name,
-            service_layer.description = saved_layer.abstract,
+
+            #service_layer.layer = saved_layer
+            service_layer.uuid = layer_uuid
+            service_layer.title = layer.name
+            service_layer.description = layer._json_struct['description'] or _("Not provided")
             service_layer.styles = None
+            service_layer.srid = "EPSG:%s" % str(srs),
             service_layer.save()
 
-            resourcebase_post_save(saved_layer, Layer)
-            catalogue_post_save(saved_layer, Layer)
+            #resourcebase_post_save(saved_layer, Layer)
+            #catalogue_post_save(saved_layer, Layer)
 
-            signals.post_save.connect(resourcebase_post_save, sender=Layer)
-            signals.post_save.connect(catalogue_post_save, sender=Layer)
+            #signals.post_save.connect(resourcebase_post_save, sender=Layer)
+            #signals.post_save.connect(catalogue_post_save, sender=Layer)
 
-            create_arcgis_links(saved_layer)
+            #create_arcgis_links(saved_layer)
 
         count += 1
     message = "%d Layers Registered" % count
@@ -939,14 +948,16 @@ def _process_arcgis_service(arcserver, name, owner=None, parent=None):
     name = _get_valid_name(arcserver.mapName or arc_url) if not name else name
     service = Service.objects.create(base_url=arc_url, name=name,
                                      type='REST',
+                                     uuid=str(uuid.uuid1()),
                                      method='I',
                                      title=arcserver.mapName,
                                      abstract=arcserver.serviceDescription,
                                      online_resource=arc_url,
+                                     service_refs=arcserver._json_struct['supportedExtensions'],
                                      owner=owner,
                                      parent=parent)
 
-    service.set_default_permissions()
+    #service.set_default_permissions()
 
     available_resources = []
     for layer in list(arcserver.layers):
@@ -1165,7 +1176,7 @@ def service_detail(request, service_id):
     This view shows the details of a service
     '''
     service = get_object_or_404(Service, pk=service_id)
-    layer_list = service.layer_set.all()
+    layer_list = [sl for sl in service.servicelayer_set.all()]
     service_list = service.service_set.all()
     # Show 25 services per page
     service_paginator = Paginator(service_list, 25)
