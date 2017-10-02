@@ -30,7 +30,6 @@ class Migration(migrations.Migration):
                 ('center_y', models.FloatField(verbose_name='center Y')),
                 ('last_modified', models.DateTimeField(auto_now_add=True)),
                 ('urlsuffix', models.CharField(max_length=255, verbose_name='Site URL', blank=True)),
-                ('renderer',  models.CharField(max_length=32, verbose_name='Renderer', blank=True)),
                 ('featuredurl', models.CharField(max_length=255, verbose_name='Featured Map URL', blank=True)),
             ],
             options={

@@ -28,6 +28,7 @@ from geonode.celery_app import app  # flake8: noqa
 from distutils.util import strtobool
 import djcelery
 import dj_database_url
+import ast
 
 
 #
@@ -934,8 +935,10 @@ CACHES = {
     #     }
 }
 
-LAYER_PREVIEW_LIBRARY = 'geoext'
-# LAYER_PREVIEW_LIBRARY = 'leaflet'
+LAYER_PREVIEW_LIBRARY = os.getenv('LAYER_PREVIEW_LIBRARY', 'geoext')
+AVAILABLE_RENDERERS = os.getenv('AVAILABLE_RENDERERS',
+                                "[('geoext', 'GeoEXT'), ('react', 'React'), ('maploom', 'MapLoom')]")
+AVAILABLE_RENDERERS = ast.literal_eval(AVAILABLE_RENDERERS)
 
 SERVICE_UPDATE_INTERVAL = 0
 

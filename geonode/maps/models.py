@@ -89,14 +89,7 @@ class Map(ResourceBase, GXPMapBase):
         else:
             return False
 
-    GEONODE_CLIENT_ENABLED = str2bool(os.getenv('GEONODE_CLIENT_ENABLED', 'True'))
-
-    available_renderers = (('geoext', 'GeoEXT'), ('maploom', 'MapLoom'))
-
-    if GEONODE_CLIENT_ENABLED:
-        available_renderers = (('geoext', 'GeoEXT'), ('react', 'React'), ('maploom', 'MapLoom'))
-
-    renderer = models.CharField(_('renderer'), max_length=32, choices=available_renderers,
+    renderer = models.CharField(_('renderer'), max_length=32, choices=getattr(settings, 'AVAILABLE_RENDERERS'),
                                     default=getattr(settings, 'LAYER_PREVIEW_LIBRARY', ''))
 
     featuredurl = models.CharField(
