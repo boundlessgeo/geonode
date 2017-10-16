@@ -33,6 +33,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
+import urlparse
 try:
     # Django >= 1.7
     import json
@@ -139,10 +140,15 @@ def map_detail(request, mapid, snapshot=None, template='maps/map_detail.html'):
         "documents": get_related_documents(map_obj),
     }
 
-    context_dict["preview"] = getattr(
-        settings,
-        'LAYER_PREVIEW_LIBRARY',
-        '')
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+    context_dict["preview"] = preview
     context_dict["crs"] = getattr(
         settings,
         'DEFAULT_MAP_CRS',
@@ -346,13 +352,22 @@ def map_view(request, mapid, snapshot=None, template='maps/map_view.html'):
     else:
         config = snapshot_config(snapshot, map_obj, request.user, access_token)
 
-    return render_to_response(template, RequestContext(request, {
-        'config': json.dumps(config),
-        'map': map_obj,
-        'preview': getattr(
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
             settings,
             'LAYER_PREVIEW_LIBRARY',
             '')
+
+    #For some reason, doing this in the map_new.html doesn't work
+    if preview == 'maploom':
+        template = 'maps/maploom.html'
+
+    return render_to_response(template, RequestContext(request, {
+        'config': json.dumps(config),
+        'map': map_obj,
+        'preview': preview
     }))
 
 
@@ -430,14 +445,20 @@ def map_edit(request, mapid, snapshot=None, template='maps/map_edit.html'):
     else:
         config = snapshot_config(snapshot, map_obj, request.user, access_token)
 
+    preview = map_obj.renderer
+
+    if preview is None:
+        preview = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+
     return render_to_response(template, RequestContext(request, {
         'mapId': mapid,
         'config': json.dumps(config),
         'map': map_obj,
-        'preview': getattr(
-            settings,
-            'LAYER_PREVIEW_LIBRARY',
-            '')
+        'preview': preview
     }))
 
 
@@ -471,10 +492,19 @@ def new_map(request, template='maps/map_new.html'):
     context_dict = {
         'config': config,
     }
-    context_dict["preview"] = getattr(
-        settings,
-        'LAYER_PREVIEW_LIBRARY',
-        '')
+
+    #Cleaner to do it in two statements than nesting gets and defaults
+    context_dict['preview'] = request.GET.get('renderer', None)
+    if context_dict['preview'] is None:
+        context_dict['preview'] = getattr(
+            settings,
+            'LAYER_PREVIEW_LIBRARY',
+            '')
+
+    #For some reason, doing this in the map_new.html doesn't work
+    if context_dict['preview'] == 'maploom':
+        template = 'maps/maploom.html'
+
     if isinstance(config, HttpResponse):
         return config
     else:
@@ -498,7 +528,14 @@ def new_map_json(request):
                 status=401
             )
 
-        map_obj = Map(owner=request.user, zoom=0,
+        referer_dict = urlparse.parse_qs(urlparse.urlparse(request.META['HTTP_REFERER']).query)
+
+        if 'renderer' in referer_dict:
+            map_obj = Map(owner=request.user, zoom=0,
+                      center_x=0, center_y=0,
+                      renderer=referer_dict['renderer'][0])
+        else:
+            map_obj = Map(owner=request.user, zoom=0,
                       center_x=0, center_y=0)
         map_obj.save()
         map_obj.set_default_permissions()

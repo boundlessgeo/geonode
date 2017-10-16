@@ -28,6 +28,7 @@ try:
     import json
 except ImportError:
     from django.utils import simplejson as json
+import os
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ObjectDoesNotExist
@@ -48,6 +49,7 @@ from geonode.security.models import remove_object_permissions
 from agon_ratings.models import OverallRating
 
 logger = logging.getLogger("geonode.maps.models")
+
 
 
 class Map(ResourceBase, GXPMapBase):
@@ -80,6 +82,15 @@ class Map(ResourceBase, GXPMapBase):
     urlsuffix = models.CharField(_('Site URL'), max_length=255, blank=True)
     # Alphanumeric alternative to referencing maps by id, appended to end of
     # URL instead of id, ie http://domain/maps/someview
+
+    def str2bool(v):
+        if v and len(v) > 0:
+            return v.lower() in ("yes", "true", "t", "1")
+        else:
+            return False
+
+    renderer = models.CharField(_('renderer'), max_length=32, choices=getattr(settings, 'AVAILABLE_RENDERERS'),
+                                    default=getattr(settings, 'LAYER_PREVIEW_LIBRARY', ''))
 
     featuredurl = models.CharField(
         _('Featured Map URL'),
@@ -237,6 +248,7 @@ class Map(ResourceBase, GXPMapBase):
         self.zoom = 0
         self.center_x = 0
         self.center_y = 0
+        self.renderer = None
         bbox = None
         index = 0
 
