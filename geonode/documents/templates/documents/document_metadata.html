@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load bootstrap_tags %}
 
-{% block title %}{{ document.typename }} — {{ block.super }}{% endblock %}
+{% block title %}{{ document.title }} — {{ block.super }}{% endblock %}
 
 {% block head %}
   {% include "geonode/ext_header.html" %}
@@ -13,9 +13,9 @@
 
 {% block body_outer %}
 <div class="page-header">
-  <a href="{% url "document_browse" %}" class="btn btn-primary pull-right">{% trans "Explore Documents" %}</a>
+  <a href="{% url "document_detail" document.id %}" class="btn btn-primary pull-right">{% trans "Back to Document" %}</a>
   <h2 class="page-title">{% trans "Edit Metadata" %}</h2>
-</div> 
+</div>
 <div class="row">
   <div class="col-md-8">
     <p class="lead">
@@ -70,7 +70,7 @@
             <input type="radio" name="category_choice_field" value="{{ choice.0 }}"
             {% ifequal category_form.initial choice.0 %}
               checked="checked"
-            {% endifequal %}> 
+            {% endifequal %}>
             {{ choice.1 }}
             </input>
           </div>
