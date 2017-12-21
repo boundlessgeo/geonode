@@ -31,6 +31,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.core.files.storage import FileSystemStorage
+from django.contrib.postgres.fields import JSONField
 
 from geonode.base.models import ResourceBase, ResourceBaseManager, resourcebase_post_save
 from geonode.people.utils import get_valid_user
@@ -506,6 +507,13 @@ class Attribute(models.Model):
         _('visible?'),
         help_text=_('specifies if the attribute should be displayed in identify results'),
         default=True)
+    required = models.BooleanField(
+        _('required?'),
+        help_text=_('specifies if the attribute is required when creating new features'),
+        default=False)
+    constraints = JSONField(
+        _('form_metadata'),
+        help_text=_('specifies extra metadata related to displaying this attribute as a form input'))
     display_order = models.IntegerField(
         _('display order'),
         help_text=_('specifies the order in which attribute should be displayed in identify results'),
