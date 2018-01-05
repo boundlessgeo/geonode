@@ -658,42 +658,43 @@ def _register_indexed_layers(service, wms=None, verbosity=False):
 
             # Need to check if layer already exists??
             existing_layer = None
-            #for layer in Layer.objects.filter(typename=wms_layer.name):
-            #    if layer.service == service:
-            #        existing_layer = layer
+            for lyr in Layer.objects.filter(typename=wms_layer.name):
+                if lyr.service == service:
+                    existing_layer = lyr
 
             if not existing_layer:
-                #signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
-                #signals.post_save.disconnect(catalogue_post_save, sender=Layer)
-                #saved_layer = Layer.objects.create(
-                #    typename=wms_layer.name,
-                #    name=wms_layer.name,
-                #    store=service.name,  # ??
-                #    storeType="remoteStore",
-                #    workspace="remoteWorkspace",
-                #    title=wms_layer.title or wms_layer.name,
-                #    abstract=abstract or _("Not provided"),
-                #    uuid=layer_uuid,
-                #    owner=None,
-                #    srid=srid,
-                #    bbox_x0=bbox[0],
-                #    bbox_x1=bbox[2],
-                #    bbox_y0=bbox[1],
-                #    bbox_y1=bbox[3]
-                #)
+                signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
+                signals.post_save.disconnect(catalogue_post_save, sender=Layer)
+                saved_layer = Layer.objects.create(
+                    typename=wms_layer.name,
+                    name=wms_layer.name,
+                    store=service.name,  # ??
+                    storeType="remoteStore",
+                    workspace="remoteWorkspace",
+                    title=wms_layer.title or wms_layer.name,
+                    abstract=abstract or _("Not provided"),
+                    uuid=layer_uuid,
+                    owner=None,
+                    srid=srid,
+                    is_published=False,
+                    bbox_x0=bbox[0],
+                    bbox_x1=bbox[2],
+                    bbox_y0=bbox[1],
+                    bbox_y1=bbox[3]
+                )
 
-                #saved_layer.set_default_permissions()
-                #saved_layer.keywords.add(*keywords)
+                saved_layer.set_default_permissions()
+                saved_layer.keywords.add(*keywords)
 
                 service_layer, created = ServiceLayer.objects.get_or_create(
                     typename=wms_layer.name,
                     service=service
                 )
-                #service_layer.layer = saved_layer
+                service_layer.layer = saved_layer
                 service_layer.uuid = layer_uuid
                 service_layer.title = wms_layer.title
                 service_layer.description = abstract
-                #service_layer.styles = wms_layer.styles
+                service_layer.styles = wms_layer.styles
                 service_layer.bbox_x0 = bbox[0]
                 service_layer.bbox_x1 = bbox[2]
                 service_layer.bbox_y0 = bbox[1]
@@ -702,11 +703,11 @@ def _register_indexed_layers(service, wms=None, verbosity=False):
                 service_layer.keywords = limit_text(','.join(wms_layer.keywords))
                 service_layer.save()
 
-                #resourcebase_post_save(saved_layer, Layer)
+                resourcebase_post_save(saved_layer, Layer)
                 #catalogue_post_save(saved_layer, Layer)
-                #set_attributes_from_geoserver(saved_layer)
+                set_attributes_from_geoserver(saved_layer)
 
-                #signals.post_save.connect(resourcebase_post_save, sender=Layer)
+                signals.post_save.connect(resourcebase_post_save, sender=Layer)
                 #signals.post_save.connect(catalogue_post_save, sender=Layer)
             count += 1
         message = "%d Layers Registered" % count
@@ -886,49 +887,50 @@ def _register_arcgis_layers(service, arc=None):
 
         existing_layer = None
         logger.info("Registering layer  %s" % layer.name)
-        #try:
-        #    for layer in Layer.objects.filter(typename=typename):
-        #        if layer.service == service:
-        #            existing_layer = layer
-        #except Layer.DoesNotExist:
-        #    pass
+        try:
+            for lyr in Layer.objects.filter(typename=typename):
+                if lyr.service == service:
+                    existing_layer = lyr
+        except Layer.DoesNotExist:
+            pass
 
         llbbox = mercator_to_llbbox(bbox)
 
         if existing_layer is None:
 
-            #signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
-            #signals.post_save.disconnect(catalogue_post_save, sender=Layer)
+            signals.post_save.disconnect(resourcebase_post_save, sender=Layer)
+            signals.post_save.disconnect(catalogue_post_save, sender=Layer)
 
             # Need to check if layer already exists??
-            #logger.info("Importing layer  %s" % layer.name)
-            #saved_layer = Layer.objects.create(
-            #    typename=typename,
-            #    name=valid_name,
-            #    store=service.name,  # ??
-            #    storeType="remoteStore",
-            #    workspace="remoteWorkspace",
-            #    title=layer.name,
-            #    abstract=layer._json_struct[
-            #        'description'] or _("Not provided"),
-            #    uuid=layer_uuid,
-            #    owner=None,
-            #    srid="EPSG:%s" % layer.extent.spatialReference.wkid,
-            #    bbox_x0=llbbox[0],
-            #    bbox_x1=llbbox[2],
-            #    bbox_y0=llbbox[1],
-            #    bbox_y1=llbbox[3],
-            #)
+            logger.info("Importing layer  %s" % layer.name)
+            saved_layer = Layer.objects.create(
+                typename=typename,
+                name=valid_name,
+                store=service.name,  # ??
+                storeType="remoteStore",
+                workspace="remoteWorkspace",
+                title=layer.name,
+                abstract=layer._json_struct[
+                    'description'] or _("Not provided"),
+                uuid=layer_uuid,
+                owner=None,
+                is_published=False,
+                srid="EPSG:%s" % layer.extent.spatialReference.wkid,
+                bbox_x0=llbbox[0],
+                bbox_x1=llbbox[2],
+                bbox_y0=llbbox[1],
+                bbox_y1=llbbox[3],
+            )
 
-            #saved_layer.set_default_permissions()
-            #saved_layer.save()
+            saved_layer.set_default_permissions()
+            saved_layer.save()
 
             service_layer, created = ServiceLayer.objects.get_or_create(
                 service=service,
                 typename=typename
             )
 
-            #service_layer.layer = saved_layer
+            service_layer.layer = saved_layer
             service_layer.uuid = layer_uuid
             service_layer.title = layer.name
             service_layer.description = abstract
@@ -936,13 +938,13 @@ def _register_arcgis_layers(service, arc=None):
             service_layer.srid = "EPSG:%s" % str(srs),
             service_layer.save()
 
-            #resourcebase_post_save(saved_layer, Layer)
+            resourcebase_post_save(saved_layer, Layer)
             #catalogue_post_save(saved_layer, Layer)
 
-            #signals.post_save.connect(resourcebase_post_save, sender=Layer)
+            signals.post_save.connect(resourcebase_post_save, sender=Layer)
             #signals.post_save.connect(catalogue_post_save, sender=Layer)
 
-            #create_arcgis_links(saved_layer)
+            create_arcgis_links(saved_layer)
 
         count += 1
     message = "%d Layers Registered" % count
@@ -980,7 +982,7 @@ def _process_arcgis_service(arcserver, name, owner=None, parent=None):
                                      owner=owner,
                                      parent=parent)
 
-    #service.set_default_permissions()
+    service.set_default_permissions()
 
     available_resources = []
     for layer in list(arcserver.layers):
@@ -1017,7 +1019,7 @@ def _process_arcgis_folder(folder, name, services=None, owner=None, parent=None)
             logger.debug(return_dict['msg'])
         else:
             try:
-                if service.spatialReference.wkid in [102100, 102113, 3785, 3857, 900913]:
+                if service.spatialReference.wkid in [102100, 102113, 3785, 3857, 900913, 4326]:
                     return_dict = _process_arcgis_service(
                         service, name, owner, parent=parent)
                 else:
