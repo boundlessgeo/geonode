@@ -37,5 +37,5 @@ class GeonodeAdminSite(admin.AdminSite):
     # By default, this is "Site administration".
     index_title = '%s %s' % (settings.SITENAME, ugettext_lazy('Administration'))
 
-admin.site = GeonodeAdminSite()
+#admin.site = GeonodeAdminSite()
 
