@@ -35,6 +35,8 @@ import autocomplete_light
 # Setup Django Admin
 autocomplete_light.autodiscover()
 
+admin.autodiscover()
+
 js_info_dict = {
     'domain': 'djangojs',
     'packages': ('geonode',)
