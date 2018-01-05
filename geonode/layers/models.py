@@ -185,7 +185,7 @@ class Layer(ResourceBase):
 
     @property
     def service_typename(self):
-        if self.is_remote:
+        if self.is_remote and self.service:
             return "%s:%s" % (self.service.name, self.typename)
         else:
             return self.typename
