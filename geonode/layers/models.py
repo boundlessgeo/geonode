@@ -41,6 +41,8 @@ from geonode.security.models import remove_object_permissions
 from dialogos.models import Comment
 from django.db.models import Avg
 
+from ..services.enumerations import INDEXED
+
 logger = logging.getLogger("geonode.layers.models")
 
 shp_exts = ['.shp', ]
@@ -117,6 +119,7 @@ class Layer(ResourceBase):
         null=True,
         blank=True)
     styles = models.ManyToManyField(Style, related_name='layer_styles')
+    service = models.ForeignKey("services.Service", null=True, blank=True)
 
     charset = models.CharField(max_length=255, default='UTF-8')
 
@@ -125,16 +128,6 @@ class Layer(ResourceBase):
     @property
     def is_remote(self):
         return self.storeType == "remoteStore"
-
-    @property
-    def service(self):
-        """Get the related service object dynamically
-        """
-        service_layers = self.servicelayer_set.all()
-        if len(service_layers) == 0:
-            return None
-        else:
-            return service_layers[0].service
 
     def is_vector(self):
         return self.storeType == 'dataStore'
@@ -185,10 +178,10 @@ class Layer(ResourceBase):
 
     @property
     def service_typename(self):
-        if self.is_remote:
-            return "%s:%s" % (self.service.name, self.typename)
+        if self.service is not None and self.service.method == INDEXED:
+            return "%s:%s" % (self.service.name, self.alternate)
         else:
-            return self.typename
+            return self.alternate
 
     @property
     def attributes(self):

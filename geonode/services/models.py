@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #########################################################################
 #
-# Copyright (C) 2016 OSGeo
+# Copyright (C) 2017 OSGeo
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,68 +21,137 @@
 import logging
 from django.conf import settings
 from django.db import models
-from geoserver.catalog import FailedRequestError, Catalog
-from django.db.models import Q
-
-from geonode.base.models import ResourceBase, TopicCategory
-from geonode.services.enumerations import SERVICE_TYPES, SERVICE_METHODS, GXP_PTYPES
-from geonode.layers.models import Layer
 from django.utils.translation import ugettext_lazy as _
-from django.db.models import signals
+from geonode.base.models import ResourceBase
 from geonode.people.enumerations import ROLE_VALUES
-from geonode.security.models import remove_object_permissions
 
-STATUS_VALUES = [
-    'pending',
-    'failed',
-    'process',
-    'completed'
-]
+from . import enumerations
 
 logger = logging.getLogger("geonode.services")
 
-"""
-geonode.services
-"""
-
 
 class Service(ResourceBase):
+    """Service Class to represent remote Geo Web Services"""
 
-    """
-    Service Class to represent remote Geo Web Services
-    """
-
-    type = models.CharField(max_length=4, choices=SERVICE_TYPES)
-    method = models.CharField(max_length=1, choices=SERVICE_METHODS)
+    type = models.CharField(
+        max_length=4,
+        choices=(
+            (enumerations.AUTO, _('Auto-detect')),
+            (enumerations.OWS, _('Paired WMS/WFS/WCS')),
+            (enumerations.WMS, _('Web Map Service')),
+            (enumerations.CSW, _('Catalogue Service')),
+            (enumerations.REST, _('ArcGIS REST Service')),
+            (enumerations.OGP, _('OpenGeoPortal')),
+            (enumerations.HGL, _('Harvard Geospatial Library')),
+        )
+    )
+    method = models.CharField(
+        max_length=1,
+        choices=(
+            (enumerations.LOCAL, _('Local')),
+            (enumerations.CASCADED, _('Cascaded')),
+            (enumerations.HARVESTED, _('Harvested')),
+            (enumerations.INDEXED, _('Indexed')),
+            (enumerations.LIVE, _('Live')),
+            (enumerations.OPENGEOPORTAL, _('OpenGeoPortal'))
+        )
+    )
     # with service, version and request etc stripped off
-    base_url = models.URLField(unique=True, db_index=True)
-    version = models.CharField(max_length=10, null=True, blank=True)
-    classification = models.CharField(max_length=255, null=True, blank=True)
-    caveat = models.CharField(max_length=255, null=True, blank=True)
-    service_refs = models.CharField(max_length=255, null=True, blank=True)
-    provenance = models.CharField(max_length=255, null=True, blank=True)
+    base_url = models.URLField(
+        unique=True,
+        db_index=True
+    )
+    version = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True
+    )
     # Should force to slug?
-    name = models.CharField(max_length=255, unique=True, db_index=True)
-    description = models.CharField(max_length=255, null=True, blank=True)
-    online_resource = models.URLField(False, null=True, blank=True)
-    fees = models.CharField(max_length=1000, null=True, blank=True)
-    access_constraints = models.CharField(max_length=255, null=True, blank=True)
-    connection_params = models.TextField(null=True, blank=True)
-    username = models.CharField(max_length=50, null=True, blank=True)
-    password = models.CharField(max_length=50, null=True, blank=True)
-    api_key = models.CharField(max_length=255, null=True, blank=True)
-    workspace_ref = models.URLField(False, null=True, blank=True)
-    store_ref = models.URLField(null=True, blank=True)
-    resources_ref = models.URLField(null=True, blank=True)
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True
+    )
+    description = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    online_resource = models.URLField(
+        False,
+        null=True,
+        blank=True
+    )
+    fees = models.CharField(
+        max_length=1000,
+        null=True,
+        blank=True
+    )
+    access_constraints = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    connection_params = models.TextField(
+        null=True,
+        blank=True
+    )
+    username = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True
+    )
+    password = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True
+    )
+    api_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    workspace_ref = models.URLField(
+        False,
+        null=True,
+        blank=True
+    )
+    store_ref = models.URLField(
+        null=True,
+        blank=True
+    )
+    resources_ref = models.URLField(
+        null=True,
+        blank=True
+    )
     profiles = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, through='ServiceProfileRole')
-    created = models.DateTimeField(auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=True)
-    first_noanswer = models.DateTimeField(null=True, blank=True)
-    noanswer_retries = models.PositiveIntegerField(null=True, blank=True)
-    external_id = models.IntegerField(null=True, blank=True)
+        settings.AUTH_USER_MODEL,
+        through='ServiceProfileRole'
+    )
+    created = models.DateTimeField(
+        auto_now_add=True
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True
+    )
+    first_noanswer = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    noanswer_retries = models.PositiveIntegerField(
+        null=True,
+        blank=True
+    )
+    external_id = models.IntegerField(
+        null=True,
+        blank=True
+    )
     parent = models.ForeignKey(
-        'services.Service', null=True, blank=True, related_name='service_set')
+        'services.Service',
+        null=True,
+        blank=True,
+        related_name='service_set'
+    )
 
     # Supported Capabilities
 
@@ -92,13 +161,10 @@ class Service(ResourceBase):
     @property
     def ptype(self):
         # Return the gxp ptype that should be used to display layers
-        return GXP_PTYPES[self.type]
+        return enumerations.GXP_PTYPES[self.type]
 
     def get_absolute_url(self):
         return '/services/%i' % self.id
-
-    class Meta(ResourceBase.Meta):
-        pass
 
 
 class ServiceProfileRole(models.Model):
@@ -112,68 +178,23 @@ class ServiceProfileRole(models.Model):
         'function performed by the responsible party'))
 
 
-class ServiceLayer(models.Model):
-    uuid = models.CharField(max_length=36, blank=True, null=True)
+class HarvestJob(models.Model):
     service = models.ForeignKey(Service)
-    layer = models.ForeignKey(Layer, null=True)
-    typename = models.CharField(_("Layer Name"), max_length=255)
-    title = models.CharField(_("Layer Title"), max_length=512)
-    category = models.ForeignKey(TopicCategory, null=True, blank=True, limit_choices_to=Q(is_choice=True),
-                                 help_text=ResourceBase.category_help_text)
-    description = models.TextField(_("Layer Description"), null=True)
-    bbox_x0 = models.DecimalField(max_digits=19, decimal_places=10, blank=True, null=True)
-    bbox_x1 = models.DecimalField(max_digits=19, decimal_places=10, blank=True, null=True)
-    bbox_y0 = models.DecimalField(max_digits=19, decimal_places=10, blank=True, null=True)
-    bbox_y1 = models.DecimalField(max_digits=19, decimal_places=10, blank=True, null=True)
-    srid = models.CharField(max_length=255, default='EPSG:4326')
-    keywords = models.CharField(max_length=400, null=True, blank=True)
-    styles = models.TextField(_("Layer Styles"), null=True)
+    resource_id = models.CharField(max_length=255)
+    status = models.CharField(
+        choices=(
+            (enumerations.QUEUED, enumerations.QUEUED),
+            (enumerations.CANCELLED, enumerations.QUEUED),
+            (enumerations.IN_PROCESS, enumerations.IN_PROCESS),
+            (enumerations.PROCESSED, enumerations.PROCESSED),
+            (enumerations.FAILED, enumerations.FAILED),
+        ),
+        default=enumerations.QUEUED,
+        max_length=15,
+    )
+    details = models.TextField(default=_("Resource is queued"))
 
-    def __unicode__(self):
-        return self.layer.title if self.layer else self.title
-
-
-class WebServiceHarvestLayersJob(models.Model):
-    service = models.OneToOneField(Service, blank=False, null=False)
-    status = models.CharField(choices=[(
-        x, x) for x in STATUS_VALUES], max_length=10, blank=False, null=False, default='pending')
-
-
-class WebServiceRegistrationJob(models.Model):
-    base_url = models.URLField(unique=True)
-    type = models.CharField(max_length=4, choices=SERVICE_TYPES)
-    status = models.CharField(choices=[(
-        x, x) for x in STATUS_VALUES], max_length=10, blank=False, null=False, default='pending')
-    result = models.TextField(blank=True, null=True)
-
-
-def post_save_service(instance, sender, created, **kwargs):
-    if created:
-        instance.set_default_permissions()
-
-
-def pre_delete_service(instance, sender, **kwargs):
-    for layer in [s.layer for s in instance.servicelayer_set.all()]:
-    	if layer:
-        	layer.delete()
-    # if instance.method == 'H':
-    #     gn = Layer.objects.gn_catalog
-    #     gn.control_harvesting_task('stop', [instance.external_id])
-    #     gn.control_harvesting_task('remove', [instance.external_id])
-    if instance.method == 'C':
-        try:
-            _user = settings.OGC_SERVER['default']['USER']
-            _password = settings.OGC_SERVER['default']['PASSWORD']
-            gs = Catalog(settings.OGC_SERVER['default']['LOCATION'] + "rest",
-                         _user, _password)
-            cascade_store = gs.get_store(
-                instance.name, settings.CASCADE_WORKSPACE)
-            gs.delete(cascade_store, recurse=True)
-        except FailedRequestError:
-            logger.error(
-                "Could not delete cascading WMS Store for %s - maybe already gone" % instance.name)
-    remove_object_permissions(instance.get_self_resource())
-
-
-signals.pre_delete.connect(pre_delete_service, sender=Service)
-signals.post_save.connect(post_save_service, sender=Service)
+    def update_status(self, status, details=""):
+        self.status = status
+        self.details = details
+        self.save()

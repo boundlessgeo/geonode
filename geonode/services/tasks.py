@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #########################################################################
 #
-# Copyright (C) 2016 OSGeo
+# Copyright (C) 2017 OSGeo
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,57 +17,46 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
+"""Celery tasks for geonode.services"""
 
-from celery.schedules import crontab
-from celery.task import periodic_task
-from django.conf import settings
-from geonode.services.models import WebServiceHarvestLayersJob, WebServiceRegistrationJob
-from geonode.services.views import update_layers, register_service_by_type
-from geonode.people.models import Profile
-from django.core.mail import send_mail
+from __future__ import absolute_import
 
+import logging
 
-@periodic_task(run_every=crontab(minute=settings.SERVICE_UPDATE_INTERVAL))
-def harvest_service_layers():
-    if WebServiceHarvestLayersJob.objects.filter(status="process").count() == 0:
-        for job in WebServiceHarvestLayersJob.objects.filter(status="pending"):
-            try:
-                job.status = "process"
-                job.save()
-                update_layers(job.service)
-                job.delete()
-            except Exception, e:
-                print e
-                job.status = 'failed'
-                job.save()
-                send_mail('Service harvest failed', 'Service %d failed, error is %s' % (job.service.id, str(e)),
-                          settings.DEFAULT_FROM_EMAIL, [email for admin, email in settings.ADMINS], fail_silently=True)
+from celery import shared_task
+from django.db import transaction
+
+from . import enumerations
+from . import models
+from .serviceprocessors import get_service_handler
+
+logger = logging.getLogger(__name__)
 
 
-@periodic_task(run_every=crontab(minute=settings.SERVICE_UPDATE_INTERVAL))
-def import_service(job_id=None, owner='admin', name=None):
-    boundsJobs = WebServiceRegistrationJob.objects.all()
-    args = {'status': 'pending'}
-
-    if job_id:
-        args.update({'pk': job_id})
-
-    response = {}
-    for job in boundsJobs.filter(**args):
-        try:
-            job.status = "process"
-            job.save()
-            response = register_service_by_type(
-                job.base_url, job.type, owner=Profile.objects.get(username=owner), name=name)
-            job.status = "completed"
-            job.result = response
-            job.save()
-            #job.delete()
-        except Exception, e:
-            job.status = 'failed'
-            job.result = str(e)
-            response.update({'error': str(e)})
-            job.save()
-            raise e
-
-    return response
+@shared_task(bind=True)
+def harvest_resource(self, harvest_job_id):
+    harvest_job = models.HarvestJob.objects.get(pk=harvest_job_id)
+    harvest_job.update_status(
+        status=enumerations.IN_PROCESS, details="Harvesting resource...")
+    result = False
+    details = ""
+    try:
+        handler = get_service_handler(
+            base_url=harvest_job.service.base_url,
+            service_type=harvest_job.service.type
+        )
+        with transaction.atomic():
+            logger.debug("harvesting resource...")
+            handler.harvest_resource(
+                harvest_job.resource_id, harvest_job.service)
+            result = True
+        logger.debug("Resource harvested successfully")
+    except Exception as err:
+        logger.exception(msg="An error has occurred while harvesting "
+                             "resource {!r}".format(harvest_job.resource_id))
+        details = str(err)  # TODO: pass more context about the error
+    finally:
+        harvest_job.update_status(
+            status=enumerations.PROCESSED if result else enumerations.FAILED,
+            details=details
+        )
