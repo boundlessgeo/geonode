@@ -123,7 +123,7 @@ def harvest_resources(request, service_id):
         already_harvested = HarvestJob.objects.values_list(
             "resource_id", flat=True).filter(service=service)
         not_yet_harvested = [
-            r for r in available_resources if r.id not in already_harvested]
+            r for r in available_resources if str(r.id) not in already_harvested]
         not_yet_harvested.sort(key=lambda resource: resource.id)
         paginator = Paginator(
             not_yet_harvested, getattr(settings, "CLIENT_RESULTS_LIMIT", 100))
@@ -209,7 +209,11 @@ def harvest_single_resource(request, service_id, resource_id):
 def _gen_harvestable_ids(requested_ids, available_resources):
     available_resource_ids = [r.id for r in available_resources]
     for id in requested_ids:
-        identifier = str(id)
+        if id.isdigit() and any(isinstance(_id, int) for _id in available_resource_ids):
+            identifier = int(id)
+        else:
+            identifier = id
+
         if identifier in available_resource_ids:
             yield identifier
 

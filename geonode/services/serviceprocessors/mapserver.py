@@ -29,6 +29,7 @@ from django.utils.translation import ugettext as _
 from geonode.base.models import Link
 from geonode.layers.models import Layer
 from geonode.layers.utils import create_thumbnail
+from geonode.utils import set_attributes
 from arcrest.ags import MapService as ArcMapService
 from .. import enumerations
 from ..enumerations import CASCADED
@@ -39,6 +40,20 @@ from . import base
 
 logger = logging.getLogger(__name__)
 
+
+_esri_types = {
+    "esriFieldTypeDouble": "xsd:double",
+    "esriFieldTypeString": "xsd:string",
+    "esriFieldTypeSmallInteger": "xsd:int",
+    "esriFieldTypeInteger": "xsd:int",
+    "esriFieldTypeDate": "xsd:dateTime",
+    "esriFieldTypeOID": "xsd:long",
+    "esriFieldTypeGeometry": "xsd:geometry",
+    "esriFieldTypeBlob": "xsd:base64Binary",
+    "esriFieldTypeRaster": "raster",
+    "esriFieldTypeGUID": "xsd:string",
+    "esriFieldTypeGlobalID": "xsd:string",
+    "esriFieldTypeXML": "xsd:anyType"}
 
 class MapserverServiceHandler(base.ServiceHandlerBase,
                         base.CascadableServiceHandlerMixin):
@@ -51,8 +66,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         self.indexing_method = (
             INDEXED if self._offers_geonode_projection() else CASCADED)
         self.url = self.parsed_service.url
-        _title = self.parsed_service.mapName
-        self.name = _get_valid_name(urlsplit(self.url).netloc + _title)
+        self.title = self.parsed_service.itemInfo['title']
+        self.name = _get_valid_name(self.parsed_service.itemInfo['name'])
 
     def create_cascaded_store(self):
         store = self._get_store(create=True)
@@ -76,9 +91,9 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             method=self.indexing_method,
             owner=owner,
             parent=parent,
-            version='',#self.parsed_service.currentVersion,
+            version=self.parsed_service.currentVersion,
             name=self.name,
-            title=self.name,
+            title=self.title,
             abstract=self.parsed_service.serviceDescription or _(
                 "Not provided"),
             online_resource=self.url,
@@ -86,13 +101,10 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         return instance
 
     def get_keywords(self):
-        return []#self.parsed_service.documentInfo.Keywords
+        return self.parsed_service.documentInfo['Keywords']
 
     def get_resource(self, resource_id):
-        resource = self.parsed_service.layers[resource_id]
-        map_layer = ArcMapService(resource.url)
-        resource['description'] = map_layer.description
-        return resource
+        return self.parsed_service.layers[int(resource_id)]
 
     def get_resources(self):
         """Return an iterable with the service's resources.
@@ -153,35 +165,37 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         geonode_layer.set_default_permissions()
         self._create_layer_service_link(geonode_layer)
         self._create_layer_legend_link(geonode_layer)
-        #self._create_layer_thumbnail(geonode_layer)
+        self._create_layer_thumbnail(geonode_layer)
+        self._create_layer_attributes(geonode_layer, layer_meta)
 
     def has_resources(self):
-        return True if len(self.parsed_service.layers) > 1 else False
+        return True if len(self.parsed_service.layers) > 0 else False
 
     def _create_layer_thumbnail(self, geonode_layer):
         """Create a thumbnail with a WMS request."""
-        params = {
-            "service": self.service_type,
-            "version": self.parsed_service.version,
-            "request": "GetMap",
-            "layers": geonode_layer.alternate.encode('utf-8'),
-            "bbox": geonode_layer.bbox_string,
-            "srs": "EPSG:4326",
-            "width": "200",
-            "height": "150",
-            "format": "image/png",
-        }
-        kvp = "&".join("{}={}".format(*item) for item in params.items())
-        thumbnail_remote_url = "{}?{}".format(
-            geonode_layer.ows_url, kvp)
+
+        thumbnail_remote_url = "{}/info/thumbnail".format(self.url)
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
         create_thumbnail(
             instance=geonode_layer,
             thumbnail_remote_url=thumbnail_remote_url,
             thumbnail_create_url=None,
-            check_bbox=True,
+            check_bbox=False,
             overwrite=True,
         )
+
+    def _create_layer_attributes(self, geonode_layer, layer_meta):
+        """Get the layer's field name and types
+
+        Regardless of the service being INDEXED or CASCADED we're always
+        creating the layer attributes.
+
+        """
+
+        attribute_map = [[n["name"], _esri_types[n["type"]]]
+                         for n in layer_meta.fields if n.get("name") and n.get("type")]
+
+        set_attributes(geonode_layer, attribute_map, overwrite=True)
 
     def _create_layer_legend_link(self, geonode_layer):
         """Get the layer's legend and save it locally
@@ -192,47 +206,37 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         """
 
-        params = {
-            "service": self.service_type,
-            "version": self.parsed_service.version,
-            "request": "GetLegendGraphic",
-            "format": "image/png",
-            "width": 20,
-            "height": 20,
-            "layer": geonode_layer.name,
-            "legend_options": (
-                "fontAntiAliasing:true;fontSize:12;forceLabels:on")
-        }
-        kvp = "&".join("{}={}".format(*item) for item in params.items())
-        legend_url = "{}?{}".format(self.url, kvp)
+        legend_url = "{}/legend?f=pjson".format(self.url)
         logger.debug("legend_url: {}".format(legend_url))
         Link.objects.get_or_create(
             resource=geonode_layer.resourcebase_ptr,
             url=legend_url,
             defaults={
-                "extension": 'png',
+                "extension": 'json',
                 "name": 'Legend',
                 "url": legend_url,
-                "mime": 'image/png',
-                "link_type": 'image',
+                "mime": 'application/json',
+                "link_type": 'data',
             }
         )
 
     def _create_layer_service_link(self, geonode_layer):
-        Link.objects.get_or_create(
-            resource=geonode_layer.resourcebase_ptr,
-            url=geonode_layer.ows_url,
-            defaults={
-                "extension": "html",
-                "name": "OGC {}: {} Service".format(
-                    geonode_layer.service.type,
-                    geonode_layer.store
-                ),
-                "url": geonode_layer.ows_url,
-                "mime": "text/html",
-                "link_type": "OGC:{}".format(geonode_layer.service.type),
-            }
-        )
+
+        for supportedService in self.parsed_service.supportedExtensions.split(','):
+            Link.objects.get_or_create(
+                resource=geonode_layer.resourcebase_ptr,
+                url=geonode_layer.ows_url,
+                defaults={
+                    "extension": "html",
+                    "name": "ESRI {}: {} Service".format(
+                        supportedService,
+                        geonode_layer.store
+                    ),
+                    "url": geonode_layer.ows_url,
+                    "mime": "text/html",
+                    "link_type": "html",
+                }
+            )
 
     def _get_cascaded_layer_fields(self, geoserver_resource):
         name = geoserver_resource.name
@@ -254,21 +258,21 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         }
 
     def _get_indexed_layer_fields(self, layer_meta):
-        bbox = layer_meta.boundingBoxWGS84
+        bbox = layer_meta.extent
         return {
             "name": layer_meta.name,
             "store": self.name,
             "storeType": "remoteStore",
             "workspace": "remoteWorkspace",
-            "typename": layer_meta.name,
-            "alternate": layer_meta.name,
-            "title": layer_meta.title,
-            "abstract": 'sfds',#layer_meta.description,
-            "bbox_x0": bbox[0],
-            "bbox_x1": bbox[2],
-            "bbox_y0": bbox[1],
-            "bbox_y1": bbox[3],
-            "keywords": [keyword[:100] for keyword in layer_meta.keywords],
+            "typename": "{}:{}".format(self.name, layer_meta.id),
+            "alternate": layer_meta.id,
+            "title": layer_meta.name,
+            "abstract": layer_meta.description,
+            "bbox_x0": bbox['xmin'],
+            "bbox_x1": bbox['ymin'],
+            "bbox_y0": bbox['xmax'],
+            "bbox_y1": bbox['ymax'],
+            "keywords": [keyword[:100] for keyword in self.get_keywords()],
         }
 
     def _get_store(self, create=True):
@@ -320,8 +324,11 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
     def _offers_geonode_projection(self):
         geonode_projection = getattr(settings, "DEFAULT_MAP_CRS", "EPSG:3857")
-        first_layer = list(self.get_resources())[0]
-        return True#geonode_projection in first_layer.crsOptions
+        layers = list(self.get_resources())
+        if len(layers) > 0:
+            return geonode_projection in layers[0].crsOptions
+        else:
+            return True
 
 
 def _get_valid_name(proposed_name):
