@@ -323,12 +323,13 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         return layer_resource
 
     def _offers_geonode_projection(self):
-        geonode_projection = getattr(settings, "DEFAULT_MAP_CRS", "EPSG:3857")
+        geonode_projection = getattr(settings, "DEFAULT_MAP_CRS", "EPSG:4326")
         layers = list(self.get_resources())
         if len(layers) > 0:
-            return geonode_projection in layers[0].crsOptions
-        else:
+            #str(layers[0].extent['spatialReference']['wkid']) in geonode_projection
             return True
+        else:
+            return False
 
 
 def _get_valid_name(proposed_name):
