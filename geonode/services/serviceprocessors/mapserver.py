@@ -17,7 +17,7 @@
 #
 #########################################################################
 
-"""Utilities for enabling OGC WMS remote services in geonode."""
+"""Utilities for enabling ESRI REST Mapserver remote services in geonode."""
 
 import logging
 from urlparse import urlsplit
@@ -172,7 +172,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         return True if len(self.parsed_service.layers) > 0 else False
 
     def _create_layer_thumbnail(self, geonode_layer):
-        """Create a thumbnail with a WMS request."""
+        """Grab the image from the service."""
 
         thumbnail_remote_url = "{}/info/thumbnail".format(self.url)
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
@@ -228,7 +228,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                 url=geonode_layer.ows_url,
                 defaults={
                     "extension": "html",
-                    "name": "ESRI {}: {} Service".format(
+                    "name": "{}({})".format(
                         supportedService,
                         geonode_layer.store
                     ),
@@ -264,7 +264,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             "store": self.name,
             "storeType": "remoteStore",
             "workspace": "remoteWorkspace",
-            "typename": "{}:{}".format(self.name, layer_meta.id),
+            "typename": "{}:{}".format(slugify(layer_meta.name), str(layer_meta.id)),
             "alternate": layer_meta.id,
             "title": layer_meta.name,
             "abstract": layer_meta.description,

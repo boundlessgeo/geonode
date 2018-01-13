@@ -179,7 +179,7 @@ class Layer(ResourceBase):
     @property
     def service_typename(self):
         if self.service is not None and self.service.method == INDEXED:
-            return "%s:%s" % (self.service.name, self.alternate)
+            return "%s:%s" % (self.service.name, self.typename)
         else:
             return self.alternate
 
