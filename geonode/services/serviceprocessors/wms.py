@@ -53,7 +53,8 @@ class WmsServiceHandler(base.ServiceHandlerBase,
             INDEXED if self._offers_geonode_projection() else CASCADED)
         self.url = self.parsed_service.url
         _title = self.parsed_service.identification.title or ''
-        self.name = _get_valid_name(urlsplit(self.url).netloc + _title)
+        _domain = urlsplit(self.url).netloc.split('.')[0]
+        self.name = _get_valid_name(_domain + _title)
 
     def create_cascaded_store(self):
         store = self._get_store(create=True)

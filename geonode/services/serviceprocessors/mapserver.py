@@ -229,8 +229,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                 defaults={
                     "extension": "html",
                     "name": "{}({})".format(
-                        supportedService,
-                        geonode_layer.store
+                        geonode_layer.store,
+                        supportedService
                     ),
                     "url": geonode_layer.ows_url,
                     "mime": "text/html",
