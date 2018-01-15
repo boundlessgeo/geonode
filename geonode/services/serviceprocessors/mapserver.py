@@ -223,16 +223,12 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
     def _create_layer_service_link(self, geonode_layer):
 
         for supportedService in self.parsed_service.supportedExtensions.split(','):
-            Link.objects.get_or_create(
+            link, created = Link.objects.get_or_create(
                 resource=geonode_layer.resourcebase_ptr,
                 url=geonode_layer.ows_url,
+                name=supportedService.strip(),
                 defaults={
                     "extension": "html",
-                    "name": "{}({})".format(
-                        geonode_layer.store,
-                        supportedService
-                    ),
-                    "url": geonode_layer.ows_url,
                     "mime": "text/html",
                     "link_type": "html",
                 }
