@@ -89,4 +89,19 @@ class Migration(migrations.Migration):
             name='profiles',
             field=models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='services.ServiceProfileRole'),
         ),
+        migrations.AddField(
+            model_name='service',
+            name='classification',
+            field=models.CharField(max_length=255, blank=True, null=True),
+        ),
+	    migrations.AddField(
+            model_name='service',
+            name='caveat',
+            field=models.CharField(max_length=255, blank=True, null=True),
+        ),
+	    migrations.AddField(
+            model_name='service',
+            name='provenance',
+            field=models.CharField(max_length=255, blank=True, null=True),
+        ),
     ]

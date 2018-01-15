@@ -77,6 +77,21 @@ class Service(ResourceBase):
         null=True,
         blank=True
     )
+    classification = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    provenance = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    caveat = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
     online_resource = models.URLField(
         False,
         null=True,
