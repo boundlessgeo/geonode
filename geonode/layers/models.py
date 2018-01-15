@@ -41,6 +41,8 @@ from geonode.security.models import remove_object_permissions
 from dialogos.models import Comment
 from django.db.models import Avg
 
+from six.moves.urllib_parse import urlparse
+
 from ..services.enumerations import INDEXED
 
 logger = logging.getLogger("geonode.layers.models")
@@ -316,7 +318,9 @@ class Layer(ResourceBase):
                 num_ratings=self.prepare_num_ratings(),
                 num_comments=self.prepare_num_comments(),
                 geogig_link=self.geogig_link,
-                has_time=self.prepare_has_time()
+                has_time=self.prepare_has_time(),
+                references=self.prepare_references(),
+                source_host=self.prepare_source_host()
             )
             obj.save()
             return obj.to_dict(include_meta=True)
@@ -324,6 +328,15 @@ class Layer(ResourceBase):
     # elasticsearch_dsl indexing helper functions
     def prepare_type(self):
         return "layer"
+
+    def prepare_source_host(self):
+        if self.service is not None and self.service.method == INDEXED:
+            return urlparse(self.service.base_url).netloc
+        else:
+            return None
+
+    def prepare_references(self):
+        return [{'scheme': link.name, 'type':link.link_type, 'url': link.url} for link in self.link_set.filter()]
 
     def prepare_subtype(self):
         if self.storeType == "dataStore":
