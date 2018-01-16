@@ -117,6 +117,7 @@ class Layer(ResourceBase):
 
     default_style = models.ForeignKey(
         Style,
+        on_delete=models.SET_NULL,
         related_name='layer_default_style',
         null=True,
         blank=True)
@@ -336,7 +337,7 @@ class Layer(ResourceBase):
             return None
 
     def prepare_references(self):
-        return [{'scheme': link.name, 'type':link.link_type, 'url': link.url} for link in self.link_set.filter()]
+        return [{'name': link.name, 'scheme':link.link_type, 'url': link.url} for link in self.link_set.ows()]
 
     def prepare_subtype(self):
         if self.storeType == "dataStore":

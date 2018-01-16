@@ -222,15 +222,36 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
     def _create_layer_service_link(self, geonode_layer):
 
-        for supportedService in self.parsed_service.supportedExtensions.split(','):
+        type_mapping = { 'mapserver': 'ESRI:AIMS--http-get-map',
+                         'featureserver': 'ESRI:AIMS--http-get-feature',
+                         'imageserver': 'ESRI:AIMS--http-get-image',
+                         'kmlserver': 'OGC:KML',
+                         'wfsserver': 'OGC:WFS',
+                         'wmsserver': 'OGC:WMS',
+                         }
+
+        for supported_extension in self.parsed_service.supportedExtensions.split(','):
+            url = geonode_layer.ows_url
+            supported_extension = supported_extension.strip()
+            if supported_extension == 'WMSServer':
+                url = url.replace('rest/services', 'services')
+                url += 'WMSServer?request=GetCapabilities&amp;service=WMS'
+            elif supported_extension == 'KmlServer':
+                url += 'generateKml';
+            elif supported_extension == 'FeatureServer':
+                url = url.replace('MapServer', 'FeatureServer')
+            elif supported_extension == 'WFSServer':
+                url = url.replace('rest/services', 'services')
+                url += 'WFSServer?request=GetCapabilities&amp;service=WFS';
+
             link, created = Link.objects.get_or_create(
                 resource=geonode_layer.resourcebase_ptr,
-                url=geonode_layer.ows_url,
-                name=supportedService.strip(),
+                url=url,
+                name=supported_extension,
                 defaults={
                     "extension": "html",
                     "mime": "text/html",
-                    "link_type": "html",
+                    "link_type": type_mapping[supported_extension.lower()],
                 }
             )
 
@@ -265,8 +286,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             "title": layer_meta.name,
             "abstract": layer_meta.description,
             "bbox_x0": bbox['xmin'],
-            "bbox_x1": bbox['ymin'],
-            "bbox_y0": bbox['xmax'],
+            "bbox_x1": bbox['xmax'],
+            "bbox_y0": bbox['ymin'],
             "bbox_y1": bbox['ymax'],
             "keywords": [keyword[:100] for keyword in self.get_keywords()],
         }

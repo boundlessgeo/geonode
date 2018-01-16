@@ -21,7 +21,8 @@
 from django.utils.translation import ugettext_lazy as _
 
 LINK_TYPES = ['original', 'data', 'image', 'metadata', 'html',
-              'OGC:WMS', 'OGC:WFS', 'OGC:WCS']
+              'OGC:WMS', 'OGC:WFS', 'OGC:WCS', 'OGC:KML', 'ESRI:AIMS--http-get-map',
+              'ESRI:AIMS--http-get-feature', 'ESRI:AIMS--http-get-image']
 
 HIERARCHY_LEVELS = (
     ('series', _('series')),

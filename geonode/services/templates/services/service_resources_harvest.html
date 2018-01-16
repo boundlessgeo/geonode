@@ -57,12 +57,15 @@
             </div>
         {% else %}
             <p>{% trans "All resources have already been imported" %}</p>
+            <script type="application/javascript">
+                setTimeout(function(){ window.location = "/services/{{ service.id }}" }, 1500);
+            </script>
         {% endif %}
         <div class="modal fade" data-backdrop="static" data-keyboard="false" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        {% trans "Connecting to service..." %}
+                        {% trans "Scanning Service for Resources..." %}
                     </div>
                     <div class="modal-body">
                         <div class="progress" id="serviceConnectionProgress">

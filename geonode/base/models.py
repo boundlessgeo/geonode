@@ -39,6 +39,7 @@ from django.conf import settings
 from django.contrib.staticfiles.templatetags import staticfiles
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db.models import signals
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.core.files.storage import default_storage as storage
@@ -438,14 +439,14 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     date_type = models.CharField(_('date type'), max_length=255, choices=VALID_DATE_TYPES, default='publication',
                                  help_text=date_type_help_text)
     edition = models.CharField(_('edition'), max_length=255, blank=True, null=True, help_text=edition_help_text)
-    abstract = models.TextField(_('abstract'), blank=True, help_text=abstract_help_text)
-    purpose = models.TextField(_('purpose'), null=True, blank=True, help_text=purpose_help_text)
+    abstract = models.TextField(_('abstract'), max_length=2000, blank=True, help_text=abstract_help_text)
+    purpose = models.TextField(_('purpose'), max_length=500, null=True, blank=True, help_text=purpose_help_text)
     maintenance_frequency = models.CharField(_('maintenance frequency'), max_length=255, choices=UPDATE_FREQUENCIES,
                                              blank=True, null=True, help_text=maintenance_frequency_help_text)
 
     keywords = TaggableManager(_('keywords'), through=TaggedContentItem, blank=True, help_text=keywords_help_text,
                                manager=_HierarchicalTagManager)
-    tkeywords = models.ManyToManyField(ThesaurusKeyword, help_text=tkeywords_help_text, blank=True, null=True)
+    tkeywords = models.ManyToManyField(ThesaurusKeyword, help_text=tkeywords_help_text, blank=True)
     regions = models.ManyToManyField(Region, verbose_name=_('keywords region'), blank=True,
                                      help_text=regions_help_text)
 
@@ -476,13 +477,15 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     temporal_extent_end = models.DateTimeField(_('temporal extent end'), blank=True, null=True,
                                                help_text=temporal_extent_end_help_text)
 
-    supplemental_information = models.TextField(_('supplemental information'), default=DEFAULT_SUPPLEMENTAL_INFORMATION,
+    supplemental_information = models.TextField(_('supplemental information'), max_length=2000, default=DEFAULT_SUPPLEMENTAL_INFORMATION,
                                                 help_text=_('any other descriptive information about the dataset'))
 
     # Section 8
-    data_quality_statement = models.TextField(_('data quality statement'), blank=True, null=True,
+    data_quality_statement = models.TextField(_('data quality statement'), max_length=2000, blank=True, null=True,
                                               help_text=data_quality_statement_help_text)
 
+
+    group = models.ForeignKey(Group, null=True, blank=True)
     # Section 9
     # see metadata_author property definition below
 
@@ -887,7 +890,11 @@ class LinkManager(models.Manager):
         return self.get_queryset().filter(name__icontains='geogig')
 
     def ows(self):
-        return self.get_queryset().filter(link_type__in=['OGC:WMS', 'OGC:WFS', 'OGC:WCS'])
+        return self.get_queryset().filter(link_type__in=['OGC:WMS', 'OGC:WFS',
+                                                         'OGC:WCS', 'OGC:KML',
+                                                         'ESRI:AIMS--http-get-map',
+                                                         'ESRI:AIMS--http-get-feature',
+                                                         'ESRI:AIMS--http-get-image'])
 
 
 class Link(models.Model):
