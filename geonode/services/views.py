@@ -148,7 +148,6 @@ def harvest_resources(request, service_id):
     elif request.method == "POST":
         requested = request.POST.getlist("resource_list")
         resources_to_harvest = []
-        print available_resources, requested
         for id in _gen_harvestable_ids(requested, available_resources):
             logger.debug("id: {}".format(id))
             harvest_job, created = HarvestJob.objects.get_or_create(
