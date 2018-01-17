@@ -231,18 +231,18 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                          }
 
         for supported_extension in self.parsed_service.supportedExtensions.split(','):
-            url = geonode_layer.ows_url
+            url = geonode_layer.ows_url.strip('/')
             supported_extension = supported_extension.strip()
             if supported_extension == 'WMSServer':
                 url = url.replace('rest/services', 'services')
-                url += 'WMSServer?request=GetCapabilities&amp;service=WMS'
+                url += '/WMSServer?request=GetCapabilities&amp;service=WMS'
             elif supported_extension == 'KmlServer':
-                url += 'generateKml';
+                url += '/generateKml';
             elif supported_extension == 'FeatureServer':
                 url = url.replace('MapServer', 'FeatureServer')
             elif supported_extension == 'WFSServer':
                 url = url.replace('rest/services', 'services')
-                url += 'WFSServer?request=GetCapabilities&amp;service=WFS';
+                url += '/WFSServer?request=GetCapabilities&amp;service=WFS';
 
             link, created = Link.objects.get_or_create(
                 resource=geonode_layer.resourcebase_ptr,
