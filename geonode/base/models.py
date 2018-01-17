@@ -945,7 +945,9 @@ def resourcebase_post_save(instance, *args, **kwargs):
             if link.resource.doc_url != link.url:
                 link.delete()
         else:
-            if urlsplit(settings.SITEURL).hostname not in link.url:
+            if instance.polymorphic_ctype.name == 'layer' and instance.get_real_instance().storeType == 'remoteStore':
+                pass
+            elif urlsplit(settings.SITEURL).hostname not in link.url:
                 link.delete()
 
 
