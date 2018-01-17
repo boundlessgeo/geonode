@@ -43,6 +43,8 @@ class Command(BaseCommand):
                     help="Username required to login to this service if any"),
         make_option('-s', '--security', dest="security", default=None,
                     help="Security permissions JSON - who can view/edit"),
+        make_option('-l', '--limit', dest="limit", default=3,
+                    help="Number of items to Harvest"),
     )
 
     args = 'url name type method'
@@ -50,6 +52,7 @@ class Command(BaseCommand):
     def handle(self, url, name, type, method, console=sys.stdout, **options):
         user = options.get('user')
         owner = get_valid_user(user)
+        limit = options.get('limit')
         register_layers = options.get('registerlayers')
         username = options.get('username')
         password = options.get('password')
@@ -87,11 +90,16 @@ class Command(BaseCommand):
                     available_resources = service_handler.get_resources()
                     print "Service created with id of %d" % service.id
                     print " Harvesting..."
+                    processed = 0
                     for resource in available_resources:
-                        try:
-                            service_handler.harvest_resource(resource.id, service)
-                        except:
-                            print " - Failed Harvesting Resource Id: {}".format(resource.id)
+                        if processed < limit:
+                            try:
+                                service_handler.harvest_resource(resource.id, service)
+                                processed = processed + 1
+                            except:
+                                print " - Failed Harvesting Resource Id: {}".format(resource.id)
+                        else:
+                            break
                 else:
                     print form.errors
             else:
