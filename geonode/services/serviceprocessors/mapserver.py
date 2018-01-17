@@ -167,6 +167,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         self._create_layer_legend_link(geonode_layer)
         self._create_layer_thumbnail(geonode_layer)
         self._create_layer_attributes(geonode_layer, layer_meta)
+        geonode_layer.save()
 
     def has_resources(self):
         return True if len(self.parsed_service.layers) > 0 else False

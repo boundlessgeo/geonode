@@ -154,6 +154,7 @@ class WmsServiceHandler(base.ServiceHandlerBase,
         self._create_layer_service_link(geonode_layer)
         self._create_layer_legend_link(geonode_layer)
         #self._create_layer_thumbnail(geonode_layer)
+        geonode_layer.save()
 
     def has_resources(self):
         return True if len(self.parsed_service.contents) > 1 else False
