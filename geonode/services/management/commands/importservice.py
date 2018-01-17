@@ -21,9 +21,9 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 from geonode.services.models import Service
-from geonode.services.views import _register_cascaded_service, _register_indexed_service, \
-    _register_harvested_service, _register_cascaded_layers, _register_indexed_layers
-import json
+from geonode.services import forms
+from geonode.services.serviceprocessors import get_service_handler
+
 from geonode.people.utils import get_valid_user
 import sys
 
@@ -56,7 +56,6 @@ class Command(BaseCommand):
         perm_spec = options.get('permspec')
 
         register_service = True
-
         # First Check if this service already exists based on the URL
         base_url = url
         try:
@@ -74,43 +73,28 @@ class Command(BaseCommand):
         if service is not None:
             print "This is an existing service using this name.\nPlease specify a different name."
         if register_service:
-            if method == 'C':
-                response = _register_cascaded_service(type, url, name, username, password, owner=owner, verbosity=True)
-            elif method == 'I':
-                response = _register_indexed_service(type, url, name, username, password, owner=owner, verbosity=True)
-            elif method == 'H':
-                response = _register_harvested_service(url, name, username, password, owner=owner, verbosity=True)
-            elif method == 'X':
-                print 'Not Implemented (Yet)'
-            elif method == 'L':
-                print 'Local Services not configurable via API'
+            if method == 'I':
+                form = forms.CreateServiceForm(data={'url':base_url, 'type':type})
+                if form.is_valid():
+                    service_handler = form.cleaned_data["service_handler"]
+                    service = service_handler.create_geonode_service(owner=owner)
+                    service.full_clean()
+                    service.save()
+                    service.keywords.add(*service_handler.get_keywords())
+                    service.set_default_permissions()
+
+                    service_handler = get_service_handler(service.base_url, service.type)
+                    available_resources = service_handler.get_resources()
+                    print "Service created with id of %d" % service.id
+                    print " Harvesting..."
+                    for resource in available_resources:
+                        try:
+                            service_handler.harvest_resource(resource.id, service)
+                        except:
+                            print " - Failed Harvesting Resource Id: {}".format(resource.id)
+                else:
+                    print form.errors
             else:
-                print 'Invalid method'
+                print "Indexing is only available."
 
-            json_response = json.loads(response)[0]
-            if "service_id" in json_response:
-                print "Service created with id of %d" % json_response["service_id"]
-                service = Service.objects.get(id=json_response["service_id"])
-            else:
-                print "Something went wrong: %s" % response
-                return
-
-            print service.id
-            print register_layers
-
-        if service and register_layers:
-            layers = []
-            for layer in service.layer_set.all():
-                layers.append(layer.alternate)
-            if service.method == 'C':
-                response = _register_cascaded_layers(user, service, layers, perm_spec)
-            elif service.method == 'I':
-                response = _register_indexed_layers(user, service, layers, perm_spec)
-            elif service.method == 'X':
-                print 'Not Implemented (Yet)'
-            elif service.method == 'L':
-                print 'Local Services not configurable via API'
-            else:
-                print('Invalid Service Type')
-
-        print response
+        print 'Done'
