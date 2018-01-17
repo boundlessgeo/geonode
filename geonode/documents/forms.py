@@ -38,6 +38,12 @@ autocomplete_light.autodiscover() # flake8: noqa
 
 from geonode.base.forms import ResourceBaseForm
 
+resourcebaseform_meta_exclude = tuple(x for x in ResourceBaseForm.Meta.exclude if x not in ['bbox_x0',
+                                                                                   'bbox_x1',
+                                                                                   'bbox_y1',
+                                                                                   'bbox_y0',
+                                                                                   'srid'])
+
 
 class DocumentForm(ResourceBaseForm):
 
@@ -79,7 +85,7 @@ class DocumentForm(ResourceBaseForm):
 
     class Meta(ResourceBaseForm.Meta):
         model = Document
-        exclude = ResourceBaseForm.Meta.exclude + (
+        exclude = resourcebaseform_meta_exclude + (
             'content_type',
             'object_id',
             'doc_file',
