@@ -184,7 +184,7 @@ class Layer(ResourceBase):
         if self.service is not None and self.service.method == INDEXED:
             return "%s:%s" % (self.service.name, self.typename)
         else:
-            return self.alternate
+            return self.alternate or self.typename
 
     @property
     def attributes(self):
