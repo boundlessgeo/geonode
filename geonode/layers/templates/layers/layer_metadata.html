@@ -60,7 +60,7 @@
 
         {% if not layer.metadata_uploaded_preserve %}
         <div class="form-actions">
-          <input type="submit" class="btn btn-primary" value="{% trans "Update" %}"/>
+          <input type="submit" id="update-metadata-top" class="btn btn-primary" value="{% trans "Update" %}" disabled="disabled" onclick="this.disabled=true,this.form.submit();"/>
         </div>
         {% endif %}
 
@@ -123,7 +123,7 @@
 
             {% if not layer.metadata_uploaded_preserve %}
             <div class="form-actions">
-              <input type="submit" class="btn btn-primary" value="{% trans "Update" %}"/>
+              <input type="submit" id="update-metadata-bot" class="btn btn-primary" value="{% trans "Update" %}" disabled="disabled" onclick="this.disabled=true,this.form.submit();"/>
             </div>
             {% endif %}
           </div>

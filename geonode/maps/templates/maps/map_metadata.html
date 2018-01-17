@@ -41,7 +41,7 @@
       </div>
       {% endif %}
       <div class="form-actions">
-        <input type="submit" class="btn btn-primary" value="{% trans "Update" %}"/>
+        <input type="submit" id="update-metadata-top" class="btn btn-primary" value="{% trans "Update" %}" disabled="disabled" onclick="this.disabled=true,this.form.submit();"/>
       </div>
       {% csrf_token %}
       <div class="form-controls">
@@ -75,7 +75,7 @@
         {% endautoescape %}
       </fieldset>
       <div class="form-actions">
-        <input type="submit" class="btn btn-primary" value="{% trans "Update" %}"/>
+        <input type="submit" id="update-metadata-bot" class="btn btn-primary" value="{% trans "Update" %}" disabled="disabled" onclick="this.disabled=true,this.form.submit();"/>
       </div>
     </form>
   </div>
