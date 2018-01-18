@@ -301,7 +301,7 @@ class Layer(ResourceBase):
                 supplemental_information=self.prepare_supplemental_information(),
                 thumbnail_url=self.thumbnail_url,
                 uuid=self.uuid,
-                title=self.title,
+                title=self.prepare_title(),
                 date=self.date,
                 type=self.prepare_type(),
                 subtype=self.prepare_subtype(),
@@ -335,6 +335,12 @@ class Layer(ResourceBase):
             return urlparse(self.service.base_url).netloc
         else:
             return None
+
+    def prepare_title(self):
+        if self.service is not None:
+            return '{} {}'.format(self.service.title.strip(), self.title)
+        else:
+            return self.title
 
     def prepare_references(self):
         return [{'name': link.name, 'scheme':link.link_type, 'url': link.url} for link in self.link_set.ows()]
@@ -381,7 +387,7 @@ class Layer(ResourceBase):
             return 0
 
     def prepare_title_sortable(self):
-        return self.title.lower()
+        return self.prepare_title().lower()
 
     # Check to see if either time extent is set on the object,
     # if so, then it is time enabled.

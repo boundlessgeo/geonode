@@ -289,8 +289,6 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         iteminfo_name = slugify(self.parsed_service.itemInfo['name'])
         typename = "{}_{}:{}".format(iteminfo_name, layer_name,
                 str(layer_meta.id))
-        title = "{} {}".format(iteminfo_name.replace('_', ' ').title(),
-                layer_meta.name)
 
         return {
             "name": "{}_{}".format(iteminfo_name, layer_meta.name),
@@ -299,7 +297,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             "workspace": "remoteWorkspace",
             "typename": typename,
             "alternate": layer_meta.id,
-            "title": title,
+            "title": layer_meta.name,
             "abstract": layer_meta.description,
             "bbox_x0": bbox['xmin'],
             "bbox_x1": bbox['xmax'],
