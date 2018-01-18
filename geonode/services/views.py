@@ -68,7 +68,7 @@ def register_service(request):
             service.full_clean()
             service.save()
             service.keywords.add(*service_handler.get_keywords())
-            service.set_permissions({'users': {''.join(request.user.username): ['services.change_service']}})
+            service.set_permissions({'users': {''.join(request.user.username): ['services.change_service', 'services.delete_service']}})
             if service_handler.indexing_method == enumerations.CASCADED:
                 service_handler.create_cascaded_store()
             request.session[service_handler.url] = service_handler
@@ -319,7 +319,7 @@ def edit_service(request, service_id):
 def remove_service(request, service_id):
     """Delete a service and its constituent layers"""
     service = get_object_or_404(Service, pk=service_id)
-    if not request.user.has_perm('maps.delete_service', obj=service):
+    if not request.user.has_perm('services.delete_service', obj=service):
         return HttpResponse(
             loader.render_to_string(
                 '401.html', RequestContext(
