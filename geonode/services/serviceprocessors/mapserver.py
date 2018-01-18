@@ -53,7 +53,10 @@ _esri_types = {
     "esriFieldTypeRaster": "raster",
     "esriFieldTypeGUID": "xsd:string",
     "esriFieldTypeGlobalID": "xsd:string",
-    "esriFieldTypeXML": "xsd:anyType"}
+    "esriFieldTypeXML": "xsd:anyType",
+    "esriFieldTypeSingle": "xsd:float"
+}
+
 
 class MapserverServiceHandler(base.ServiceHandlerBase,
                         base.CascadableServiceHandlerMixin):
@@ -101,7 +104,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         return instance
 
     def get_keywords(self):
-        return self.parsed_service.documentInfo['Keywords']
+        return self.parsed_service.documentInfo['Keywords'].split(',')
 
     def get_resource(self, resource_id):
         return self.parsed_service.layers[int(resource_id)]
@@ -193,8 +196,10 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         """
 
-        attribute_map = [[n["name"], _esri_types[n["type"]]]
-                         for n in layer_meta.fields if n.get("name") and n.get("type")]
+        attribute_map = []
+        if layer_meta.fields:
+            attribute_map = [[n["name"], _esri_types[n["type"]]]
+                             for n in layer_meta.fields if n.get("name") and n.get("type")]
 
         set_attributes(geonode_layer, attribute_map, overwrite=True)
 
@@ -231,30 +236,33 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                          'wmsserver': 'OGC:WMS',
                          }
 
-        for supported_extension in self.parsed_service.supportedExtensions.split(','):
-            url = geonode_layer.ows_url.strip('/')
-            supported_extension = supported_extension.strip()
-            if supported_extension == 'WMSServer':
-                url = url.replace('rest/services', 'services')
-                url += '/WMSServer?request=GetCapabilities&amp;service=WMS'
-            elif supported_extension == 'KmlServer':
-                url += '/generateKml';
-            elif supported_extension == 'FeatureServer':
-                url = url.replace('MapServer', 'FeatureServer')
-            elif supported_extension == 'WFSServer':
-                url = url.replace('rest/services', 'services')
-                url += '/WFSServer?request=GetCapabilities&amp;service=WFS';
 
-            link, created = Link.objects.get_or_create(
-                resource=geonode_layer.resourcebase_ptr,
-                url=url,
-                name=supported_extension,
-                defaults={
-                    "extension": "html",
-                    "mime": "text/html",
-                    "link_type": type_mapping[supported_extension.lower()],
-                }
-            )
+        # Services don't always have extensions.
+        if self.parsed_service.supportedExtensions.strip():
+            for supported_extension in self.parsed_service.supportedExtensions.split(','):
+                url = geonode_layer.ows_url.strip('/')
+                supported_extension = supported_extension.strip()
+                if supported_extension == 'WMSServer':
+                    url = url.replace('rest/services', 'services')
+                    url += '/WMSServer?request=GetCapabilities&amp;service=WMS'
+                elif supported_extension == 'KmlServer':
+                    url += '/generateKml';
+                elif supported_extension == 'FeatureServer':
+                    url = url.replace('MapServer', 'FeatureServer')
+                elif supported_extension == 'WFSServer':
+                    url = url.replace('rest/services', 'services')
+                    url += '/WFSServer?request=GetCapabilities&amp;service=WFS';
+
+                link, created = Link.objects.get_or_create(
+                    resource=geonode_layer.resourcebase_ptr,
+                    url=url,
+                    name=supported_extension,
+                    defaults={
+                        "extension": "html",
+                        "mime": "text/html",
+                        "link_type": type_mapping[supported_extension.lower()],
+                    }
+                )
 
     def _get_cascaded_layer_fields(self, geoserver_resource):
         name = geoserver_resource.name
@@ -277,20 +285,27 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
     def _get_indexed_layer_fields(self, layer_meta):
         bbox = layer_meta.extent
+        layer_name = slugify(layer_meta.name)
+        iteminfo_name = slugify(self.parsed_service.itemInfo['name'])
+        typename = "{}_{}:{}".format(iteminfo_name, layer_name,
+                str(layer_meta.id))
+        title = "{} {}".format(iteminfo_name.replace('_', ' ').title(),
+                layer_meta.name)
+
         return {
-            "name": layer_meta.name,
+            "name": "{}_{}".format(iteminfo_name, layer_meta.name),
             "store": self.name,
             "storeType": "remoteStore",
             "workspace": "remoteWorkspace",
-            "typename": "{}:{}".format(slugify(layer_meta.name), str(layer_meta.id)),
+            "typename": typename,
             "alternate": layer_meta.id,
-            "title": layer_meta.name,
+            "title": title,
             "abstract": layer_meta.description,
             "bbox_x0": bbox['xmin'],
             "bbox_x1": bbox['xmax'],
             "bbox_y0": bbox['ymin'],
             "bbox_y1": bbox['ymax'],
-            "keywords": [keyword[:100] for keyword in self.get_keywords()],
+            "keywords": self.get_keywords(),
         }
 
     def _get_store(self, create=True):
