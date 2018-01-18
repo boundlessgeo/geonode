@@ -116,7 +116,7 @@ setup(name='GeoNode',
         "elasticsearch-dsl>=6.0.0,<7.0.0",
 
         # elasticsearch-dsl app
-        #"geonode-elasticsearch-app==0.2.0",
+        "geonode-elasticsearch-app==0.2.1",
 
         # datetimepicker widget
         "django-bootstrap3-datetimepicker==2.2.3",
