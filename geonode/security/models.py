@@ -256,6 +256,8 @@ class PermissionLevelMixin(object):
                 if self.polymorphic_ctype.name == 'layer' and perm in ('change_layer_data', 'change_layer_style',
                                                                        'add_layer', 'change_layer', 'delete_layer',):
                     assign_perm(perm, anonymous_group, self.layer)
+                elif self.polymorphic_ctype.name == 'service':
+                        assign_perm(perm, anonymous_group, self.service)
                 else:
                     assign_perm(perm, anonymous_group, self.get_self_resource())
 
@@ -268,6 +270,8 @@ class PermissionLevelMixin(object):
                             'change_layer_data', 'change_layer_style',
                             'add_layer', 'change_layer', 'delete_layer',):
                         assign_perm(perm, user, self.layer)
+                    elif self.polymorphic_ctype.name == 'service':
+                        assign_perm(perm, user, self.service)
                     else:
                         assign_perm(perm, user, self.get_self_resource())
                 # Set the GeoFence Owner Rules
@@ -286,6 +290,8 @@ class PermissionLevelMixin(object):
                             'change_layer_data', 'change_layer_style',
                             'add_layer', 'change_layer', 'delete_layer',):
                         assign_perm(perm, group, self.layer)
+                    elif self.polymorphic_ctype.name == 'service':
+                        assign_perm(perm, group, self.service)
                     else:
                         assign_perm(perm, group, self.get_self_resource())
                 # Set the GeoFence Owner Rules

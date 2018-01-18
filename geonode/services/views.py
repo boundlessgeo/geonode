@@ -68,7 +68,7 @@ def register_service(request):
             service.full_clean()
             service.save()
             service.keywords.add(*service_handler.get_keywords())
-            service.set_default_permissions()
+            service.set_permissions({'users': {''.join(request.user.username): ['services.change_service']}})
             if service_handler.indexing_method == enumerations.CASCADED:
                 service_handler.create_cascaded_store()
             request.session[service_handler.url] = service_handler

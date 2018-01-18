@@ -8,7 +8,7 @@
 {% block body %}
 <div class="twocol">
     <div class="page-header">
-        <h3>{% trans "Import resources" %}<small> {{ service.name }}</small></h3>
+        <h3>{% trans "Available resources" %}<small> {{ service.name }}</small></h3>
     </div>
     <div class="container">
         {% if resources %}
@@ -58,7 +58,7 @@
         {% else %}
             <p>{% trans "All resources have already been imported" %}</p>
             <script type="application/javascript">
-                setTimeout(function(){ window.location = "/services/{{ service.id }}" }, 1500);
+                setTimeout(function(){ window.location = "/services/{{ service.id }}" }, 1000);
             </script>
         {% endif %}
         <div class="modal fade" data-backdrop="static" data-keyboard="false" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel">
