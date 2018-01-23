@@ -84,6 +84,9 @@ class ServiceHandlerBase(object):
 
         raise NotImplementedError
 
+    def has_basic_capabilities(self):
+        raise NotImplementedError
+
     def get_keywords(self):
         raise NotImplementedError
 
