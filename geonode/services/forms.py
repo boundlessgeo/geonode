@@ -106,8 +106,8 @@ class CreateServiceForm(forms.Form):
 
             except Warning:
                 raise ValidationError(
-                    _("Basic Capabilities not supported at %(url)s"),
-                    params={"url": url}
+                    _("This service is published in a manner incompatible with the map viewer "
+                      "and cannot be registered within Exchange.")
                 )
             except Exception:
                 raise ValidationError(
