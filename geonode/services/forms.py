@@ -100,6 +100,15 @@ class CreateServiceForm(forms.Form):
             try:
                 service_handler = get_service_handler(
                     base_url=url, service_type=service_type)
+
+                if not service_handler.has_basic_capabilities():
+                    raise Warning('Basic Capabilities Not Supported')
+
+            except Warning:
+                raise ValidationError(
+                    _("Basic Capabilities not supported at %(url)s"),
+                    params={"url": url}
+                )
             except Exception:
                 raise ValidationError(
                     _("Could not connect to the service at %(url)s"),

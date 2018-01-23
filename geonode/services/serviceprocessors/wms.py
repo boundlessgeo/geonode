@@ -87,6 +87,9 @@ class WmsServiceHandler(base.ServiceHandlerBase,
         )
         return instance
 
+    def has_basic_capabilities(self):
+        return True
+
     def get_keywords(self):
         return self.parsed_service.identification.keywords
 

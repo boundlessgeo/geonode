@@ -106,6 +106,12 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
     def get_keywords(self):
         return self.parsed_service.documentInfo['Keywords'].split(',')
 
+    def has_basic_capabilities(self):
+        if self.parsed_service.capabilities and 'Tilemap' in self.parsed_service.capabilities:
+            return True
+        else:
+            return False
+
     def get_resource(self, resource_id):
         return self.parsed_service.layers[int(resource_id)]
 
