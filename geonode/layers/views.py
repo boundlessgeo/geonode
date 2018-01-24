@@ -109,9 +109,16 @@ def _resolve_layer(request, typename, permission='base.view_resourcebase',
 
     if Service.objects.filter(name=service_typename[0]).exists():
         service = Service.objects.filter(name=service_typename[0])
+        args = {}
+        if service[0].method != "C":
+            args['typename'] = service_typename[1]
+            args['service_id'] = service[0].id
+        else:
+            args['typename'] = typename
+
         return resolve_object(request,
                               Layer,
-                              {'typename': service_typename[1] if service[0].method != "C" else typename},
+                              args,
                               permission=permission,
                               permission_msg=msg,
                               **kwargs)
