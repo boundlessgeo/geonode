@@ -19,11 +19,11 @@
 #########################################################################
 
 from django.http import HttpResponse
-from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlsplit
 from django.conf import settings
 from django.utils.http import is_safe_url
 from django.http.request import validate_host
+import requests
 
 
 def proxy(request):
@@ -45,11 +45,7 @@ def proxy(request):
 
     raw_url = request.GET['url']
     url = urlsplit(raw_url)
-    locator = str(url.path)
-    if url.query != "":
-        locator += '?' + url.query
-    if url.fragment != "":
-        locator += '#' + url.fragment
+    headers = {}
 
     if not settings.DEBUG:
         if not validate_host(url.hostname, PROXY_ALLOWED_HOSTS):
@@ -58,7 +54,6 @@ def proxy(request):
                                 status=403,
                                 content_type="text/plain"
                                 )
-    headers = {}
 
     if settings.SESSION_COOKIE_NAME in request.COOKIES and is_safe_url(url=raw_url, host=host):
         headers["Cookie"] = request.META["HTTP_COOKIE"]
@@ -66,27 +61,30 @@ def proxy(request):
     if request.method in ("POST", "PUT") and "CONTENT_TYPE" in request.META:
         headers["Content-Type"] = request.META["CONTENT_TYPE"]
 
-    if url.scheme == 'https':
-        conn = HTTPSConnection(url.hostname, url.port)
-    else:
-        conn = HTTPConnection(url.hostname, url.port)
-    conn.request(request.method, locator, request.body, headers)
+    http_client = requests.session()
+    http_client.verify = True
+    req_method = getattr(http_client, request.method.lower())
+    resp = req_method(raw_url, headers=headers, data=request.body)
 
-    result = conn.getresponse()
+    if 'Content-Type' in resp.headers:
+        content_type = resp.headers['Content-Type']
+    else:
+        content_type = 'text/plain'
 
     # If we get a redirect, let's add a useful message.
-    if result.status in (301, 302, 303, 307):
+    if resp.status_code in (301, 302, 303, 307):
         response = HttpResponse(('This proxy does not support redirects. The server in "%s" '
-                                 'asked for a redirect to "%s"' % (url, result.getheader('Location'))),
-                                status=result.status,
-                                content_type=result.getheader("Content-Type", "text/plain")
+                                 'asked for a redirect to "%s"' % (raw_url, resp.headers['Location'])),
+                                status=resp.status_code,
+                                content_type=content_type
                                 )
 
-        response['Location'] = result.getheader('Location')
+        response['Location'] = resp.headers['Location']
     else:
         response = HttpResponse(
-            result.read(),
-            status=result.status,
-            content_type=result.getheader("Content-Type", "text/plain"))
+            resp.content,
+            status=resp.status_code,
+            content_type=content_type
+        )
 
     return response
