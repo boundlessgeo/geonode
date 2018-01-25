@@ -101,14 +101,6 @@ class CreateServiceForm(forms.Form):
                 service_handler = get_service_handler(
                     base_url=url, service_type=service_type)
 
-                if not service_handler.has_basic_capabilities():
-                    raise Warning('Basic Capabilities Not Supported')
-
-            except Warning:
-                raise ValidationError(
-                    _("This service is published in a manner incompatible with the map viewer "
-                      "and cannot be registered within Exchange.")
-                )
             except Exception:
                 raise ValidationError(
                     _("Could not connect to the service at %(url)s"),
