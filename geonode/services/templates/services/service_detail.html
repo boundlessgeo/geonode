@@ -60,6 +60,13 @@ Ext.onReady(function() {
                 <th>Description</th>
                 </thead>
                 {% for job in resource_jobs %}
+                   {% if forloop.first %}
+                        <script>
+                        setTimeout(function(){
+                            window.location.reload(true);
+                        }, 7000);
+                        </script>
+                    {% endif %}
                     <tr>
                         <td>{{job.resource_id}}</td>
                         <td>
