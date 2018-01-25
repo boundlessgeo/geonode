@@ -792,9 +792,8 @@ LOCKDOWN_GEONODE = strtobool(os.getenv('LOCKDOWN_GEONODE', 'False'))
 AUTH_EXEMPT_URLS = ()
 
 # A tuple of hosts the proxy can send requests to.
-PROXY_ALLOWED_HOSTS = os.getenv(
-    tuple(map(str.strip, 'PROXY_ALLOWED_HOSTS'.split(','))),
-    ()
+PROXY_ALLOWED_HOSTS = tuple(
+    map(str.strip, os.getenv('PROXY_ALLOWED_HOSTS', '').split(','))
 )
 
 # The proxy to use when making cross origin requests.
