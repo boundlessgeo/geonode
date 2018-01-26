@@ -305,7 +305,7 @@ class Layer(ResourceBase):
                 date=self.date,
                 type=self.prepare_type(),
                 subtype=self.prepare_subtype(),
-                typename=self.typename,
+                typename=self.service_typename,
                 title_sortable=self.prepare_title_sortable(),
                 category=self.prepare_category(),
                 bbox_left=self.bbox_x0,
