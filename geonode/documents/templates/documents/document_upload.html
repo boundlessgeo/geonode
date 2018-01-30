@@ -55,7 +55,7 @@
           data: function(term,page){
             return {
               type__in: ['layer','map'],
-              title__contains: term.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
+              title__icontains: term.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
             }
           },
           results: function(data) {
