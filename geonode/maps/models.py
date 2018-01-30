@@ -595,7 +595,7 @@ class MapLayer(models.Model, GXPLayerBase):
     @property
     def layer_title(self):
         if self.local:
-            title = Layer.objects.get(typename=self.name).title
+            title = Layer.objects.filter(typename=self.name).first().title
         else:
             title = self.name
         return title
