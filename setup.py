@@ -70,16 +70,16 @@ setup(name='GeoNode',
         "boto>=2.38.0",  # python-boto (2.38.0)
 
         # Django Apps
-        "django-pagination >=1.0.5, <=1.0.7",  # python-django-pagination (1.0.7)
-        "django-extensions>=1.2.5",  # python-django-extensions (1.5.9)
-        "django-jsonfield>=0.9.16",  # python-django-jsonfield (0.9.15, 1.0.1 in our ppa)
-        "django-taggit>=0.21.0",  # python-django-taggit (0.18.0)
-        "django-mptt>=0.8.6",  # django-mptt (0.8.0, 0.8.6 in our ppa)
-        "django-treebeard>=3.0",  # django-treebeard (4.0)
-        "django-guardian>=1.4.1",  # django-guardian (1.4.1)
-        "django-downloadview>=1.2",  # python-django-downloadview (1.8)
-        "django-polymorphic>=0.9.2",  # python-django-polymorphic (0.8.1) FIXME
-        "django-tastypie>=0.12.2",  # python-django-tastypie (0.12.0, 0.12.2 in our ppa)
+        "django-pagination==1.0.7",  # python-django-pagination (1.0.7)
+        "django-extensions==1.9.7",  # python-django-extensions (1.5.9)
+        "django-jsonfield==1.0.1",  # python-django-jsonfield (0.9.15, 1.0.1 in our ppa)
+        "django-taggit==0.22.1",  # python-django-taggit (0.18.0)
+        "django-mptt==0.8.7",  # django-mptt (0.8.0, 0.8.6 in our ppa)
+        "django-treebeard==4.1.2",  # django-treebeard (4.0)
+        "django-guardian==1.4.9",  # django-guardian (1.4.1)
+        "django-downloadview==1.9",  # python-django-downloadview (1.8)
+        "django-polymorphic==1.3",  # python-django-polymorphic (0.8.1) FIXME
+        "django-tastypie==0.13.1",  # python-django-tastypie (0.12.0, 0.12.2 in our ppa)
         "django-oauth-toolkit==0.12.0",  # python-django-oauth-toolkit (0.10.0)
         "oauthlib==2.0.1",
 
