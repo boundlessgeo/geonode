@@ -33,28 +33,10 @@ MAPBOX_API = {
             'attribution': '© Mapbox © OpenStreetMap',
             'visibility': False,
         },
-        'dark-v9': {
-            'enabled': True,
-            'name': 'Mapbox Dark',
-            'attribution': '© Mapbox © OpenStreetMap',
-            'visibility': False,
-        },
         'light-v9': {
             'enabled': True,
             'name': 'Mapbox Light',
             'attribution': '© Mapbox © OpenStreetMap',
-            'visibility': False,
-        },
-        'satellite-v9': {
-            'enabled': True,
-            'name': 'Mapbox Satellite',
-            'attribution': '© Mapbox © DigitalGlobe',
-            'visibility': False,
-        },
-        'satellite-streets-v9': {
-            'enabled': True,
-            'name': 'Mapbox Satellite Streets',
-            'attribution': '© Mapbox © OpenStreetMap © DigitalGlobe',
             'visibility': False,
         },
     }
