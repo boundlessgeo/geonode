@@ -21,7 +21,7 @@
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser
 from django.db.models import signals
 from django.conf import settings
 
@@ -34,6 +34,9 @@ from account.models import EmailAddress
 
 from .utils import format_address
 
+from django.utils import timezone
+from django.core import validators
+
 if 'notification' in settings.INSTALLED_APPS:
     from notification import models as notification
 
@@ -43,9 +46,60 @@ class ProfileUserManager(UserManager):
         return self.get(username__iexact=username)
 
 
-class Profile(AbstractUser):
+class Profile(AbstractBaseUser):
 
     """Fully featured Geonode user"""
+
+    username = models.CharField(
+        _('username'),
+        max_length=255,
+        unique=True,
+        help_text=_('Required. 256 characters or fewer. Letters, digits and '
+                    '@/./+/-/_ only.'),
+        validators=[
+            validators.RegexValidator(r'^[\w.@+-]+$',
+                                      _('Enter a valid username. '
+                                        'This value may contain only letters, numbers '
+                                        'and @/./+/-/_ characters.'), 'invalid'),
+        ],
+        error_messages={
+            'unique': _("A user with that username already exists."),
+        }
+    )
+
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    email = models.EmailField(_('email address'), blank=True)
+    is_staff = models.BooleanField(_('staff status'), default=False,
+        help_text=_('Designates whether the user can log into this admin '
+                    'site.'))
+    is_active = models.BooleanField(_('active'), default=True,
+        help_text=_('Designates whether this user should be treated as '
+                    'active. Unselect this instead of deleting accounts.'))
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    is_superuser = models.BooleanField(
+        default=False,
+        help_text='Designates that this user has all permissions without explicitly assigning them.',
+        verbose_name='superuser status'
+    )
+
+    groups = models.ManyToManyField(
+        related_query_name='user',
+        related_name='user_set',
+        to='auth.Group',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        related_query_name='user',
+        related_name='user_set',
+        to='auth.Permission',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
 
     organization = models.CharField(
         _('Organization Name'),
@@ -97,6 +151,87 @@ class Profile(AbstractUser):
     keywords = TaggableManager(_('keywords'), blank=True, help_text=_(
         'commonly used word(s) or formalised word(s) or phrase(s) used to describe the subject \
             (space or comma-separated'))
+
+    class Meta:
+        abstract = False
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+
+    objects = UserManager()
+
+    #USERNAME_FIELD = 'username'
+    #REQUIRED_FIELDS = ['email']
+
+    def get_group_permissions(self, obj=None):
+        """
+        Returns a list of permission strings that this user has through their
+        groups. This method queries all available auth backends. If an object
+        is passed in, only permissions matching this object are returned.
+        """
+        permissions = set()
+        for backend in auth.get_backends():
+            if hasattr(backend, "get_group_permissions"):
+                permissions.update(backend.get_group_permissions(self, obj))
+        return permissions
+
+    def get_all_permissions(self, obj=None):
+        return _user_get_all_permissions(self, obj)
+
+    def has_perm(self, perm, obj=None):
+        """
+        Returns True if the user has the specified permission. This method
+        queries all available auth backends, but returns immediately if any
+        backend returns True. Thus, a user who has permission from a single
+        auth backend is assumed to have permission in general. If an object is
+        provided, permissions for this specific object are checked.
+        """
+
+        # Active superusers have all permissions.
+        if self.is_active and self.is_superuser:
+            return True
+
+        # Otherwise we need to check the backends.
+        return _user_has_perm(self, perm, obj)
+
+    def has_perms(self, perm_list, obj=None):
+        """
+        Returns True if the user has each of the specified permissions. If
+        object is passed, it checks if the user has all required perms for this
+        object.
+        """
+        for perm in perm_list:
+            if not self.has_perm(perm, obj):
+                return False
+        return True
+
+    def has_module_perms(self, app_label):
+        """
+        Returns True if the user has any permissions in the given app label.
+        Uses pretty much the same logic as has_perm, above.
+        """
+        # Active superusers have all permissions.
+        if self.is_active and self.is_superuser:
+            return True
+
+        return _user_has_module_perms(self, app_label)
+
+    def get_full_name(self):
+        """
+        Returns the first_name plus the last_name, with a space in between.
+        """
+        full_name = '%s %s' % (self.first_name, self.last_name)
+        return full_name.strip()
+
+    def get_short_name(self):
+        "Returns the short name for the user."
+        return self.first_name
+
+    def email_user(self, subject, message, from_email=None, **kwargs):
+        """
+        Sends an email to this User.
+        """
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
 
     def get_absolute_url(self):
         return reverse('profile_detail', args=[self.username, ])
