@@ -49,3 +49,9 @@ class NewLayerForm(forms.Form):
                 'name': 'attributes',
                 'id': 'attributes'}),
         required=True)
+
+
+    def clean_title(self):
+        data = self.cleaned_data['title']
+
+        return data.title()

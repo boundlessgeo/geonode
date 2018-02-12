@@ -149,6 +149,11 @@ if "djmp" in settings.INSTALLED_APPS:
                             (r'^djmp/', include('djmp.urls')),
                             )
 
+if "geonode.contrib.createlayer" in settings.INSTALLED_APPS:
+    urlpatterns += patterns('',
+                            (r'^layers/create/', include('geonode.contrib.createlayer.urls')),
+                            )
+
 # Set up proxy
 urlpatterns += geonode.proxy.urls.urlpatterns
 

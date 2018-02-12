@@ -34,6 +34,8 @@ from geonode.layers.utils import get_valid_name
 from geonode.people.models import Profile
 from geonode.geoserver.helpers import ogc_server_settings
 
+from geonode.geoserver.helpers import get_sld_for
+
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +51,10 @@ def create_layer(name, title, owner_name, geometry_type, attributes=None):
         raise GeoNodeException(msg)
     name = get_valid_name(name)
     # we can proceed
-    print 'Creating the layer in GeoServer'
+    logger.info('Creating the layer in GeoServer')
     workspace, datastore = create_gs_layer(name, title, geometry_type, attributes)
-    print 'Creating the layer in GeoNode'
+    create_gs_layer_style(name)
+    logger.info('Creating the layer in GeoNode')
     return create_gn_layer(workspace, datastore, name, title, owner_name)
 
 
@@ -114,7 +117,7 @@ def get_attributes(geometry_type, json_attrs=None):
         jattrs = json.loads(json_attrs)
         for jattr in jattrs.items():
             lattr = []
-            attr_name = slugify(jattr[0])
+            attr_name = slugify(jattr[0]).replace('-', '_')
             attr_type = jattr[1].lower()
             if len(attr_name) == 0:
                 msg = 'You must provide an attribute name for attribute of type %s' % (attr_type)
@@ -149,7 +152,9 @@ def get_or_create_datastore(cat, workspace=None, charset="UTF-8"):
         raise GeoNodeException(msg)
 
     try:
-        ds = cat.get_store(dsname, workspace)
+        ds = cat.get_store(dsname, workspace=workspace)
+        if not ds:
+            ds = cat.create_datastore(dsname, workspace=workspace)
     except FailedRequestError:
         ds = cat.create_datastore(dsname, workspace=workspace)
 
@@ -175,6 +180,26 @@ def get_or_create_datastore(cat, workspace=None, charset="UTF-8"):
     ds = cat.get_store(dsname, workspace)
 
     return ds
+
+
+def create_gs_layer_style(name):
+    logger.info('Creating the layer style in GeoServer')
+    gs_user = ogc_server_settings.credentials[0]
+    gs_password = ogc_server_settings.credentials[1]
+    cat = Catalog(ogc_server_settings.internal_rest, gs_user, gs_password)
+    layer = cat.get_layer(name)
+    sld = get_sld_for(cat, layer)
+
+    if sld is not None:
+        try:
+            cat.create_style(name, sld, raw=True)
+            style = cat.get_style(name)
+            if style:
+                layer.default_style = style
+                cat.save(layer)
+
+        except:
+            pass
 
 
 def create_gs_layer(name, title, geometry_type, attributes=None):

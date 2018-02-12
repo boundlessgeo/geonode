@@ -48,7 +48,7 @@ def layer_create(request, template='createlayer/layer_create.html'):
                 permissions = form.cleaned_data["permissions"]
                 layer = create_layer(name, title, request.user.username, geometry_type, attributes)
                 layer.set_permissions(json.loads(permissions))
-                return redirect(layer)
+                return HttpResponseRedirect('/maps/new?layer=%s' % layer.typename)
             except Exception as e:
                 error = '%s (%s)' % (e.message, type(e))
     else:

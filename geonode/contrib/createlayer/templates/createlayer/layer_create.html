@@ -1,4 +1,4 @@
-{% extends "geonode_base.html" %}
+{% extends "site_base.html" %}
 {% load url from future %}
 {% load i18n %}
 {% load bootstrap_tags %}
@@ -36,10 +36,10 @@
         {{ form|as_bootstrap }}
 
         <div class="input-attrs-wrap">
-          <button id="add-attr-button" class="add-attr-button btn btn-primary">{% trans "Add Attribute" %}</button>
         </div>
 
-        <button type="submit" id="layer-create-button" class="btn btn-danger" style="margin-top:20px">{% trans "Create" %}</button>
+        <button id="add-attr-button" class="add-attr-button btn btn-primary" style="margin-top:20px">{% trans "Add Attribute" %}</button>
+        <button type="submit" id="layer-create-button" class="pull-right btn btn-danger" style="margin-top:20px">{% trans "Create" %}</button>
 
       </form>
     </section>
