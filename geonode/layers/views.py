@@ -747,7 +747,6 @@ def get_layer(request, layername):
             return float(obj)
         raise TypeError
 
-    logger.debug('Call get layer')
     if request.method == 'GET':
         layer_obj = _resolve_layer(request, layername)
         visible_attributes = layer_obj.attribute_set.visible()
@@ -761,12 +760,29 @@ def get_layer(request, layername):
         if layer_obj.is_remote:
             url = layer_obj.ows_url
 
+        maps = []
+        for layer_map in layer_obj.maps().all():
+            maps.append({
+                'map_id' : layer_map.map.id,
+                'title': unicode(layer_map.map),
+            })
+
+        temporal_extent_start = layer_obj.temporal_extent_start
+        if temporal_extent_start is not None:
+            temporal_extent_start = layer_obj.temporal_extent_start.isoformat()
+
+        temporal_extent_end = layer_obj.temporal_extent_end
+        if temporal_extent_end is not None:
+            temporal_extent_end = layer_obj.temporal_extent_end.isoformat()
+
         response = {
             'typename': layername,
             'name': layer_obj.name,
             'title': layer_obj.title,
             'ptype': layer_obj.ptype,
             'url': url,
+            'date': layer_obj.date.strftime('%Y-%m-%d'),
+            'date_type': layer_obj.date_type,
             'remote': layer_obj.is_remote,
             'bbox_string': layer_obj.bbox_string,
             'bbox_x0': layer_obj.bbox_x0,
@@ -775,8 +791,11 @@ def get_layer(request, layername):
             'bbox_y1': layer_obj.bbox_y1,
             'type': slugify(layer_obj.display_type),
             'styles': styles,
+            'maps': maps,
             'versioned': layer_obj.geogig_enabled,
-            'attributes': attributes_as_json(layer_obj)
+            'attributes': attributes_as_json(layer_obj),
+            'temporal_extent_start' : temporal_extent_start,
+            'temporal_extent_end' : temporal_extent_end,
         }
         return HttpResponse(json.dumps(
             response,
@@ -806,5 +825,8 @@ def attribute_as_json(attribute):
         'attribute_label': attribute.attribute_label,
         'attribute_type': attribute.attribute_type,
         'visible': attribute.visible,
-        'display_order': attribute.display_order
+        'display_order': attribute.display_order,
+        'stddev': attribute.stddev,
+        'median': attribute.median,
+        'average': attribute.average,
     }
