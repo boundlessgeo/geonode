@@ -56,6 +56,7 @@ class LayerForm(ResourceBaseForm):
             'store',
             'storeType',
             'typename',
+            'alternate',
             'tkeywords',
             'default_style',
             'styles',
