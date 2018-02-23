@@ -136,7 +136,14 @@ class TopicCategoryAdmin(MediaTranslationAdmin):
     list_display = ('identifier', 'description', 'gn_description', 'fa_class', 'is_choice')
     if settings.MODIFY_TOPICCATEGORY is False:
         exclude = ('identifier', 'description',)
-
+    
+    def get_actions(self, request):
+            actions = super(TopicCategoryAdmin, self).get_actions(request)
+            if not settings.MODIFY_TOPICCATEGORY:
+                if 'delete_selected' in actions:
+                    del actions['delete_selected']
+            return actions
+          
     def has_add_permission(self, request):
         # the records are from the standard TC 211 list, so no way to add
         if settings.MODIFY_TOPICCATEGORY:
