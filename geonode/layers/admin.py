@@ -22,7 +22,7 @@ from django.contrib import admin
 from django.contrib import messages
 
 from geonode.base.admin import MediaTranslationAdmin, ResourceBaseAdminForm
-from geonode.layers.models import Layer, Attribute, Style
+from geonode.layers.models import Layer, Attribute, AttributeOption, Style
 from geonode.layers.models import LayerFile, UploadSession
 from geonode.geoserver.helpers import set_styles, gs_catalog
 
@@ -126,6 +126,18 @@ class AttributeAdmin(admin.ModelAdmin):
     list_filter = ('layer', 'attribute_type')
     search_fields = ('attribute', 'attribute_label',)
 
+class AttributeOptionAdmin(admin.ModelAdmin):
+     model = AttributeOption
+     list_display_links = ('id',)
+     list_display = (
+         'id',
+         'layer',
+         'attribute',
+         'value',
+         'label')
+     list_filter = ('layer', 'attribute',)
+     search_fields = ('value', 'label',)
+
 
 class StyleAdmin(admin.ModelAdmin):
     model = Style
@@ -147,5 +159,6 @@ class UploadSessionAdmin(admin.ModelAdmin):
 
 admin.site.register(Layer, LayerAdmin)
 admin.site.register(Attribute, AttributeAdmin)
+admin.site.register(AttributeOption, AttributeOptionAdmin)
 admin.site.register(Style, StyleAdmin)
 admin.site.register(UploadSession, UploadSessionAdmin)

@@ -365,6 +365,14 @@ class Attribute(models.Model):
         _('display order'),
         help_text=_('specifies the order in which attribute should be displayed in identify results'),
         default=1)
+    required = models.BooleanField(
+        _('required?'),
+        help_text = _('specifies if the attribute should be required in editing views'),
+        default = False)
+    readonly = models.BooleanField(
+        _('readonly?'),
+        help_text = _('specifies if the attribute should be readonly in editing views'),
+        default = False)
 
     # statistical derivations
     count = models.IntegerField(
@@ -437,6 +445,40 @@ class Attribute(models.Model):
 
     def unique_values_as_list(self):
         return self.unique_values.split(',')
+
+class AttributeOptionManager(models.Manager):
+
+     def __init__(self):
+         models.Manager.__init__(self)
+
+class AttributeOption(models.Model):
+    layer = models.ForeignKey(
+        Layer,
+        blank=False,
+        null=False,
+        unique=False,)
+    attribute = models.ForeignKey(
+        Attribute,
+        blank=False,
+        null=False,
+        unique=False,
+        related_name='options')
+    value = models.TextField(
+        _('value'),
+        help_text=_('the option value that will be stored in the db when selected by the user'),
+        null=False,
+        blank=False)
+    label = models.TextField(
+        _('label'),
+        help_text=_('the option label that is shown to the user in the dropdown'),
+        null=False,
+        blank=False)
+
+    objects = AttributeOptionManager()
+
+    def __str__(self):
+        return "%s - %s" % (self.value.encode(
+            "utf-8"), self.label.encode("utf-8"))
 
 
 def pre_save_layer(instance, sender, **kwargs):

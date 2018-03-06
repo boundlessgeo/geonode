@@ -51,7 +51,7 @@ from geonode.tasks.deletion import delete_layer
 from geonode.services.models import Service
 from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
 from geonode.base.forms import CategoryForm
-from geonode.layers.models import Layer, Attribute, UploadSession
+from geonode.layers.models import Layer, Attribute, AttributeOption, UploadSession
 from geonode.base.enumerations import CHARSETS
 from geonode.base.models import TopicCategory
 
@@ -488,6 +488,8 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             la.attribute_label = form["attribute_label"]
             la.visible = form["visible"]
             la.display_order = form["display_order"]
+            la.required = form["required"]
+            la.readonly = form["readonly"]
             la.save()
 
         if new_poc is not None and new_author is not None:
@@ -815,5 +817,17 @@ def attribute_as_json(attribute):
         'attribute_label': attribute.attribute_label,
         'attribute_type': attribute.attribute_type,
         'visible': attribute.visible,
-        'display_order': attribute.display_order
+        'display_order': attribute.display_order,
+        'required': attribute.required,
+        'readonly': attribute.readonly,
+        'options': attribute_options_as_json(attribute),
     }
+
+def attribute_options_as_json(attribute):
+     options = []
+     for option in attribute.options.all():
+         options.append({
+             'value': option.value,
+             'label': option.label,
+             })
+     return options

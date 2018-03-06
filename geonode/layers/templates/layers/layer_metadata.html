@@ -96,6 +96,8 @@
                 <th>{% trans "Description" %}</th>
                 <th>{% trans "Display Order" %}</th>
                 <th>{% trans "Visible?" %}</th>
+                <th>{% trans "Required?" %}</th>
+                <th>{% trans "Readonly?" %}</th>
               </tr>
               {% for form in attribute_form.forms %}
               {% if form.attribute %}
@@ -105,6 +107,8 @@
                 <td>{{form.description}}</td>
                 <td>{{form.display_order}}</td>
                 <td>{{form.visible}}</td>
+                <td>{{form.required}}</td>
+                <td>{{form.readonly}}</td>
               </tr>
               {% endif %}
               {% endfor %}
