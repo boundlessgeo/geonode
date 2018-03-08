@@ -62,4 +62,4 @@ class LoginRequiredMiddleware(object):
                 return HttpResponseRedirect(
                     '{login_path}?next={request_path}'.format(
                         login_path=self.redirect_to,
-                        request_path=request.request.get_full_path()))
+                        request_path=request.get_full_path()))
