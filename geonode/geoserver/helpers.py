@@ -1617,10 +1617,10 @@ def style_update(request, url):
                 txml = re.sub(r'NS[0-9]:', '', txml)
                 request._body = txml
         tree = ET.ElementTree(ET.fromstring(request.body))
-        elm_namedlayer_name = tree.findall(
-            './/{http://www.opengis.net/sld}Name')[0]
-        elm_user_style_name = tree.findall(
-            './/{http://www.opengis.net/sld}Name')[1]
+        list_of_names = tree.findall(
+            './/{http://www.opengis.net/sld}Name')
+        elm_namedlayer_name = list_of_names[0] if list_of_names else ''
+        elm_user_style_name = list_of_names[1] if len(list_of_names) > 1 else list_of_names[0]
         elm_user_style_title = tree.find(
             './/{http://www.opengis.net/sld}Title')
         if not elm_user_style_title:
