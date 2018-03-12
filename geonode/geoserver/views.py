@@ -347,7 +347,7 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
 
     affected_layers = None
 
-    if request.method in ("POST", "PUT") and "CONTENT_TYPE" in request.META:
+    if request.method in ("POST", "GET", "PUT") and "CONTENT_TYPE" in request.META:
         headers["Content-Type"] = request.META["CONTENT_TYPE"]
         headers["Authorization"] = "Basic " + auth
         # if user is not authorized, we must stop him
