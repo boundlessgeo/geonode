@@ -59,10 +59,24 @@ class Map(ResourceBase, GXPMapBase):
     configuration.
     """
 
+    name = models.CharField(_('name'), max_length=255, blank=True, null=True)
+    version = models.IntegerField(default=0, null=True, blank=True)
     # viewer configuration
     zoom = models.IntegerField(_('zoom'))
     # The zoom level to use when initially loading this map.  Zoom levels start
     # at 0 (most zoomed out) and each increment doubles the resolution.
+
+    bearing = models.IntegerField(_('bearing'), default=0, null=True, blank=True)
+
+    pitch = models.IntegerField(_('pitch'), default=0, null=True, blank=True)
+
+    light = models.TextField(_('light'), null=True, blank=True)
+
+    sprite = models.CharField(_('sprite'), max_length=255, null=True, blank=True)
+
+    glyphs = models.CharField(_('glyphs'), max_length=255, null=True, blank=True)
+
+    transition = models.TextField(_('light'), null=True, blank=True)
 
     projection = models.CharField(_('projection'), max_length=32)
     # The projection used for this map.  This is stored as a string with the
