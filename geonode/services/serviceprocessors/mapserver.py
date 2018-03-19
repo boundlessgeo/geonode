@@ -44,12 +44,12 @@ from . import base
 
 try:
     from exchange.pki.utils import (
-        pki_prefix,
+        has_pki_prefix,
         pki_to_proxy_route,
         pki_route_reverse
     )
 except ImportError:
-    pki_prefix = None
+    has_pki_prefix = None
     pki_to_proxy_route = None
     pki_route_reverse = None
 
@@ -88,7 +88,9 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             INDEXED if self._offers_geonode_projection() else CASCADED)
         self.url = self.parsed_service.url
         self.pki_proxy_url = None
-        if pki_prefix is not None and self.url.startswith(pki_prefix()):
+        self.pki_url = None
+        if callable(has_pki_prefix) and has_pki_prefix(self.url):
+            self.pki_url = self.url
             self.pki_proxy_url = pki_to_proxy_route(self.url)
             self.url = pki_route_reverse(self.url)
         self.title = self.parsed_service.itemInfo['title']
@@ -208,10 +210,13 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         thumbnail_remote_url = "{}/info/thumbnail".format(self.url)
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
+        thumbnail_create_url = "{}/info/thumbnail".format(
+            self.pki_url or self.url)
+        logger.debug("thumbnail_remote_url: {}".format(thumbnail_create_url))
         create_thumbnail(
             instance=geonode_layer,
             thumbnail_remote_url=thumbnail_remote_url,
-            thumbnail_create_url=None,
+            thumbnail_create_url=thumbnail_create_url,
             check_bbox=False,
             overwrite=True,
         )
