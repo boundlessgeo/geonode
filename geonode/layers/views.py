@@ -74,9 +74,9 @@ if 'geonode.geoserver' in settings.INSTALLED_APPS:
 CONTEXT_LOG_FILE = ogc_server_settings.LOG_FILE
 
 try:
-    from exchange.pki.models import has_ssl_config
+    from exchange.pki.models import requires_ssl_proxy
 except ImportError:
-    has_ssl_config = None
+    requires_ssl_proxy = None
 
 logger = logging.getLogger("geonode.layers.views")
 
@@ -253,7 +253,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
     if layer.storeType == "remoteStore":
         service = layer.service
         source_url = service.base_url
-        use_proxy = (callable(has_ssl_config) and has_ssl_config(service.base_url))
+        use_proxy = (callable(requires_ssl_proxy)
+                     and requires_ssl_proxy(service.base_url))
         components = urlparse.urlsplit(service.base_url)
         query_params = None
         if components.query:
