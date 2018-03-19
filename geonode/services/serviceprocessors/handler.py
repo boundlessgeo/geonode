@@ -89,6 +89,9 @@ def get_service_handler(base_url, service_type=enumerations.AUTO, headers=None):
             else:
                 headers = bearer_header
 
+            # Pass service type to pki_request view, for workarounds
+            headers['PKI_SERVICE_TYPE'] = "{0}".format(service_type)
+
         try:
             service = handler(base_url, headers=headers)
         except Exception:
