@@ -200,7 +200,7 @@ class WmsServiceHandler(base.ServiceHandlerBase,
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
         thumbnail_create_url = "{}?{}".format(
             self.pki_url or geonode_layer.ows_url, kvp)
-        logger.debug("thumbnail_remote_url: {}".format(thumbnail_create_url))
+        logger.debug("thumbnail_create_url: {}".format(thumbnail_create_url))
         create_thumbnail(
             instance=geonode_layer,
             thumbnail_remote_url=thumbnail_remote_url,
