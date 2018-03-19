@@ -20,12 +20,8 @@
 """Utilities for enabling ESRI REST Mapserver remote services in geonode."""
 
 import logging
+from urlparse import urlsplit
 from uuid import uuid4
-
-try:
-    from urllib.parse import urlparse, urlunparse, parse_qsl
-except ImportError:
-    from urlparse import urlparse, urlunparse, parse_qsl
 
 from django.conf import settings
 from django.template.defaultfilters import slugify
