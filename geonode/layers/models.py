@@ -480,6 +480,50 @@ class AttributeOption(models.Model):
         return "%s - %s" % (self.value.encode(
             "utf-8"), self.label.encode("utf-8"))
 
+class Constraint(models.Model):
+    CONTROL_TYPE_CHOICES = (
+        ('string', 'string'),
+        ('number', 'number'),
+        ('date', 'date'),
+        ('boolean', 'boolean'),
+        ('select', 'select'),
+        ('slider', 'slider'),
+        ('counter', 'counter'),
+        ('photo', 'photo')
+    )
+    attribute = models.OneToOneField(
+        Attribute,
+        blank=False,
+        null=False,
+        related_name='constraints'
+    )
+    initial_value = models.CharField(
+        default='',
+        max_length=255,
+        blank=True)
+    is_integer = models.BooleanField(default=False)
+    minimum = models.BigIntegerField(
+        null=True,
+        blank=True)
+    maximum = models.BigIntegerField(
+        null=True,
+        blank=True)
+    minimum_length = models.BigIntegerField(
+        null=True,
+        blank=True)
+    maximum_length = models.BigIntegerField(
+        null=True,
+        blank=True)
+    regex = models.CharField(
+        max_length=1024,
+        blank=True
+    )
+    control_type = models.CharField(
+        choices=CONTROL_TYPE_CHOICES,
+        blank=True,
+        null=True,
+        max_length=128
+    )
 
 def pre_save_layer(instance, sender, **kwargs):
     if kwargs.get('raw', False):

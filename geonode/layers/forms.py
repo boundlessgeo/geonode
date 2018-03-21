@@ -25,12 +25,13 @@ import autocomplete_light
 
 from django.conf import settings
 from django import forms
+from django.forms.models import BaseInlineFormSet
 try:
     import json
 except ImportError:
     from django.utils import simplejson as json
 from geonode.layers.utils import unzip_file
-from geonode.layers.models import Layer, Attribute
+from geonode.layers.models import Layer, Attribute, Constraint, AttributeOption
 
 autocomplete_light.autodiscover() # flake8: noqa
 
@@ -225,9 +226,57 @@ class LayerAttributeForm(forms.ModelForm):
             'last_stats_updated',
             'objects')
 
+class LayerAttributeFormset(BaseInlineFormSet):
+    def is_valid(self):
+        result = super(LayerAttributeFormset, self).is_valid()
+
+        if self.is_bound:
+            for form in self.forms:
+                if hasattr(form, 'constraint_form'):
+                    result = result and form.constraint_form.is_valid()
+                if hasattr(form, 'attribute_option_form'):
+                    result = result and form.attribute_option_form.is_valid()
+
+        return result
 
 class LayerStyleUploadForm(forms.Form):
     layerid = forms.IntegerField()
     name = forms.CharField(required=False)
     update = forms.BooleanField(required=False)
     sld = forms.FileField()
+
+class LayerConstraintForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(LayerConstraintForm, self).__init__(*args, **kwargs)
+
+        self.fields['initial_value'].widget.attrs['class'] = 'form-control'
+        self.fields['minimum'].widget.attrs['class'] = 'form-control'
+        self.fields['maximum'].widget.attrs['class'] = 'form-control'
+        self.fields['minimum_length'].widget.attrs['class'] = 'form-control'
+        self.fields['maximum_length'].widget.attrs['class'] = 'form-control'
+        self.fields['regex'].widget.attrs['class'] = 'form-control'
+        self.fields['control_type'].widget.attrs['class'] = 'form-control'
+
+    class Meta:
+        model = Constraint
+        fields=(
+            'initial_value',
+            'is_integer',
+            'minimum',
+            'maximum',
+            'minimum_length',
+            'maximum_length',
+            'regex',
+            'control_type'
+        )
+
+class LayerAttributeOptionForm(forms.ModelForm):
+    value = forms.CharField()
+    label = forms.CharField()
+
+    class Meta:
+        model = AttributeOption
+        fields=(
+            'value',
+            'label'
+        )
