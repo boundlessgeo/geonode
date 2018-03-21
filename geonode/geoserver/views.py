@@ -23,8 +23,7 @@ import logging
 import base64
 import httplib2
 import os
-import requests
-from requests.auth import HTTPBasicAuth
+from geonode.security.models import http_request
 
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseRedirect
@@ -342,12 +341,10 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
     path = strip_prefix(request.get_full_path(), proxy_path)
     url = str("".join([ogc_server_settings.LOCATION, downstream_path, path]))
 
-    http = httplib2.Http()
     username, password = ogc_server_settings.credentials
     headers = dict()
 
     affected_layers = None
-    response = None
 
     if request.method in ("POST", "GET", "PUT") and "CONTENT_TYPE" in request.META:
         headers["Content-Type"] = request.META["CONTENT_TYPE"]
@@ -365,18 +362,9 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
             if downstream_path == 'rest/styles':
                 affected_layers = style_update(request, url)
 
-    if request.method == 'POST':
-        response = requests.post(url,
-        auth=(username, password),
-        headers=headers,
-        data=request.body or None)
-    elif request.method == 'PUT':
-        response = requests.put(url,
-        auth=(username, password),
-        headers=headers,
-        data=request.body or None)
-    else:
-        response = requests.get(url, auth=(username, password))
+    response = http_request(url,
+    headers=headers,
+    data=request.body or None)
 
     # update thumbnails
     if affected_layers:
