@@ -23,6 +23,8 @@ import logging
 import base64
 import httplib2
 import os
+import requests
+from requests.auth import HTTPBasicAuth
 
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseRedirect
@@ -342,15 +344,13 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
 
     http = httplib2.Http()
     username, password = ogc_server_settings.credentials
-    auth = base64.encodestring(username + ':' + password)
-    # http.add_credentials(*(ogc_server_settings.credentials))
     headers = dict()
 
     affected_layers = None
+    response = None
 
     if request.method in ("POST", "GET", "PUT") and "CONTENT_TYPE" in request.META:
         headers["Content-Type"] = request.META["CONTENT_TYPE"]
-        headers["Authorization"] = "Basic " + auth
         # if user is not authorized, we must stop him
         # we need to sync django here and check if some object (styles) can
         # be edited by the user
@@ -365,10 +365,18 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
             if downstream_path == 'rest/styles':
                 affected_layers = style_update(request, url)
 
-    response, content = http.request(
-        url, request.method,
-        body=request.body or None,
-        headers=headers)
+    if request.method == 'POST':
+        response = requests.post(url,
+        auth=(username, password),
+        headers=headers,
+        data=request.body or None)
+    elif request.method == 'PUT':
+        response = requests.put(url,
+        auth=(username, password),
+        headers=headers,
+        data=request.body or None)
+    else:
+        response = requests.get(url, auth=(username, password))
 
     # update thumbnails
     if affected_layers:
@@ -377,9 +385,9 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
             create_gs_thumbnail(layer, True)
 
     return HttpResponse(
-        content=content,
-        status=response.status,
-        content_type=response.get("content-type", "text/plain"))
+        content=response.content,
+        status=response.status_code,
+        content_type=response.headers.get("content-type", "text/plain"))
 
 
 def layer_batch_download(request):
