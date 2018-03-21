@@ -363,6 +363,7 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
                 affected_layers = style_update(request, url)
 
     response = http_request(url,
+    method=request.method,
     headers=headers,
     data=request.body or None)
 
