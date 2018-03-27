@@ -1620,7 +1620,7 @@ def style_update(request, url):
         list_of_names = tree.findall(
             './/{http://www.opengis.net/sld}Name')
         elm_namedlayer_name = list_of_names[0] if list_of_names else ''
-        elm_user_style_name = list_of_names[1] if len(list_of_names) > 1 else list_of_names[0]
+        elm_user_style_name = elm_namedlayer_name
         elm_user_style_title = tree.find(
             './/{http://www.opengis.net/sld}Title')
         if not elm_user_style_title:
