@@ -286,14 +286,6 @@ class GXPMapBase(object):
         source_urls = [source['url']
                        for source in sources.values() if 'url' in source]
 
-        if 'geonode.geoserver' in settings.INSTALLED_APPS:
-            if len(sources.keys()) > 0 and not settings.MAP_BASELAYERS[0]['source']['url'] in source_urls:
-                keys = sorted(sources.keys())
-                settings.MAP_BASELAYERS[0]['source'][
-                    'title'] = 'Local Geoserver'
-                sources[
-                    str(int(keys[-1]) + 1)] = settings.MAP_BASELAYERS[0]['source']
-
         def _base_source(source):
             base_source = copy.deepcopy(source)
             for key in ["id", "baseParams", "title"]:
@@ -377,7 +369,8 @@ class GXPLayerBase(object):
         try:
             cfg = json.loads(self.source_params)
         except Exception:
-            cfg = dict(ptype="gxp_wmscsource", restUrl="/gs/rest")
+            cfg = dict(ptype="gxp_wmscsource", restUrl="/gs/rest", 
+                       title='Local Geoserver')
 
         if self.ows_url:
             '''
