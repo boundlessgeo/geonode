@@ -97,6 +97,10 @@ class Map(ResourceBase, GXPMapBase):
     # Alphanumeric alternative to referencing maps by id, appended to end of
     # URL instead of id, ie http://domain/maps/someview
 
+    map_params = models.TextField(_('map params'), blank=True)
+    # A JSON-encoded dictionary of arbitrary parameters for the map itself when
+    # passed to the GXP viewer.
+
     featuredurl = models.CharField(
         _('Featured Map URL'),
         max_length=255,
