@@ -448,12 +448,11 @@ def gs_slurp(
         resources = [k for k in resources if k.advertised in ["true", True]]
 
     # filter out layers already registered in geonode
-    layer_names = Layer.objects.all().values_list('typename', flat=True)
+    # We don't prepend the workspace to the typename, so esure we don't evaluate it
+    layer_names = [ l.typename.split('{}:'.format(l.workspace))[-1] for l in Layer.objects.all() if not l.is_remote ]
     if skip_geonode_registered:
-        resources = [k for k in resources
-                     if not '%s:%s' % (k.workspace.name, k.name) in layer_names]
-
-        layergroups = [lg for lg in layergroups if not '%s:%s' % (lg.workspace, lg.name) in layer_names]
+        resources = [k for k in resources if not k.name in layer_names]
+        layergroups = [lg for lg in layergroups if not lg.name in layer_names]
 
     # TODO: Should we do something with these?
     # i.e. look for matching layers in GeoNode and also disable?
