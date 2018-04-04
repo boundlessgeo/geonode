@@ -771,6 +771,7 @@ def get_layer(request, layername):
             'name': layer_obj.name,
             'title': layer_obj.title,
             'ptype': layer_obj.ptype,
+            'workspace': layer_obj.workspace,
             'url': url,
             'remote': layer_obj.is_remote,
             'bbox_string': layer_obj.bbox_string,
