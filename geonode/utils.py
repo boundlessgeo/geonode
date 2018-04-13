@@ -302,6 +302,16 @@ class GXPMapBase(object):
                     sources[
                         str(int(max(sources.keys(), key=int)) + 1)] = lyr["source"]
 
+        if 'geonode.geoserver' in settings.INSTALLED_APPS:
+           next_id = len(sources.keys())
+           gs_public_url = settings.OGC_SERVER['default']['PUBLIC_LOCATION']
+           url = '%swms?access_token=%s' % (gs_public_url, access_token)
+           default_source = {'url': url,
+                       'restUrl': '/gs/rest',
+                       'ptype': 'gxp_wmscsource',
+                       'title': 'Local Geoserver'}
+           sources.update({str(next_id) : default_source})
+
         config = {
             'id': self.id,
             'about': {
@@ -493,16 +503,6 @@ def default_map_config(request):
 
     DEFAULT_MAP_CONFIG = _default_map.viewer_json(user, access_token, *DEFAULT_BASE_LAYERS)
 
-    if 'geonode.geoserver' in settings.INSTALLED_APPS:
-        next_id = len(DEFAULT_MAP_CONFIG['sources'].keys())
-        gs_public_url = settings.OGC_SERVER['default']['PUBLIC_LOCATION']
-        url = '%swms?access_token=%s' % (gs_public_url, access_token)
-        default_source = {'url': url,
-                    'restUrl': '/gs/rest',
-                    'ptype': 'gxp_wmscsource',
-                    'title': 'Local Geoserver'}
-        DEFAULT_MAP_CONFIG['sources'].update({str(next_id) : default_source})
-    
     return DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS
 
 
