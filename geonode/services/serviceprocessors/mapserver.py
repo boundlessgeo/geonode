@@ -258,6 +258,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                 elif supported_extension == 'WFSServer':
                     url = url.replace('rest/services', 'services')
                     url += '/WFSServer?request=GetCapabilities&amp;service=WFS';
+                else:
+                    continue
 
                 link, created = Link.objects.get_or_create(
                     resource=geonode_layer.resourcebase_ptr,
