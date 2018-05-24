@@ -551,6 +551,7 @@ def new_map_config(request):
 
         map_obj.abstract = DEFAULT_ABSTRACT
         map_obj.title = DEFAULT_TITLE
+        map_obj.refresh_interval = 60000
         if request.user.is_authenticated():
             map_obj.owner = request.user
 
