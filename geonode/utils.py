@@ -316,7 +316,8 @@ class GXPMapBase(object):
             'id': self.id,
             'about': {
                 'title': self.title,
-                'abstract': self.abstract
+                'abstract': self.abstract,
+                'refresh_interval': refresh_interval
             },
             'aboutUrl': '../about',
             'defaultSourceType': "gxp_wmscsource",
