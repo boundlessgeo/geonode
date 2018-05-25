@@ -115,9 +115,6 @@ setup(name='GeoNode',
         # haystack/elasticsearch, uncomment to use
         "elasticsearch-dsl>=6.0.0,<7.0.0",
 
-        # elasticsearch-dsl app
-        "geonode-elasticsearch-app==0.2.1",
-
         # datetimepicker widget
         "django-bootstrap3-datetimepicker==2.2.3",
 
