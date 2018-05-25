@@ -532,6 +532,7 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     thumbnail_url = models.TextField(null=True, blank=True)
     detail_url = models.CharField(max_length=255, null=True, blank=True)
     rating = models.IntegerField(default=0, null=True, blank=True)
+    refresh_interval = models.IntegerField(default=60000, null=True, blank=True)
 
     def __unicode__(self):
         return self.title

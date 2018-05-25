@@ -321,7 +321,10 @@ class Layer(ResourceBase):
                 geogig_link=self.geogig_link,
                 has_time=self.prepare_has_time(),
                 references=self.prepare_references(),
-                source_host=self.prepare_source_host()
+                source_host=self.prepare_source_host(),
+                caveat=self.prepare_caveat(),
+                classification=self.prepare_classification(),
+                provenance=self.prepare_provenance()
             )
             obj.save()
             return obj.to_dict(include_meta=True)
@@ -432,6 +435,24 @@ class Layer(ResourceBase):
     def prepare_owner_last(self):
         if self.owner.last_name:
             return self.owner.last_name
+        else:
+            return None
+
+    def prepare_caveat(self):
+        if self.service is not None and self.service.caveat:
+            return self.service.caveat
+        else:
+            return None
+    
+    def prepare_classification(self):
+        if self.service is not None and self.service.classification:
+            return self.service.classification
+        else:
+            return None
+
+    def prepare_provenance(self):
+        if self.service is not None and self.service.provenance:
+            return self.service.provenance
         else:
             return None
 

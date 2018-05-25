@@ -108,7 +108,7 @@ setup(name='GeoNode',
         "geonode-arcrest==10.2",
         "geonode-notification==1.1.3",
         "geonode-dialogos==0.7",
-        "gsconfig==1.0.8",  # (1.0.3 in ppa) FIXME
+        # "gsconfig==1.0.8",  # (1.0.3 in ppa) FIXME
         "gsimporter==1.0.0",  # (0.1 in ppa) FIXME
         "gisdata==0.5.4",
 
