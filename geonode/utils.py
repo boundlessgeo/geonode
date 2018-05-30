@@ -312,6 +312,10 @@ class GXPMapBase(object):
                        'title': 'Local Geoserver'}
            sources.update({str(next_id) : default_source})
 
+        refresh_interval = 60000
+        if hasattr(self, 'refresh_interval'):
+            refresh_interval = self.refresh_interval
+        
         config = {
             'id': self.id,
             'about': {
