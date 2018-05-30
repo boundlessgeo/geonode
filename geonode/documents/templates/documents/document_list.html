@@ -30,12 +30,7 @@
     {% include "_permissions_form_js.html" %}
   {% endif %}
   <script type="text/javascript">
-      {% if HAYSTACK_SEARCH %}
-          SEARCH_URL = '{% url 'api_get_search' api_name='api' resource_name='documents'%}'
-      {% else %}
-          SEARCH_URL = '{% url 'api_dispatch_list' api_name='api' resource_name='documents' %}';
-      {% endif %}
-    FILTER_TYPE = 'document';
+    SEARCH_URL = '{% url 'elastic_search' resourcetype='documents' %}'
   </script>
   {% with include_spatial='true' %}
   {% include 'search/search_scripts.html' %}
