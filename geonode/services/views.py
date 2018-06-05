@@ -294,6 +294,7 @@ def edit_service(request, service_id):
     Edit an existing Service
     """
     service_obj = get_object_or_404(Service, pk=service_id)
+    classification_dict = getattr(settings, "CLASSIFICATION_LEVELS", {})
 
     if request.method == "POST":
         service_form = forms.ServiceForm(
@@ -312,7 +313,8 @@ def edit_service(request, service_id):
     return render_to_response("services/service_edit.html",
                               RequestContext(request,
                                              {"service": service_obj,
-                                              "service_form": service_form}))
+                                              "service_form": service_form,
+                                              "classification_levels": classification_dict}))
 
 
 @login_required

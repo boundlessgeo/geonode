@@ -27,3 +27,39 @@
   </div>
 </form>
 {% endblock %}
+
+{% block extra_script %}
+{{ block.super }}
+<script type="text/javascript">
+  $(document).ready(function () {
+    {% autoescape on %}
+    var classification_mapping = {{ classification_levels | safe }};
+    {% endautoescape %}
+    var classification_dropdown = $('#id_service-classification')[0];
+    var caveat_dropdown = $('#id_service-caveat')[0];
+
+    var get_caveats_from_classification = function (classification) {
+      return classification_mapping[classification]
+    };
+
+    var update_caveats = function () {
+
+      while(caveat_dropdown.options.length) {
+        caveat_dropdown.remove(0);
+      }
+
+      var caveats = get_caveats_from_classification(classification_dropdown.value);
+      var i;
+      for (i = 0; i < caveats.length; i++) {
+        caveat_dropdown.add(new Option(caveats[i], i));
+      }
+    };
+
+    update_caveats();
+
+    classification_dropdown.onchange = function(){
+      update_caveats();
+    };
+  });
+</script>
+{% endblock %}
