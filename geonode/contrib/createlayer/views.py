@@ -24,7 +24,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
-from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
 
 from .forms import NewLayerForm
 from .utils import create_layer
