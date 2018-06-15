@@ -969,18 +969,27 @@ def do_login(sender, user, request, **kwargs):
     """
     if user and user.is_authenticated():
         token = None
+        ttl = 86400
+
         try:
             Application = get_application_model()
             app = Application.objects.get(name="GeoServer")
 
-            # Lets create a new one
-            token = generate_token()
-
+            if hasattr(user, 'social_user'):
+                logging.debug("Using token from social authentication.")
+                social_user = user.social_user
+                token = social_user.extra_data.get('access_token')
+                ttl = social_user.extra_data.get('expires')
+            else:
+                logging.debug("Generating a local access token.")
+                token = generate_token()
+            expires = datetime.datetime.now() + datetime.timedelta(seconds=ttl)
             AccessToken.objects.get_or_create(user=user,
                                               application=app,
-                                              expires=datetime.datetime.now() + datetime.timedelta(days=1),
+                                              expires=expires,
                                               token=token)
         except:
+            logging.debug("Unable to get_or_create token so defautling to uuid")
             u = uuid.uuid1()
             token = u.hex
 
