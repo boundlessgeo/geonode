@@ -128,8 +128,8 @@ class Document(ResourceBase):
         else:
             filename = finders.find(
                 'documents/{0}-placeholder.png'.format(
-                    self.extension
-                ).lower(), False
+                    self.extension.lower()
+                ), False
             ) or \
                 finders.find('documents/generic-placeholder.png', False)
 
