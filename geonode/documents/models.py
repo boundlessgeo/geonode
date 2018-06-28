@@ -126,7 +126,11 @@ class Document(ResourceBase):
             img = Image.open(self.doc_file.path)
             img = ImageOps.fit(img, size, Image.ANTIALIAS)
         else:
-            filename = finders.find('documents/{0}-placeholder.png'.format(self.extension), False) or \
+            filename = finders.find(
+                'documents/{0}-placeholder.png'.format(
+                    self.extension
+                ).lower(), False
+            ) or \
                 finders.find('documents/generic-placeholder.png', False)
 
             if not filename:
