@@ -43,25 +43,23 @@ class RecentActivity(ListView):
 
     def get_queryset(self):
         self.filter_set_ids = get_filter_ids(self.request.user)
-        logger.debug('user: %s', self.request.user)
-        logger.debug('filter_set_ids: %s', self.filter_set_ids)
         return Action.objects.filter(
-            action_object_object_id=self.filter_set_ids
+            action_object_object_id__in=self.filter_set_ids
         )
 
 
     def get_context_data(self, *args, **kwargs):
         context = super(ListView, self).get_context_data(*args, **kwargs)
         context['action_list_layers'] = Action.objects.filter(
-            action_object_object_id=self.filter_set_ids,
+            action_object_object_id__in=self.filter_set_ids,
             public=True,
             action_object_content_type__model='layer')[:15]
         context['action_list_maps'] = Action.objects.filter(
-            action_object_object_id=self.filter_set_ids,
+            action_object_object_id__in=self.filter_set_ids,
             public=True,
             action_object_content_type__model='map')[:15]
         context['action_list_comments'] = Action.objects.filter(
-            action_object_object_id=self.filter_set_ids,
+            action_object_object_id__in=self.filter_set_ids,
             public=True,
             action_object_content_type__model='comment')[:15]
         return context
@@ -77,7 +75,13 @@ class UserActivity(ListView):
     def get_queryset(self):
         # There's no generic foreign key for 'actor', so can't filter directly
         # Hence the code below is essentially applying the filter afterwards
-        return [x for x in Action.objects.filter(public=True)[:15]
+
+        self.filter_set_ids = get_filter_ids(self.request.user)
+        actions = Action.objects.filter(
+            public=True,
+            action_object_object_id__in=self.filter_set_ids
+        )
+        return [x for x in actions[:15]
                 if x.actor.username == self.kwargs['actor']]
 
     def get_context_data(self, *args, **kwargs):
