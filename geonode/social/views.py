@@ -20,7 +20,17 @@
 
 from actstream.models import Action
 from django.views.generic import ListView
+from guardian.shortcuts import get_objects_for_user
+import logging
 
+logger = logging.getLogger(__name__)
+
+def get_filter_ids(user):
+    filter_set = get_objects_for_user(
+        user,
+        'base.view_resourcebase'
+    )
+    return map(str, filter_set.values_list('id', flat=True))
 
 class RecentActivity(ListView):
     """
@@ -30,15 +40,28 @@ class RecentActivity(ListView):
     queryset = Action.objects.filter(public=True)[:15]
     template_name = 'social/activity_list.html'
 
+
+    def get_queryset(self):
+        self.filter_set_ids = get_filter_ids(self.request.user)
+        logger.debug('user: %s', self.request.user)
+        logger.debug('filter_set_ids: %s', self.filter_set_ids)
+        return Action.objects.filter(
+            action_object_object_id=self.filter_set_ids
+        )
+
+
     def get_context_data(self, *args, **kwargs):
         context = super(ListView, self).get_context_data(*args, **kwargs)
         context['action_list_layers'] = Action.objects.filter(
+            action_object_object_id=self.filter_set_ids,
             public=True,
             action_object_content_type__model='layer')[:15]
         context['action_list_maps'] = Action.objects.filter(
+            action_object_object_id=self.filter_set_ids,
             public=True,
             action_object_content_type__model='map')[:15]
         context['action_list_comments'] = Action.objects.filter(
+            action_object_object_id=self.filter_set_ids,
             public=True,
             action_object_content_type__model='comment')[:15]
         return context
