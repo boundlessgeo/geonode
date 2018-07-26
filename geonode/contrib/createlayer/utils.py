@@ -248,7 +248,7 @@ def create_gs_layer(name, title, geometry_type, attributes=None):
            "<nativeName>{native_name}</nativeName>"
            "<title>{title}</title>"
            "<srs>EPSG:4326</srs>"
-           "<latLonBoundingBox><minx>-180</minx><maxx>180</maxx><miny>-90</miny><maxy>90</maxy>"
+           "<latLonBoundingBox><minx>-1</minx><maxx>0</maxx><miny>-1</miny><maxy>0</maxy>"
            "<crs>EPSG:4326</crs></latLonBoundingBox>"
            "{attributes}"
            "</featureType>").format(
