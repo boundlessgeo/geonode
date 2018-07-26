@@ -67,6 +67,8 @@ from geonode.utils import build_social_links
 from geonode.geoserver.helpers import cascading_delete, gs_catalog
 from geonode.geoserver.helpers import ogc_server_settings
 
+from geonode.contrib.createlayer.utils import update_gs_layer_bounds
+
 if 'geonode.geoserver' in settings.INSTALLED_APPS:
     from geonode.geoserver.helpers import _render_thumbnail
 CONTEXT_LOG_FILE = ogc_server_settings.LOG_FILE
@@ -220,6 +222,23 @@ def layer_upload(request, template='upload/layer_upload.html'):
             json.dumps(out),
             content_type='application/json',
             status=status_code)
+
+
+def layer_update_bounds(request, layername):
+    layer = _resolve_layer(
+        request,
+        layername,
+        'base.view_resourcebase',
+        _PERMISSION_MSG_VIEW)
+
+    update_gs_layer_bounds(layername)
+
+    layer.save()
+
+    return HttpResponse(
+        json.dumps({'data': '{} bbox has been updated.'.format(layername)}),
+        content_type='application/json',
+        status=200)
 
 
 def layer_detail(request, layername, template='layers/layer_detail.html'):
