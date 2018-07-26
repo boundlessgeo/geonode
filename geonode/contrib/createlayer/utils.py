@@ -69,14 +69,11 @@ def create_gn_layer(workspace, datastore, name, title, owner_name):
         workspace=workspace.name,
         store=datastore.name,
         storeType='dataStore',
-        alternate='%s:%s' % (workspace.name, name),
+        alternate='{}'.format(name.encode('utf-8')),
+        typename='{}'.format(name.encode('utf-8')),
         title=title,
         owner=owner,
-        uuid=str(uuid.uuid4()),
-        bbox_x0=-180,
-        bbox_x1=180,
-        bbox_y0=-90,
-        bbox_y1=90
+        uuid=str(uuid.uuid4())
     )
     return layer
 
