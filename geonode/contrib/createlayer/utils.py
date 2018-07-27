@@ -200,7 +200,7 @@ def create_gs_layer_style(name):
 
 
 def update_gs_layer_bounds(ft):
-    native_name = ft
+    layer = Layer.objects.get(typename=ft)
     gs_user = ogc_server_settings.credentials[0]
     gs_password = ogc_server_settings.credentials[1]
 
@@ -209,16 +209,13 @@ def update_gs_layer_bounds(ft):
     # get workspace and store
     workspace = cat.get_default_workspace()
 
-    # get (or create the datastore)
-    datastore = get_or_create_datastore(cat, workspace)
-
     xml = ("<featureType>"
            "<enabled>true</enabled>"
            "</featureType>")
 
     url = ('%s/workspaces/%s/datastores/%s/featuretypes/%s.xml?recalculate=nativebbox,latlonbbox'
            % (ogc_server_settings.internal_rest,
-              workspace.name, datastore.name, native_name))
+              workspace.name, layer.store, layer.typename))
     headers = {'Content-Type': 'application/xml'}
     req = requests.put(url, data=xml, headers=headers, auth=(gs_user, gs_password))
     if req.status_code != 200:
