@@ -242,7 +242,7 @@ def create_gs_layer(name, title, geometry_type, attributes=None):
     datastore = get_or_create_datastore(cat, workspace)
 
     # check if datastore is of PostGIS type
-    if datastore.type != 'PostGIS':
+    if not 'PostGIS' in datastore.type:
         msg = ("To use the createlayer application you must use PostGIS")
         logger.error(msg)
         raise GeoNodeException(msg)
