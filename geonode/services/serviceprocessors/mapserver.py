@@ -38,6 +38,19 @@ from .. import models
 
 from . import base
 
+try:
+    from ssl_pki.utils import (
+        has_pki_prefix,
+        pki_to_proxy_route,
+        pki_route_reverse,
+        proxy_route
+    )
+except ImportError:
+    has_pki_prefix = None
+    pki_to_proxy_route = None
+    pki_route_reverse = None
+    proxy_route = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,11 +77,20 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
     service_type = enumerations.REST
 
-    def __init__(self, url):
-        self.parsed_service = ArcMapService(url)
+    def __init__(self, url, **kwargs):
+        headers = kwargs.pop('headers', None)
+        logger.debug('passed headers = {0}'.format(headers))
+
+        self.parsed_service = ArcMapService(url, add_headers=headers)
         self.indexing_method = (
             INDEXED if self._offers_geonode_projection() else CASCADED)
         self.url = self.parsed_service.url
+        self.pki_proxy_url = None
+        self.pki_url = None
+        if callable(has_pki_prefix) and has_pki_prefix(self.url):
+            self.pki_url = self.url
+            self.pki_proxy_url = pki_to_proxy_route(self.url)
+            self.url = pki_route_reverse(self.url)
         self.title = self.parsed_service.itemInfo['title']
         self.name = _get_valid_name(self.parsed_service.itemInfo['name'])
 
@@ -123,7 +145,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         """
 
-        return list(self.parsed_service.layers)
+        return [] if self.parsed_service.layers is None else \
+            list(self.parsed_service.layers)
 
     def harvest_resource(self, resource_id, geonode_service):
         """Harvest a single resource from the service
@@ -186,10 +209,13 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         thumbnail_remote_url = "{}/info/thumbnail".format(self.url)
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
+        thumbnail_create_url = "{}/info/thumbnail".format(
+            self.pki_url or self.url)
+        logger.debug("thumbnail_remote_url: {}".format(thumbnail_create_url))
         create_thumbnail(
             instance=geonode_layer,
             thumbnail_remote_url=thumbnail_remote_url,
-            thumbnail_create_url=None,
+            thumbnail_create_url=thumbnail_create_url,
             check_bbox=False,
             overwrite=True,
         )
@@ -219,6 +245,9 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         """
 
         legend_url = "{}/legend?f=pjson".format(self.url)
+        if self.pki_url is not None:
+            legend_url = proxy_route(legend_url)
+
         logger.debug("legend_url: {}".format(legend_url))
         Link.objects.get_or_create(
             resource=geonode_layer.resourcebase_ptr,

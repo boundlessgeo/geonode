@@ -26,6 +26,7 @@ import traceback
 from base64 import b64decode
 import uuid
 import decimal
+from collections import OrderedDict
 
 from guardian.shortcuts import get_perms
 from django.contrib import messages
@@ -66,12 +67,18 @@ from geonode.documents.models import get_related_documents
 from geonode.utils import build_social_links
 from geonode.geoserver.helpers import cascading_delete, gs_catalog
 from geonode.geoserver.helpers import ogc_server_settings
+import urlparse
 
 from geonode.contrib.createlayer.utils import update_gs_layer_bounds
 
 if 'geonode.geoserver' in settings.INSTALLED_APPS:
     from geonode.geoserver.helpers import _render_thumbnail
 CONTEXT_LOG_FILE = ogc_server_settings.LOG_FILE
+
+try:
+    from ssl_pki.models import uses_proxy_route
+except ImportError:
+    uses_proxy_route = None
 
 logger = logging.getLogger("geonode.layers.views")
 
@@ -254,7 +261,7 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
     # Add required parameters for GXP lazy-loading
     layer_bbox = layer.bbox
     bbox = [float(coord) for coord in list(layer_bbox[0:4])]
-    config["srs"] = getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913')
+    config["srs"] = layer.srid if layer.srid else getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913')
     config["bbox"] = bbox if config["srs"] != 'EPSG:900913' \
         else llbbox_to_mercator([float(coord) for coord in bbox])
     config["title"] = layer.title
@@ -264,11 +271,24 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
 
     if layer.storeType == "remoteStore":
         service = layer.service
+        source_url = service.base_url
+        use_proxy = (callable(uses_proxy_route)
+                     and uses_proxy_route(service.base_url))
+        components = urlparse.urlsplit(service.base_url)
+        query_params = None
+        if components.query:
+            query_params = OrderedDict(urlparse.parse_qsl(components.query, keep_blank_values=True))
+            removed_query = [components.scheme, components.netloc, components.path,
+                             None, components.fragment]
+            source_url = urlparse.urlunsplit(removed_query)
         source_params = {
             "ptype": service.ptype,
             "remote": True,
-            "url": service.base_url,
-            "name": service.name}
+            "url": source_url,
+            "name": service.name,
+            "use_proxy": use_proxy}
+        if query_params is not None:
+            source_params["params"] = query_params
         if layer.alternate is not None:
             config["layerid"] = layer.alternate
         maplayer = GXPLayer(

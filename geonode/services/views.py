@@ -34,6 +34,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext, loader
 from django.utils.translation import ugettext as _
 
+from geonode.utils import get_bearer_token
 from geonode.security.views import _perms_info_json
 from geonode.layers.models import Layer
 from .serviceprocessors import get_service_handler
@@ -102,7 +103,11 @@ def _get_service_handler(request, service):
 
     """
 
-    service_handler = get_service_handler(service.base_url, service.type)
+    headers = {'Authorization': "Bearer {}".format(
+        get_bearer_token(valid_time=30, request=request))}
+
+    service_handler = get_service_handler(
+        service.base_url, service.type, headers=headers)
     request.session[service.base_url] = service_handler
     logger.debug("Added handler to the session")
     return service_handler
@@ -156,7 +161,11 @@ def harvest_resources(request, service_id):
             )
             if created:
                 resources_to_harvest.append(id)
-                tasks.harvest_resource.apply_async((harvest_job.id,))
+                tasks.harvest_resource.apply_async(
+                    args=[harvest_job.id],
+                    kwargs={'headers': {'Authorization': "Bearer {0}".format(
+                         get_bearer_token(valid_time=30, request=request))}},
+                )
             else:
                 logger.warning(
                     "resource {} already has a harvest job".format(id))
@@ -193,7 +202,11 @@ def harvest_single_resource(request, service_id, resource_id):
         raise HttpResponse(
             _("Resource is already being processed"), status=409)
     else:
-        tasks.harvest_resource.apply_async((harvest_job.id,))
+        tasks.harvest_resource.apply_async(
+            args=[harvest_job.id],
+            kwargs={'headers': {'Authorization': "Bearer {0}".format(
+                get_bearer_token(valid_time=30, request=request))}},
+        )
     messages.add_message(
         request,
         messages.SUCCESS,
@@ -294,6 +307,7 @@ def edit_service(request, service_id):
     Edit an existing Service
     """
     service_obj = get_object_or_404(Service, pk=service_id)
+    classification_dict = getattr(settings, "CLASSIFICATION_LEVELS", {})
 
     if request.method == "POST":
         service_form = forms.ServiceForm(
@@ -312,7 +326,8 @@ def edit_service(request, service_id):
     return render_to_response("services/service_edit.html",
                               RequestContext(request,
                                              {"service": service_obj,
-                                              "service_form": service_form}))
+                                              "service_form": service_form,
+                                              "classification_levels": classification_dict}))
 
 
 @login_required
