@@ -92,6 +92,31 @@ class Service(ResourceBase):
         null=True,
         blank=True
     )
+    poc_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    poc_position = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    poc_email = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    poc_phone = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    poc_address = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
     online_resource = models.URLField(
         False,
         null=True,

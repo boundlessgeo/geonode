@@ -184,6 +184,55 @@ class ServiceForm(forms.ModelForm):
             'size': '60',
             'class': 'inputText'
         }))
+    poc_name = forms.CharField(
+        label=_('Point of Contact'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_position = forms.CharField(
+        label=_('PoC Position'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_email = forms.CharField(
+        label=_('PoC Email'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_phone = forms.CharField(
+        label=_('PoC Phone'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_address = forms.CharField(
+        label=_('PoC Location/Address'),
+        max_length=255,
+        widget=forms.Textarea(
+            attrs={
+                'cols': 60
+            }
+        )
+    )
 
     def __init__(self, *args, **kwargs):
         super(ServiceForm, self).__init__(*args, **kwargs)
@@ -206,4 +255,9 @@ class ServiceForm(forms.ModelForm):
             'maintenance_frequency',
             'provenance',
             'fees',
+            'poc_name',
+            'poc_position',
+            'poc_email',
+            'poc_phone',
+            'poc_address',
         )
