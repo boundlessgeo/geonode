@@ -603,7 +603,7 @@ def new_map_config(request):
                 config["queryable"] = True
 
                 config["srs"] = getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913')
-                config["bbox"] = bbox if config["srs"] != 'EPSG:900913' \
+                config["bbox"] = bbox if config["srs"] != 'EPSG:900913' or layer.is_remote \
                     else llbbox_to_mercator([float(coord) for coord in bbox])
 
                 if layer.storeType == "remoteStore":
