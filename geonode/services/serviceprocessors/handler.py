@@ -21,6 +21,7 @@
 
 import logging
 
+from django.conf import settings
 from django.utils.datastructures import OrderedDict
 from geonode.utils import get_bearer_token
 
@@ -29,8 +30,10 @@ from .wms import WmsServiceHandler
 from .mapserver import MapserverServiceHandler
 
 try:
-    from exchange.pki.models import has_ssl_config
-    from exchange.pki.utils import pki_route
+    if 'ssl_pki' not in settings.INSTALLED_APPS:
+        raise ImportError
+    from ssl_pki.models import has_ssl_config
+    from ssl_pki.utils import pki_route
 except ImportError:
     has_ssl_config = None
     pki_route = None
