@@ -50,9 +50,9 @@ from django.forms.util import ErrorList
 
 from geonode.tasks.deletion import delete_layer
 from geonode.services.models import Service
-from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm, LayerConstraintForm, LayerAttributeFormset, LayerAttributeOptionForm
+from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
 from geonode.base.forms import CategoryForm
-from geonode.layers.models import Layer, Attribute, AttributeOption, UploadSession, Constraint, AttributeOption
+from geonode.layers.models import Layer, Attribute, UploadSession
 from geonode.base.enumerations import CHARSETS
 from geonode.base.models import TopicCategory
 
@@ -442,26 +442,11 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
         Attribute,
         extra=0,
         form=LayerAttributeForm,
-        formset=LayerAttributeFormset,
     )
     topic_category = layer.category
 
     poc = layer.poc
     metadata_author = layer.metadata_author
-
-    ConstraintInlineFormset = inlineformset_factory(
-        Attribute,
-        Constraint,
-        extra=1,
-        form=LayerConstraintForm
-    )
-
-    AttributeOptionInlineFormset = inlineformset_factory(
-        Attribute,
-        AttributeOption,
-        extra=0,
-        form=LayerAttributeOptionForm
-    )
 
     if request.method == "POST":
         if layer.metadata_uploaded_preserve:  # layer metadata cannot be edited
@@ -485,17 +470,6 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             prefix="category_choice_field",
             initial=int(
                 request.POST["category_choice_field"]) if "category_choice_field" in request.POST else None)
-        for form in attribute_form:
-            form.constraint_form = ConstraintInlineFormset(
-                request.POST,
-                instance=form.instance,
-                prefix='attribute_constraint-%s' % (form.prefix),
-            )
-            form.attribute_option_form = AttributeOptionInlineFormset(
-                request.POST,
-                instance=form.instance,
-                prefix='attribute_option-%s' % (form.prefix)
-            )
 
     else:
         layer_form = LayerForm(instance=layer, prefix="resource")
@@ -506,15 +480,6 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
         category_form = CategoryForm(
             prefix="category_choice_field",
             initial=topic_category.id if topic_category else None)
-        for form in attribute_form:
-            form.constraint_form = ConstraintInlineFormset(
-                instance=form.instance,
-                prefix='attribute_constraint-%s' % (form.prefix),
-            )
-            form.attribute_option_form = AttributeOptionInlineFormset(
-                instance=form.instance,
-                prefix='attribute_option-%s' % (form.prefix)
-            )
 
     if request.method == "POST" and layer_form.is_valid(
     ) and attribute_form.is_valid() and category_form.is_valid():
@@ -562,23 +527,7 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             la.attribute_label = form["attribute_label"]
             la.visible = form["visible"]
             la.display_order = form["display_order"]
-            la.required = form["required"]
-            la.readonly = form["readonly"]
             la.save()
-
-        for form in attribute_form:
-            for constraint_form in form.constraint_form:
-                if constraint_form and constraint_form.is_valid() and constraint_form.cleaned_data:
-                    constraint_form.save()
-            # Save attribute options.
-            attr = Attribute.objects.get(id=int(form.cleaned_data['id'].id))
-            if form.attribute_option_form.is_valid():
-                attribute_options = form.attribute_option_form.save(commit=False)
-                for ao in attribute_options:
-                    ao.layer = attr.layer
-                    ao.save()
-                for deleted_ao in form.attribute_option_form.deleted_objects:
-                    deleted_ao.delete()
 
         if new_poc is not None and new_author is not None:
             new_keywords = [x.strip() for x in layer_form.cleaned_data['keywords']]
@@ -899,48 +848,11 @@ def attributes_as_json(layer):
     return attributes
 
 def attribute_as_json(attribute):
-    attribute_dict = {
+    return {
         'attribute': attribute.attribute,
         'description': attribute.description,
         'attribute_label': attribute.attribute_label,
         'attribute_type': attribute.attribute_type,
         'visible': attribute.visible,
-        'display_order': attribute.display_order,
-        'required': attribute.required,
-        'readonly': attribute.readonly,
-        'options': attribute_options_as_json(attribute),
+        'display_order': attribute.display_order
     }
-    if hasattr(attribute, 'constraints'):
-        attribute_dict['constraints'] = constraints_as_json(attribute)
-    return attribute_dict
-
-def attribute_options_as_json(attribute):
-     options = []
-     for option in attribute.options.all():
-         options.append({
-             'value': option.value,
-             'label': option.label,
-             })
-     return options
-
-def constraints_as_json(attribute):
-    if hasattr(attribute, 'constraints'):
-        constraints_dict = {
-            'control_type': attribute.constraints.control_type,
-            'initial_value': attribute.constraints.initial_value,
-            'is_integer': attribute.constraints.is_integer,
-            'minimum': attribute.constraints.minimum,
-            'maximum': attribute.constraints.maximum,
-            'minimum_length': attribute.constraints.minimum_length,
-            'maximum_length': attribute.constraints.maximum_length,
-            'regex': attribute.constraints.regex,
-        }
-
-        # Add attribute options.
-        if attribute.options.all().exists():
-            constraints_dict['options'] = attribute_options_as_json(attribute)
-
-        # Strip out null values
-        return dict((k, v) for k, v in constraints_dict.iteritems() if v is not None)
-    else:
-        return {}

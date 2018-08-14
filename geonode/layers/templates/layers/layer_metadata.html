@@ -50,22 +50,6 @@
             {% if field.errors %}
             <li>{{ field.errors }}</li>
             {% endif %}
-            {% if not field.constraint_form.is_valid %}
-            <li>{% trans "Constraints" %} - {{field.attribute.value}}</li>
-              {% for constraint_field in field.constraint_form %}
-                {% if constraint_field.errors %}
-                  <li>{{ constraint_field.errors }}</li>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-            {% if not field.attribute_option_form.is_valid %}
-            <li>{% trans "Options" %} - {{field.attribute.value}}</li>
-              {% for option_field in field.attribute_option_form %}
-                {% if option_field.errors %}
-                  <li>{{ option_field.errors }}</li>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
             {% endfor %}
           {% endif %}
           {% if category_form.errors %}
@@ -105,124 +89,22 @@
           <div class="col-md-12 grid-spacer">
             <h5>{% trans "Attributes" %}</h5>
             {{ attribute_form.management_form }}
-            <table class="table table-striped table-bordered table-condensed layer-attributes">
+            <table class="table table-striped table-bordered table-condensed">
               <tr>
-                <th></th>
                 <th>{% trans "Attribute" %}</th>
                 <th>{% trans "Label" %}</th>
                 <th>{% trans "Description" %}</th>
                 <th>{% trans "Display Order" %}</th>
                 <th>{% trans "Visible?" %}</th>
-                <th>{% trans "Required?" %}</th>
-                <th>{% trans "Readonly?" %}</th>
               </tr>
               {% for form in attribute_form.forms %}
               {% if form.attribute %}
               <tr>
-                <td><a data-toggle="collapse" href="#collapse{{ forloop.counter }}" class="collapsed accordion-toggle"></a></td>
                 <td><div style="display:none">{{form.id}}</div>{{form.attribute}}</td>
                 <td>{{form.attribute_label}}</td>
                 <td>{{form.description}}</td>
                 <td>{{form.display_order}}</td>
                 <td>{{form.visible}}</td>
-                <td>{{form.required}}</td>
-                <td>{{form.readonly}}</td>
-              </tr>
-              <tr id="collapse{{ forloop.counter }}" class="collapse attribute-additional">
-                <td colspan="8">
-                  {{ form.constraint_form.management_form }}
-                  {% for constraint_form in form.constraint_form.forms %}
-                    <fieldset>
-                      <legend>{% trans "Constraints" %}</legend>
-                      <div class="col-md-6">
-                        {{constraint_form.id}}
-                        <div class="form-group">
-                          <div class="checkbox">
-                             {{constraint_form.is_integer}} <label for="{{constraint_form.is_integer.id_for_label}}">{% trans "Integer?" %}</label>
-                          </div>
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.control_type.id_for_label}}">{% trans "Control type" %}</label>
-                          {{constraint_form.control_type}}
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.regex.id_for_label}}">{% trans "Regex" %}</label>
-                          {{constraint_form.regex}}
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.initial_value.id_for_label}}">{% trans "Initial value" %}</label>
-                          {{constraint_form.initial_value}}
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="form-group">
-                          <label for="{{constraint_form.minimum.id_for_label}}">{% trans "Minimum" %}</label>
-                          {{constraint_form.minimum}}
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.maximum.id_for_label}}">{% trans "Maximum" %}</label>
-                          {{constraint_form.maximum}}
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.minimum_length.id_for_label}}">{% trans "Minimum length" %}</label>
-                          {{constraint_form.minimum_length}}
-                        </div>
-                        <div class="form-group">
-                          <label for="{{constraint_form.maximum_length.id_for_label}}">{% trans "Maximum length" %}</label>
-                          {{constraint_form.maximum_length}}
-                        </div>
-                      </div>
-                    </fieldset>
-                  {% endfor %}
-
-                  {{ form.attribute_option_form.management_form }}
-                  <fieldset class="attribute-options">
-                    <legend>{% trans "Options" %} <a class="badge add-attribute-option" onclick="addAttributeOption(this, '#attribute-option-template', '{{form.attribute_option_form.prefix}}');">+</a></legend>
-                    <script type="text/html" id="attribute-option-template">
-                      <div class="col-md-12 row attribute-option-form">
-                        <div class="col-md-5">
-                          <div class="form-group">
-                            <label for="id_{{form.attribute_option_form.prefix}}-__id__-value">{% trans "Value" %}</label>
-                            <input class="form-control" id="id_{{form.attribute_option_form.prefix}}-__id__-value" name="{{form.attribute_option_form.prefix}}-__id__-value" type="text" value="">
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="form-group">
-                            <label for="id_{{form.attribute_option_form.prefix}}-__id__-label">{% trans "Label" %}</label>
-                            <input class="form-control" id="id_{{form.attribute_option_form.prefix}}-__id__-label" name="{{form.attribute_option_form.prefix}}-__id__-label" type="text" value="">
-                          </div>
-                        </div>
-                        <div class="col-md-1">
-                          <div class="form-group">
-                            <a class="btn btn-danger" onclick="deleteAttributeOption(this, '{{form.attribute_option_form.prefix}}');">{% trans "Remove" %}</a>
-                          </div>
-                        </div>
-                      </div>
-                    </script>
-                    {% for attribute_option_form in form.attribute_option_form.forms %}
-                      <div class="col-md-12 row attribute-option-form">
-                        <input id="{{attribute_option_form.id.id_for_label}}" name="{{attribute_option_form.id.html_name}}" type="hidden" value="{{attribute_option_form.id.value|default_if_none:''}}">
-                        <div class="col-md-5">
-                          <div class="form-group">
-                            <label for="{{attribute_option_form.value.id_for_label}}">{% trans "Value" %}</label>
-                            <input class="form-control" id="{{attribute_option_form.value.id_for_label}}" name="{{attribute_option_form.value.html_name}}" type="text" value="{{attribute_option_form.value.value|default_if_none:''}}">
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="form-group">
-                            <label for="{{attribute_option_form.label.id_for_label}}">{% trans "Label" %}</label>
-                            <input class="form-control" id="{{attribute_option_form.label.id_for_label}}" name="{{attribute_option_form.label.html_name}}" type="text" value="{{attribute_option_form.label.value|default_if_none:''}}">
-                          </div>
-                        </div>
-                        <div class="col-md-1">
-                          <div class="form-group">
-                            <a class="btn btn-danger" onclick="deleteAttributeOption(this, '{{form.attribute_option_form.prefix}}');">{% trans "Remove" %}</a>
-                          </div>
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </fieldset>
-                </td>
               </tr>
               {% endif %}
               {% endfor %}
