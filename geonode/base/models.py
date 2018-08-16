@@ -28,7 +28,7 @@ import urllib2
 import cookielib
 
 from pyproj import transform, Proj
-from urlparse import urljoin, urlsplit
+from urlparse import urljoin, urlsplit, parse_qs
 
 from django.db import models
 from django.core import serializers
@@ -744,7 +744,12 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
 
         remote_thumbnails = self.link_set.filter(name='Remote Thumbnail')
         if remote_thumbnails.count() > 0:
-            return remote_thumbnails[0].url
+            url_parts = urlsplit(remote_thumbnails[0].url)
+            qargs = parse_qs(url_parts.query)
+            if url_parts.path == '/geoserver/wms/reflect' and not 'layers' in qargs:
+                pass
+            else:
+                return remote_thumbnails[0].url
 
         return staticfiles.static(settings.MISSING_THUMBNAIL)
 
