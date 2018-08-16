@@ -840,7 +840,7 @@ def get_layer(request, layername):
                
         response = {
             'typename': layername,
-            'name': layer_obj.name,
+            'name': slugify(layer_obj.name),
             'title': layer_obj.title,
             'ptype': layer_obj.ptype,
             'workspace': layer_obj.workspace,
