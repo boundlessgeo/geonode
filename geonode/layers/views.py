@@ -26,6 +26,7 @@ import traceback
 from base64 import b64decode
 import uuid
 import decimal
+import math
 
 from guardian.shortcuts import get_perms
 from django.contrib import messages
@@ -59,7 +60,7 @@ from geonode.utils import default_map_config
 from geonode.utils import GXPLayer
 from geonode.utils import GXPMap
 from geonode.layers.utils import file_upload, is_raster, is_vector
-from geonode.utils import resolve_object, llbbox_to_mercator
+from geonode.utils import resolve_object, llbbox_to_mercator, bbox_to_projection, forward_mercator
 from geonode.people.forms import ProfileForm, PocForm
 from geonode.security.views import _perms_info_json
 from geonode.documents.models import get_related_documents
@@ -263,6 +264,9 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         config["styles"] = layer.default_style.name
 
     if layer.storeType == "remoteStore":
+        reprojected_bbox = bbox_to_projection(bbox, source_srid=layer.srid, target_srid=3857)
+        bbox = reprojected_bbox[:4]
+        config['bbox'] = [float(coord) for coord in bbox]
         service = layer.service
         source_params = {
             "ptype": service.ptype,
@@ -338,6 +342,39 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         u = uuid.uuid1()
         access_token = u.hex
 
+    if bbox is not None:
+        minx, miny, maxx, maxy = [float(coord) for coord in bbox]
+        x = (minx + maxx) / 2
+        y = (miny + maxy) / 2
+
+        if layer.is_remote or getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
+            center = list((x, y))
+        else:
+            center = list(forward_mercator((x, y)))
+
+        if center[1] == float('-inf'):
+            center[1] = 0
+
+        BBOX_DIFFERENCE_THRESHOLD = 1e-5
+
+        # Check if the bbox is invalid
+        valid_x = (maxx - minx) ** 2 > BBOX_DIFFERENCE_THRESHOLD
+        valid_y = (maxy - miny) ** 2 > BBOX_DIFFERENCE_THRESHOLD
+
+        if valid_x:
+            width_zoom = math.log(360 / abs(maxx - minx), 2)
+        else:
+            width_zoom = 15
+
+        if valid_y:
+            height_zoom = math.log(360 / abs(maxy - miny), 2)
+        else:
+            height_zoom = 15
+
+        map_obj.center_x = center[0]
+        map_obj.center_y = center[1]
+        map_obj.zoom = math.ceil(min(width_zoom, height_zoom))         
+        
     context_dict["viewer"] = json.dumps(
         map_obj.viewer_json(request.user, access_token, * (default_map_config(request)[1] + [maplayer])))
 
