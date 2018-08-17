@@ -46,7 +46,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from geonode.layers.models import Layer
 from geonode.maps.models import Map, MapLayer, MapSnapshot
 from geonode.layers.views import _resolve_layer
-from geonode.utils import forward_mercator, llbbox_to_mercator
+from geonode.utils import forward_mercator, llbbox_to_mercator, bbox_to_projection
 from geonode.utils import DEFAULT_TITLE
 from geonode.utils import DEFAULT_ABSTRACT
 from geonode.utils import default_map_config
@@ -613,6 +613,10 @@ def new_map_config(request):
                     ogc_server_url = urlparse.urlsplit(ogc_server_settings.PUBLIC_LOCATION).netloc
                     service_url = urlparse.urlsplit(service.base_url).netloc
 
+                    reprojected_bbox = bbox_to_projection(bbox, source_srid=layer.srid, target_srid=3857)
+                    bbox = reprojected_bbox[:4]
+                    config['bbox'] = [float(coord) for coord in bbox]
+                    
                     if access_token and ogc_server_url == service_url and 'access_token' not in service.base_url:
                         url = service.base_url+'?access_token='+access_token
                     else:
@@ -654,7 +658,7 @@ def new_map_config(request):
                 x = (minx + maxx) / 2
                 y = (miny + maxy) / 2
 
-                if getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
+                if layer.is_remote or getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
                     center = list((x, y))
                 else:
                     center = list(forward_mercator((x, y)))
