@@ -26,6 +26,7 @@ import math
 import os
 import re
 import uuid
+import traceback
 
 from osgeo import ogr
 from slugify import Slugify
@@ -42,6 +43,7 @@ from django.db import models
 import httplib2
 import urlparse
 import urllib
+from django.contrib.gis.geos import GEOSGeometry
 
 import gc
 import weakref
@@ -170,6 +172,48 @@ def forward_mercator(lonlat):
         y = math.log(n) / math.pi * 20037508.34
     return (x, y)
 
+def bbox_to_projection(native_bbox, source_srid=4326, target_srid=4326):
+    """
+        native_bbox
+            ('-81.3962935', '-81.3490249', '13.3202891', '13.3859614')
+    """
+    box = native_bbox[:4]
+    proj = source_srid
+    minx, maxx, miny, maxy = [float(a) for a in box]
+    try:
+        source_srid = int(proj.split(":")[1]) if proj and ':' in proj else int(proj)
+    except BaseException:
+        source_srid = target_srid
+
+
+    def _v(coord, x, source_srid=4326, target_srid=3857):
+        if source_srid == 4326 and target_srid != 4326:
+            if x and coord >= 180.0:
+                return 179.0
+            elif x and coord <= -180.0:
+                return -179.0
+
+            if not x and coord >= 90.0:
+                return 89.0
+            elif not x and coord <= -90.0:
+                return -89.0
+        return coord
+
+    if source_srid != target_srid:
+        try:
+            wkt = bbox_to_wkt(_v(minx, x=True, source_srid=source_srid, target_srid=target_srid),
+                              _v(maxx, x=True, source_srid=source_srid, target_srid=target_srid),
+                              _v(miny, x=False, source_srid=source_srid, target_srid=target_srid),
+                              _v(maxy, x=False, source_srid=source_srid, target_srid=target_srid),
+                              srid=source_srid)
+            poly = GEOSGeometry(wkt, srid=source_srid)
+            poly.transform(target_srid)
+            return tuple([str(x) for x in poly.extent]) + ("EPSG:%s" % poly.srid,)
+        except BaseException:
+            tb = traceback.format_exc()
+            logger.error(tb)
+
+    return native_bbox
 
 def inverse_mercator(xy):
     """
