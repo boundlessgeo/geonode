@@ -710,6 +710,10 @@ CARTODB_BASEMAPS = os.environ.get('CARTODB_BASEMAPS', False)
 STAMEN_BASEMAPS = os.environ.get('STAMEN_BASEMAPS', False)
 THUNDERFOREST_BASEMAPS = os.environ.get('THUNDERFOREST_BASEMAPS', False)
 MAPBOX_ACCESS_TOKEN = os.environ.get('MAPBOX_ACCESS_TOKEN', None)
+MAPBOX_BASEMAPS = os.getenv(
+    'MAPBOX_BASEMAP_NAMES',
+    ""
+)
 BING_API_KEY = os.environ.get('BING_API_KEY', None)
 
 MAP_BASELAYERS = [{
