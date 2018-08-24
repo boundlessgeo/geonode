@@ -768,7 +768,7 @@ def layer_remove(request, layername, template='layers/layer_remove.html'):
 
             messages.error(request, message)
             return render_to_response(template, RequestContext(request, {"layer": layer}))
-        return HttpResponseRedirect(reverse("layer_browse"))
+        return HttpResponseRedirect(reverse("search"))
     else:
         return HttpResponse("Not allowed", status=403)
 
