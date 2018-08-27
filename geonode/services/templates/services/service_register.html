@@ -12,6 +12,9 @@
 <div class="page-header">
   <h2>{% trans "Register New Service" %}</h2>
 </div>
+    {% if user.content_manager == False %}
+    <p>You are not a Content Manager, so you may not register a service. Please contact an Administator if you believe you should be a Content Manager.</p>
+    {% endif %}
     <form method="POST" id="service_register_form">
     {% csrf_token %}
     {{ form|as_bootstrap }}
@@ -52,6 +55,10 @@
 {{ block.super }}
 <script type="text/javascript">
 $(document).ready(function () {
+    // disable service registration button if user is not a content manager
+    if ('{{ user.content_manager }}' != 'True') {
+        $('#submit_button').prop('disabled', true);
+    }
     $('#service_register_form').submit(function () {
         $("#progressModal").modal("show");
     });

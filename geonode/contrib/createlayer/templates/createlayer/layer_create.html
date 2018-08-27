@@ -18,6 +18,9 @@
 
 <div class="page-header">
   <h2 class="page-title">{% trans "Create an empty layer" %}</h2>
+  {% if user.content_creator == False %}
+    <p>You are not a Content Creator, so you may not create a layer. Please contact an Administator if you believe you should be a Content Creator.</p>
+  {% endif %}
 </div>
 
 <div class="row">
@@ -106,6 +109,11 @@
       $('#attributes').val(JSON.stringify(attrs));
     });
 
+    // disable layer creation button and add attribute button if user is not a content creator
+    if ('{{ user.content_creator }}' != 'True') {
+        $('#add-attr-button').prop('disabled', true);
+        $('#layer-create-button').prop('disabled', true);
+    }
 </script>
 
 {% endblock extra_script %}

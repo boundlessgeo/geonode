@@ -36,7 +36,7 @@ def layer_create(request, template='createlayer/layer_create.html'):
     Create an empty layer.
     """
     error = None
-    if request.method == 'POST':
+    if request.method == 'POST' and request.user.content_creator is True:
         form = NewLayerForm(request.POST)
         if form.is_valid():
             try:
@@ -57,7 +57,7 @@ def layer_create(request, template='createlayer/layer_create.html'):
     ctx = {
         'form': form,
         'is_layer': True,
-        'error': error,
+        'error': error
     }
 
     return render_to_response(template, RequestContext(request, ctx))

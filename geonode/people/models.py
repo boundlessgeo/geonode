@@ -97,6 +97,14 @@ class Profile(AbstractUser):
     keywords = TaggableManager(_('keywords'), blank=True, help_text=_(
         'commonly used word(s) or formalised word(s) or phrase(s) used to describe the subject \
             (space or comma-separated'))
+    content_creator = models.BooleanField(
+        _('Content Creator'),
+        default=True,
+        help_text=_('User can upload layers and documents'))
+    content_manager = models.BooleanField(
+        _('Content Manager'),
+        default=True,
+        help_text=_('User can register remote services'))
 
     def get_absolute_url(self):
         return reverse('profile_detail', args=[self.username, ])

@@ -70,5 +70,8 @@
     $('#upload_form').submit(function(){
       $('#permissions').val(JSON.stringify(permissionsString($('#permission_form'),'base')));
     });
+    if ('{{ user.content_creator }}' != 'True') {
+      $('#upload-button').prop('disabled', true);
+    }
 </script>
 {% endblock extra_script %}

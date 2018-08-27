@@ -52,14 +52,15 @@ def services(request):
     return render(
         request,
         "services/service_list.html",
-        {"services": Service.objects.all()}
+        {"services": Service.objects.all(),
+         "profile": request.user}
     )
 
 
 @login_required
 def register_service(request):
     service_register_template = "services/service_register.html"
-    if request.method == "POST":
+    if request.method == "POST" and request.user.content_manager is True:
         form = forms.CreateServiceForm(request.POST)
         if form.is_valid():
             service_handler = form.cleaned_data["service_handler"]
