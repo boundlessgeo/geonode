@@ -86,6 +86,7 @@ class MapIndex(indexes.SearchIndex, indexes.Indexable):
     rating = indexes.IntegerField(null=True)
     num_ratings = indexes.IntegerField(stored=False)
     num_comments = indexes.IntegerField(stored=False)
+    license = indexes.CharField(model_attr="license__name")
 
     def get_model(self):
         return Map
