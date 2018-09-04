@@ -94,6 +94,7 @@ class LayerIndex(indexes.SearchIndex, indexes.Indexable):
     num_comments = indexes.IntegerField(stored=False)
     geogig_link = indexes.CharField(null=True)
     has_time = indexes.BooleanField(faceted=True, null=True)
+    license = indexes.CharField(model_attr="license__name")
 
     def get_model(self):
         return Layer
@@ -148,7 +149,7 @@ class LayerIndex(indexes.SearchIndex, indexes.Indexable):
 
     def prepare_title_sortable(self, obj):
         return obj.title.lower()
-    
+
     def prepare_geogig_link(self, obj):
         try:
             return obj.geogig_link
