@@ -237,6 +237,54 @@ class Layer(ResourceBase):
             }
         return cfg
 
+    @property
+    def classification(self):
+        if self.service:
+            return self.service.classification
+        return None
+
+    @property
+    def caveat(self):
+        if self.service:
+            return self.service.caveat
+        return None
+
+    @property
+    def providence(self):
+        if self.service:
+            return self.service.providence
+        return None
+
+    @property
+    def poc_name(self):
+        if self.service:
+            return self.service.poc_name
+        return None
+
+    @property
+    def poc_position(self):
+        if self.service:
+            return self.service.poc_position
+        return None
+
+    @property
+    def poc_email(self):
+        if self.service:
+            return self.service.poc_email
+        return None
+
+    @property
+    def poc_phone(self):
+        if self.service:
+            return self.service.poc_phone
+        return None
+
+    @property
+    def poc_address(self):
+        if self.service:
+            return self.service.poc_address
+        return None
+
     def __str__(self):
         if self.typename is not None:
             return "%s Layer" % self.service_typename.encode('utf-8')
