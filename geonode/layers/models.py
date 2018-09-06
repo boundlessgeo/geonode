@@ -250,9 +250,9 @@ class Layer(ResourceBase):
         return None
 
     @property
-    def providence(self):
+    def provenance(self):
         if self.service:
-            return self.service.providence
+            return self.service.provenance
         return None
 
     @property

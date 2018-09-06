@@ -24,6 +24,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from geonode.base.models import ResourceBase
 from geonode.people.enumerations import ROLE_VALUES
+from django.db.models import signals
+from geonode.layers.models import Layer
 
 from . import enumerations
 
@@ -238,3 +240,12 @@ class HarvestJob(models.Model):
         self.status = status
         self.details = details
         self.save()
+
+
+def service_post_save(instance, sender, **kwargs):
+    for layer in Layer.objects.filter(service=instance):
+        layer.license = instance.license
+        layer.save()
+
+
+signals.post_save.connect(service_post_save, sender=Service)
