@@ -78,7 +78,7 @@ def epsg_string(bbox):
     if 'spatialReference' in bbox:
         sr = bbox['spatialReference']
         if 'latestWkid' in sr:
-            return "EPSG:%s" % sr['latestWKid']
+            return "EPSG:%s" % sr['latestWkid']
         if 'wkt' in sr:
             wkt = sr['wkt']
             logging.debug('wkt: %s', wkt)
