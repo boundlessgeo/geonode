@@ -443,17 +443,17 @@ def remove_object_permissions(instance):
         except:
             logger.debug(traceback.format_exc())
 
-        try:
-            UserObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
+    try:
+        UserObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
                                                 object_pk=instance.id).delete()
-        except:
-            logger.debug(traceback.format_exc())
+    except:
+        logger.debug(traceback.format_exc())
 
-        try:
-            GroupObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
+    try:
+        GroupObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
                                                  object_pk=instance.id).delete()
-        except:
-            logger.debug(traceback.format_exc())
+    except:
+        logger.debug(traceback.format_exc())
 
 
 # Logic to login a user automatically when it has successfully
