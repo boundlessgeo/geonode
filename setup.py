@@ -105,7 +105,7 @@ setup(name='GeoNode',
         "geonode-announcements==1.0.9",
         "geonode-agon-ratings==0.3.5",  # (0.3.1 in ppa) FIXME
         "geonode-user-accounts==1.0.13",  # (1.0.11 in ppa) FIXME
-        "geonode-arcrest==10.2",
+        #"geonode-arcrest==10.2",
         "geonode-notification==1.1.3",
         "geonode-dialogos==0.7",
         # "gsconfig==1.0.8",  # (1.0.3 in ppa) FIXME
@@ -119,8 +119,8 @@ setup(name='GeoNode',
         "django-storages==1.1.8",
 
         # https://github.com/benjaminp/six/issues/210
-        "six==1.10.0",
-        'ArcREST-Package==3.5.9'
+        "six==1.10.0"
+        #'ArcREST-Package==3.5.9'
         ],
       zip_safe=False,
       )

@@ -237,6 +237,54 @@ class Layer(ResourceBase):
             }
         return cfg
 
+    @property
+    def classification(self):
+        if self.service:
+            return self.service.classification
+        return None
+
+    @property
+    def caveat(self):
+        if self.service:
+            return self.service.caveat
+        return None
+
+    @property
+    def provenance(self):
+        if self.service:
+            return self.service.provenance
+        return None
+
+    @property
+    def poc_name(self):
+        if self.service:
+            return self.service.poc_name
+        return None
+
+    @property
+    def poc_position(self):
+        if self.service:
+            return self.service.poc_position
+        return None
+
+    @property
+    def poc_email(self):
+        if self.service:
+            return self.service.poc_email
+        return None
+
+    @property
+    def poc_phone(self):
+        if self.service:
+            return self.service.poc_phone
+        return None
+
+    @property
+    def poc_address(self):
+        if self.service:
+            return self.service.poc_address
+        return None
+
     def __str__(self):
         if self.typename is not None:
             return "%s Layer" % self.service_typename.encode('utf-8')
@@ -365,14 +413,6 @@ class Attribute(models.Model):
         _('display order'),
         help_text=_('specifies the order in which attribute should be displayed in identify results'),
         default=1)
-    required = models.BooleanField(
-        _('required?'),
-        help_text = _('specifies if the attribute should be required in editing views'),
-        default = False)
-    readonly = models.BooleanField(
-        _('readonly?'),
-        help_text = _('specifies if the attribute should be readonly in editing views'),
-        default = False)
 
     # statistical derivations
     count = models.IntegerField(
@@ -446,84 +486,6 @@ class Attribute(models.Model):
     def unique_values_as_list(self):
         return self.unique_values.split(',')
 
-class AttributeOptionManager(models.Manager):
-
-     def __init__(self):
-         models.Manager.__init__(self)
-
-class AttributeOption(models.Model):
-    layer = models.ForeignKey(
-        Layer,
-        blank=False,
-        null=False,
-        unique=False,)
-    attribute = models.ForeignKey(
-        Attribute,
-        blank=False,
-        null=False,
-        unique=False,
-        related_name='options')
-    value = models.TextField(
-        _('value'),
-        help_text=_('the option value that will be stored in the db when selected by the user'),
-        null=False,
-        blank=False)
-    label = models.TextField(
-        _('label'),
-        help_text=_('the option label that is shown to the user in the dropdown'),
-        null=False,
-        blank=False)
-
-    objects = AttributeOptionManager()
-
-    def __str__(self):
-        return "%s - %s" % (self.value.encode(
-            "utf-8"), self.label.encode("utf-8"))
-
-class Constraint(models.Model):
-    CONTROL_TYPE_CHOICES = (
-        ('string', 'string'),
-        ('number', 'number'),
-        ('date', 'date'),
-        ('boolean', 'boolean'),
-        ('select', 'select'),
-        ('slider', 'slider'),
-        ('counter', 'counter'),
-        ('photo', 'photo')
-    )
-    attribute = models.OneToOneField(
-        Attribute,
-        blank=False,
-        null=False,
-        related_name='constraints'
-    )
-    initial_value = models.CharField(
-        default='',
-        max_length=255,
-        blank=True)
-    is_integer = models.BooleanField(default=False)
-    minimum = models.BigIntegerField(
-        null=True,
-        blank=True)
-    maximum = models.BigIntegerField(
-        null=True,
-        blank=True)
-    minimum_length = models.BigIntegerField(
-        null=True,
-        blank=True)
-    maximum_length = models.BigIntegerField(
-        null=True,
-        blank=True)
-    regex = models.CharField(
-        max_length=1024,
-        blank=True
-    )
-    control_type = models.CharField(
-        choices=CONTROL_TYPE_CHOICES,
-        blank=True,
-        null=True,
-        max_length=128
-    )
 
 def pre_save_layer(instance, sender, **kwargs):
     if kwargs.get('raw', False):

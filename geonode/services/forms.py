@@ -32,15 +32,34 @@ from .serviceprocessors import get_service_handler
 from geonode.base.models import TopicCategory, License
 from geonode.base.enumerations import UPDATE_FREQUENCIES
 from django.conf import settings
+try:
+    if 'ssl_pki' not in settings.INSTALLED_APPS:
+        raise ImportError
+    from ssl_pki.models import (
+        has_ssl_config,
+        ssl_config_for_url
+    )
+except ImportError:
+    has_ssl_config = None
+    ssl_config_for_url = None
 
 logger = logging.getLogger(__name__)
 
 def get_classifications():
-        return [(x, str(x)) for x in getattr(settings, 'CLASSIFICATION_LEVELS', [])]
+    classification_dict = getattr(settings, 'CLASSIFICATION_LEVELS', {})
+    return [(x, str(x)) for x in list(classification_dict.keys())]
+
+
 
 
 def get_caveats():
-        return [(x, str(x)) for x in getattr(settings, 'CAVEATS', [])]
+    classification_dict = getattr(settings, 'CLASSIFICATION_LEVELS', {})
+    caveats = []
+
+    for key in classification_dict.keys():
+        caveats.extend([(x, str(x)) for x in classification_dict[key]])
+
+    return set(caveats)
 
 
 def get_provenances():
@@ -91,12 +110,33 @@ class CreateServiceForm(forms.Form):
             )
         return proposed_url
 
+    @staticmethod
+    def validate_pki_url(url):
+        """Validates the pki protected url and its associated certificates"""
+        ssl_config = ssl_config_for_url(url)
+        try:
+            if ssl_config is None:
+                # Should have an SslConfig, but this could happen
+                raise ValidationError
+            ssl_config.clean()
+        except ValidationError:
+            raise ValidationError(
+                _("Error with SSL or PKI configuration for url: %(url)s. "
+                  "Please contact your Exchange Administrator."),
+                params={
+                    "url": url,
+                }
+            )
+
     def clean(self):
         """Validates form fields that depend on each other"""
         super(CreateServiceForm, self).clean()
         url = self.cleaned_data.get("url")
         service_type = self.cleaned_data.get("type")
         if url is not None and service_type is not None:
+            # Check pki validation
+            if callable(has_ssl_config) and has_ssl_config(url):
+                self.validate_pki_url(url)
             try:
                 service_handler = get_service_handler(
                     base_url=url, service_type=service_type)
@@ -179,6 +219,55 @@ class ServiceForm(forms.ModelForm):
             'size': '60',
             'class': 'inputText'
         }))
+    poc_name = forms.CharField(
+        label=_('Point of Contact'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_position = forms.CharField(
+        label=_('PoC Position'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_email = forms.CharField(
+        label=_('PoC Email'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_phone = forms.CharField(
+        label=_('PoC Phone'),
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'size': '60',
+                'class': 'inputText'
+            }
+        )
+    )
+    poc_address = forms.CharField(
+        label=_('PoC Location/Address'),
+        max_length=255,
+        widget=forms.Textarea(
+            attrs={
+                'cols': 60
+            }
+        )
+    )
 
     def __init__(self, *args, **kwargs):
         super(ServiceForm, self).__init__(*args, **kwargs)
@@ -201,4 +290,9 @@ class ServiceForm(forms.ModelForm):
             'maintenance_frequency',
             'provenance',
             'fees',
+            'poc_name',
+            'poc_position',
+            'poc_email',
+            'poc_phone',
+            'poc_address',
         )

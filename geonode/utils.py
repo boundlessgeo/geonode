@@ -48,10 +48,22 @@ from django.contrib.gis.geos import GEOSGeometry
 import gc
 import weakref
 
+from oauthlib.common import generate_token
+from oauth2_provider.models import AccessToken, get_application_model
+from geonode.people.utils import get_default_user, get_valid_user
+from geonode.people.models import Profile
+
 try:
     import json
 except ImportError:
     from django.utils import simplejson as json
+
+try:
+    if 'ssl_pki' not in settings.INSTALLED_APPS:
+        raise ImportError
+    from ssl_pki.models import uses_proxy_route
+except ImportError:
+    uses_proxy_route = None
 
 DEFAULT_TITLE = ""
 DEFAULT_ABSTRACT = ""
@@ -529,6 +541,13 @@ def default_map_config(request):
     )
 
     def _baselayer(lyr, order):
+        # Only proxy the basemap if an ssl proxy exists for its url
+        # and the settings indicate to proxy it
+        if ((callable(uses_proxy_route)
+             and "url" in lyr["source"]
+             and uses_proxy_route(lyr["source"]["url"]))
+                and settings.PROXY_BASEMAP is True):
+            lyr["source"]["use_proxy"] = True
         return layer_from_viewer_config(
             GXPLayer,
             layer=lyr,
@@ -911,7 +930,7 @@ def designals():
             # first tuple element:
             # - case (id(instance), id(method))
             if not isinstance(signal[0], tuple):
-                raise "Malformed signal"
+                raise Exception("Malformed signal")
 
             lookup = signal[0]
 
@@ -957,3 +976,32 @@ def resignals():
         for signal in signals:
             signaltype.connect(signal['receiv_call'], sender=signal['sender_ista'],
                                weak=signal['is_weak'], dispatch_uid=signal['uid'])
+
+
+def get_bearer_token(app_name='GeoServer', valid_time=30,
+                     user_name=None, request=None):
+    '''
+    Create a bearer token for a given application
+    valid for the time specified in minutes
+    '''
+    if request and 'access_token' in request.session:
+        return request.session['access_token']
+
+    user = get_default_user()
+    if user_name:
+        try:
+            user = get_valid_user(user_name)
+        except Profile.DoesNotExist:
+            pass
+
+    Application = get_application_model()
+    app = Application.objects.get(name=app_name)
+    token = generate_token()
+    expires = datetime.datetime.now() + datetime.timedelta(minutes=valid_time)
+    AccessToken.objects.get_or_create(
+        user=user,
+        application=app,
+        expires=expires,
+        token=token
+    )
+    return token

@@ -20,6 +20,7 @@
 """Utilities for enabling OGC WMS remote services in geonode."""
 
 import logging
+from urllib import quote
 from urlparse import urlsplit
 from uuid import uuid4
 
@@ -30,6 +31,21 @@ from geonode.base.models import Link
 from geonode.layers.models import Layer
 from geonode.layers.utils import create_thumbnail
 from owslib.wms import WebMapService
+
+try:
+    if 'ssl_pki' not in settings.INSTALLED_APPS:
+        raise ImportError
+    from ssl_pki.utils import (
+        has_pki_prefix,
+        pki_to_proxy_route,
+        pki_route_reverse,
+        proxy_route
+    )
+except ImportError:
+    has_pki_prefix = None
+    pki_to_proxy_route = None
+    pki_route_reverse = None
+    proxy_route = None
 
 from .. import enumerations
 from ..enumerations import CASCADED
@@ -47,11 +63,20 @@ class WmsServiceHandler(base.ServiceHandlerBase,
 
     service_type = enumerations.WMS
 
-    def __init__(self, url):
-        self.parsed_service = WebMapService(url)
+    def __init__(self, url, **kwargs):
+        headers = kwargs.pop('headers', None)
+        logger.debug('passed headers = {0}'.format(headers))
+
+        self.parsed_service = WebMapService(url, headers=headers)
         self.indexing_method = (
             INDEXED if self._offers_geonode_projection() else CASCADED)
         self.url = self.parsed_service.url
+        self.pki_proxy_url = None
+        self.pki_url = None
+        if callable(has_pki_prefix) and has_pki_prefix(self.url):
+            self.pki_url = self.url
+            self.pki_proxy_url = pki_to_proxy_route(self.url)
+            self.url = pki_route_reverse(self.url)
         _title = self.parsed_service.identification.title or ''
         _domain = urlsplit(self.url).netloc.split('.')[0]
         self.name = _get_valid_name(_domain + _title)
@@ -176,13 +201,15 @@ class WmsServiceHandler(base.ServiceHandlerBase,
             "format": "image/png",
         }
         kvp = "&".join("{}={}".format(*item) for item in params.items())
-        thumbnail_remote_url = "{}?{}".format(
-            geonode_layer.ows_url, kvp)
+        thumbnail_remote_url = "{}?{}".format(geonode_layer.ows_url, kvp)
         logger.debug("thumbnail_remote_url: {}".format(thumbnail_remote_url))
+        thumbnail_create_url = "{}?{}".format(
+            self.pki_url or geonode_layer.ows_url, kvp)
+        logger.debug("thumbnail_create_url: {}".format(thumbnail_create_url))
         create_thumbnail(
             instance=geonode_layer,
             thumbnail_remote_url=thumbnail_remote_url,
-            thumbnail_create_url=None,
+            thumbnail_create_url=thumbnail_create_url,
             check_bbox=True,
             overwrite=True,
         )
@@ -207,8 +234,13 @@ class WmsServiceHandler(base.ServiceHandlerBase,
             "legend_options": (
                 "fontAntiAliasing:true;fontSize:12;forceLabels:on")
         }
+        if self.pki_url is not None:
+            # ArcREST WMS request parser doesn't cope with : or ;
+            params["legend_options"] = quote(params["legend_options"])
         kvp = "&".join("{}={}".format(*item) for item in params.items())
         legend_url = "{}?{}".format(self.url, kvp)
+        if self.pki_url is not None:
+            legend_url = proxy_route(legend_url)
         logger.debug("legend_url: {}".format(legend_url))
         Link.objects.get_or_create(
             resource=geonode_layer.resourcebase_ptr,

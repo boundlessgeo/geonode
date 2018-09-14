@@ -984,7 +984,7 @@ def do_login(sender, user, request, **kwargs):
                 logging.debug("Using token from social authentication.")
                 social_user = user.social_user
                 token = social_user.extra_data.get('access_token')
-                ttl = social_user.extra_data.get('expires') or ttl
+                ttl = social_user.extra_data.get('expires')
             else:
                 logging.debug("Generating a local access token.")
                 token = generate_token()

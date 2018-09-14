@@ -210,10 +210,22 @@ class PermissionLevelMixin(object):
         if settings.DEFAULT_ANONYMOUS_VIEW_PERMISSION:
             assign_perm('view_resourcebase', anonymous_group, self.get_self_resource())
             set_geofence_permissions = True
+        elif settings.DEFAULT_ANONYMOUS_VIEW_PERMISSION_REMOTE and \
+                hasattr(self, 'service'):
+            if self.service:
+                assign_perm('view_resourcebase', anonymous_group,
+                            self.get_self_resource())
+                set_geofence_permissions = True
 
         if settings.DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION:
             assign_perm('download_resourcebase', anonymous_group, self.get_self_resource())
             set_geofence_permissions = True
+        elif settings.DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION_REMOTE and \
+                hasattr(self, 'service'):
+            if self.service:
+                assign_perm('download_resourcebase', anonymous_group,
+                            self.get_self_resource())
+                set_geofence_permissions = True
 
         # Give public access to all Geoserver layers
         if set_geofence_permissions:

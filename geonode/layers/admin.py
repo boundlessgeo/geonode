@@ -22,7 +22,7 @@ from django.contrib import admin
 from django.contrib import messages
 
 from geonode.base.admin import MediaTranslationAdmin, ResourceBaseAdminForm
-from geonode.layers.models import Layer, Attribute, AttributeOption, Style, Constraint
+from geonode.layers.models import Layer, Attribute, Style
 from geonode.layers.models import LayerFile, UploadSession
 from geonode.geoserver.helpers import set_styles, gs_catalog
 
@@ -126,18 +126,6 @@ class AttributeAdmin(admin.ModelAdmin):
     list_filter = ('layer', 'attribute_type')
     search_fields = ('attribute', 'attribute_label',)
 
-class AttributeOptionAdmin(admin.ModelAdmin):
-     model = AttributeOption
-     list_display_links = ('id',)
-     list_display = (
-         'id',
-         'layer',
-         'attribute',
-         'value',
-         'label')
-     list_filter = ('layer', 'attribute',)
-     search_fields = ('value', 'label',)
-
 
 class StyleAdmin(admin.ModelAdmin):
     model = Style
@@ -156,20 +144,8 @@ class UploadSessionAdmin(admin.ModelAdmin):
     list_display = ('date', 'user', 'processed')
     inlines = [LayerFileInline]
 
-class ConstraintAdmin(admin.ModelAdmin):
-    model = Constraint
-    list_display_links = ('attribute',)
-    list_display = ('get_layer', 'attribute', 'control_type', 'initial_value', 'is_integer',)
-    list_filter = ('attribute__layer',)
-
-    def get_layer(self, obj):
-        return obj.attribute.layer
-    get_layer.short_description = 'Layer'
-    get_layer.admin_order_field = 'attribute__layer'
 
 admin.site.register(Layer, LayerAdmin)
 admin.site.register(Attribute, AttributeAdmin)
-admin.site.register(AttributeOption, AttributeOptionAdmin)
 admin.site.register(Style, StyleAdmin)
 admin.site.register(UploadSession, UploadSessionAdmin)
-admin.site.register(Constraint, ConstraintAdmin)
