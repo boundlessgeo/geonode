@@ -150,7 +150,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         """
 
-        return list(self.parsed_service.layers)
+        return [] if self.parsed_service.layers is None else \
+            list(self.parsed_service.layers)
 
     def harvest_resource(self, resource_id, geonode_service):
         """Harvest a single resource from the service
