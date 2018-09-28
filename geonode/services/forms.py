@@ -36,11 +36,16 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 def get_classifications():
-        return [(x, str(x)) for x in getattr(settings, 'CLASSIFICATION_LEVELS', [])]
+    classification_dict = getattr(settings, 'CLASSIFICATION_LEVELS', {})
+    return [(x, str(x)) for x in list(classification_dict.keys())]
 
 
 def get_caveats():
-        return [(x, str(x)) for x in getattr(settings, 'CAVEATS', [])]
+    classification_dict = getattr(settings, 'CLASSIFICATION_LEVELS', {})
+    caveats = []
+    for key in classification_dict.keys():
+        caveats.extend([(x, str(x)) for x in classification_dict[key]])
+    return set(caveats)
 
 
 def get_provenances():
