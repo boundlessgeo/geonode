@@ -984,6 +984,7 @@ def do_login(sender, user, request, **kwargs):
                 logging.debug("Using token from social authentication.")
                 social_user = user.social_user
                 token = social_user.extra_data.get('access_token')
+                expires = social_user.extra_data.get('expires')
                 if len(token) > 255:
                     token = generate_token()
                 if expires:
