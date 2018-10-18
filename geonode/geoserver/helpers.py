@@ -478,6 +478,7 @@ def gs_slurp(
         name = resource.name
         the_store = resource.store
         workspace = the_store.workspace
+        created = False
         try:
             layer, created = Layer.objects.get_or_create(name=name, defaults={
                 "workspace": workspace.name,
@@ -550,6 +551,7 @@ def gs_slurp(
     for i, lg in enumerate(layergroups):
         name = lg.name
         workspace = lg.workspace
+        created = False
         try:
             layer, created = Layer.objects.get_or_create(name=name, defaults={
                 "workspace": workspace,
