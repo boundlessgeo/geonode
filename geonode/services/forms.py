@@ -148,7 +148,8 @@ class ServiceForm(forms.ModelForm):
             order_by=['description']))
     license = forms.ModelChoiceField(
         label=_('License'),
-        queryset=License.objects.filter())
+        queryset=License.objects.filter(),
+        required=False)
     title = forms.CharField(
         label=_('Title'),
         max_length=255,
@@ -173,7 +174,8 @@ class ServiceForm(forms.ModelForm):
             attrs={
                 'cols': 60
             }
-        )
+        ),
+        required=False
     )
     keywords = taggit.forms.TagField(required=False)
     maintenance_frequency = forms.ChoiceField(
@@ -183,7 +185,7 @@ class ServiceForm(forms.ModelForm):
         attrs={
             'size': '60',
             'class': 'inputText'
-        }))
+        }), required=False)
     poc_name = forms.CharField(
         label=_('Point of Contact'),
         max_length=255,
@@ -192,7 +194,8 @@ class ServiceForm(forms.ModelForm):
                 'size': '60',
                 'class': 'inputText'
             }
-        )
+        ),
+        required=False
     )
     poc_position = forms.CharField(
         label=_('PoC Position'),
@@ -202,7 +205,8 @@ class ServiceForm(forms.ModelForm):
                 'size': '60',
                 'class': 'inputText'
             }
-        )
+        ),
+        required=False
     )
     poc_email = forms.CharField(
         label=_('PoC Email'),
@@ -212,7 +216,8 @@ class ServiceForm(forms.ModelForm):
                 'size': '60',
                 'class': 'inputText'
             }
-        )
+        ),
+        required=False
     )
     poc_phone = forms.CharField(
         label=_('PoC Phone'),
@@ -222,7 +227,8 @@ class ServiceForm(forms.ModelForm):
                 'size': '60',
                 'class': 'inputText'
             }
-        )
+        ),
+        required=False
     )
     poc_address = forms.CharField(
         label=_('PoC Location/Address'),
@@ -231,7 +237,8 @@ class ServiceForm(forms.ModelForm):
             attrs={
                 'cols': 60
             }
-        )
+        ),
+        required=False
     )
 
     def __init__(self, *args, **kwargs):
