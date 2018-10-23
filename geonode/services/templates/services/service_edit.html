@@ -11,6 +11,11 @@
 {% block title %} Edit Service - {{ block.super }} {% endblock %}
 
 {% block body %}
+<style>
+  .required-field::after {
+    content: "*";
+  }
+</style>
 <div class="page-header">
   <h2>{% trans "Edit Service" %}</h2>
 </div>
