@@ -21,7 +21,7 @@
 import json
 
 from django.conf import settings
-
+from geonode.utils import get_basemaps
 from .models import Map, MapLayer
 
 
@@ -92,7 +92,7 @@ def fix_baselayers(map_id):
 
     # now we re-add them
     source = 0
-    for base_layer in settings.MAP_BASELAYERS:
+    for base_layer in get_basemaps():
         if 'group' in base_layer:
             # layer_params
             layer_params = {}
