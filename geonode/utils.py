@@ -106,6 +106,24 @@ def batch_delete(request):
     pass
 
 
+def get_basemaps():
+    """
+    Helper method to centralize the retrieval of Basemap configs
+    It will default to local settings is no maps are available in
+    the database.
+
+    """
+    default = settings.MAP_BASELAYERS
+    if 'geonode.contrib.api_basemaps' in settings.INSTALLED_APPS:
+        from geonode.contrib.api_basemaps.models import MapBaseLayer
+        config_list = []
+        for obj in MapBaseLayer.objects.filter(is_published=True):
+            config_list.append(obj.layer_config())
+        return config_list or default
+    else:
+        return default
+    
+    
 def _split_query(query):
     """
     split and strip keywords, preserve space
@@ -337,7 +355,7 @@ class GXPMapBase(object):
                     del base_source[key]
             return base_source
 
-        for idx, lyr in enumerate(settings.MAP_BASELAYERS):
+        for idx, lyr in enumerate(get_basemaps()):
             if _base_source(
                     lyr["source"]) not in map(
                     _base_source,
@@ -539,7 +557,7 @@ def default_map_config(request):
     DEFAULT_BASE_LAYERS = [
         _baselayer(
             lyr, idx) for idx, lyr in enumerate(
-            settings.MAP_BASELAYERS)]
+            get_basemaps())]
     user = None
     access_token = None
     if request:
