@@ -19,6 +19,8 @@
 #
 #########################################################################
 
+default_app_config = 'geonode.contrib.api_basemaps.apps.ApiBasemapsConfig'
+
 from geonode.settings import (
     ALT_OSM_BASEMAPS,
     CARTODB_BASEMAPS,
