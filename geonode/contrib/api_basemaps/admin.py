@@ -23,27 +23,27 @@ from geonode.contrib.api_basemaps.models import MapBaseLayer
 from django.contrib import messages
 
 
-def publish(modeladmin, request, queryset):
+def enable_basemap(modeladmin, request, queryset):
     for instance in queryset:
-        instance.is_published = True
+        instance.enabled = True
         instance.save()
 
     messages.success(request,
-                     '%d basemaps are now published.' % len(queryset))
-publish.short_description = 'Publish Selected Basemaps'
+                     '%d basemaps are now enabled.' % len(queryset))
+publish.short_description = 'Enable Selected Basemaps'
 
-def unpublish(modeladmin, request, queryset):
+def disable_basemap(modeladmin, request, queryset):
     for instance in queryset:
-        instance.is_published = False
+        instance.enabled = False
         instance.save()
 
     messages.success(request,
-                     '%d basemaps are now unpublished.' % len(queryset))
-unpublish.short_description = 'Unpublish Selected Basemaps'
+                     '%d basemaps are now disabled.' % len(queryset))
+unpublish.short_description = 'Disable Selected Basemaps'
 
 
 class MapBaseLayerAdmin(admin.ModelAdmin):
-    list_display = ('name', 'provider', 'visibility', 'is_published')
-    actions = [publish, unpublish]
+    list_display = ('name', 'provider', 'visibility', 'enabled')
+    actions = [enable_basemap, disable_basemap]
 
 admin.site.register(MapBaseLayer, MapBaseLayerAdmin)
