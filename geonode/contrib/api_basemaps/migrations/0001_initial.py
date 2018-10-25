@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('layer_params', models.TextField(verbose_name='layer params')),
                 ('source_params', models.TextField(verbose_name='source params')),
                 ('local', models.BooleanField(default=False)),
-                ('is_published', models.BooleanField(default=False)),
+                ('enabled', models.BooleanField(default=False)),
             ],
             options={
                 'ordering': ['stack_order'],
