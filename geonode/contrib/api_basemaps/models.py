@@ -93,7 +93,7 @@ class MapBaseLayer(models.Model, GXPLayerBase):
     local = models.BooleanField(default=False)
     # True if this layer is served by the local geoserver
 
-    is_published = models.BooleanField(default=False)
+    enabled = models.BooleanField(default=False)
 
 
     def layer_config(self, user=None):
