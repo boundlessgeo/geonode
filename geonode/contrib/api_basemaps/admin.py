@@ -30,7 +30,7 @@ def enable_basemap(modeladmin, request, queryset):
 
     messages.success(request,
                      '%d basemaps are now enabled.' % len(queryset))
-publish.short_description = 'Enable Selected Basemaps'
+enable_basemap.short_description = 'Enable Selected Basemaps'
 
 def disable_basemap(modeladmin, request, queryset):
     for instance in queryset:
@@ -39,7 +39,7 @@ def disable_basemap(modeladmin, request, queryset):
 
     messages.success(request,
                      '%d basemaps are now disabled.' % len(queryset))
-unpublish.short_description = 'Disable Selected Basemaps'
+disable_basemap.short_description = 'Disable Selected Basemaps'
 
 
 class MapBaseLayerAdmin(admin.ModelAdmin):
