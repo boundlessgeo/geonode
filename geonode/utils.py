@@ -117,7 +117,7 @@ def get_basemaps():
     if 'geonode.contrib.api_basemaps' in settings.INSTALLED_APPS:
         from geonode.contrib.api_basemaps.models import MapBaseLayer
         config_list = []
-        for obj in MapBaseLayer.objects.filter(is_published=True):
+        for obj in MapBaseLayer.objects.filter(enabled=True):
             config_list.append(obj.layer_config())
         return config_list or default
     else:
