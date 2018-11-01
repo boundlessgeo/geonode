@@ -35,7 +35,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-
 def get_classifications():
     classification_dict = getattr(settings, 'CLASSIFICATION_LEVELS', {})
     return [(x, str(x)) for x in list(classification_dict.keys())]
@@ -58,7 +57,6 @@ def get_provenances():
         provenance_choices = [(x, str(x)) for x in getattr(settings, 'REGISTRY_PROVENANCE_CHOICES', [])]
 
         return provenance_choices + default
-
 
 class CreateServiceForm(forms.Form):
     url = forms.CharField(
