@@ -448,12 +448,11 @@ def gs_slurp(
         resources = [k for k in resources if k.advertised in ["true", True]]
 
     # filter out layers already registered in geonode
-    layer_names = Layer.objects.all().values_list('typename', flat=True)
+    # We don't prepend the workspace to the typename, so esure we don't evaluate it
+    layer_names = [ l.typename.split('{}:'.format(l.workspace))[-1] for l in Layer.objects.all() if not l.is_remote ]
     if skip_geonode_registered:
-        resources = [k for k in resources
-                     if not '%s:%s' % (k.workspace.name, k.name) in layer_names]
-
-        layergroups = [lg for lg in layergroups if not '%s:%s' % (lg.workspace, lg.name) in layer_names]
+        resources = [k for k in resources if not k.name in layer_names]
+        layergroups = [lg for lg in layergroups if not lg.name in layer_names]
 
     # TODO: Should we do something with these?
     # i.e. look for matching layers in GeoNode and also disable?
@@ -479,6 +478,7 @@ def gs_slurp(
         name = resource.name
         the_store = resource.store
         workspace = the_store.workspace
+        created = False
         try:
             layer, created = Layer.objects.get_or_create(name=name, defaults={
                 "workspace": workspace.name,
@@ -551,6 +551,7 @@ def gs_slurp(
     for i, lg in enumerate(layergroups):
         name = lg.name
         workspace = lg.workspace
+        created = False
         try:
             layer, created = Layer.objects.get_or_create(name=name, defaults={
                 "workspace": workspace,
@@ -1617,10 +1618,10 @@ def style_update(request, url):
                 txml = re.sub(r'NS[0-9]:', '', txml)
                 request._body = txml
         tree = ET.ElementTree(ET.fromstring(request.body))
-        elm_namedlayer_name = tree.findall(
-            './/{http://www.opengis.net/sld}Name')[0]
-        elm_user_style_name = tree.findall(
-            './/{http://www.opengis.net/sld}Name')[1]
+        list_of_names = tree.findall(
+            './/{http://www.opengis.net/sld}Name')
+        elm_namedlayer_name = list_of_names[0] if list_of_names else ''
+        elm_user_style_name = elm_namedlayer_name
         elm_user_style_title = tree.find(
             './/{http://www.opengis.net/sld}Title')
         if not elm_user_style_title:

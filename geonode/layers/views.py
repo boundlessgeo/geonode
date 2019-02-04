@@ -26,6 +26,7 @@ import traceback
 from base64 import b64decode
 import uuid
 import decimal
+import math
 
 from guardian.shortcuts import get_perms
 from django.contrib import messages
@@ -49,9 +50,9 @@ from django.forms.util import ErrorList
 
 from geonode.tasks.deletion import delete_layer
 from geonode.services.models import Service
-from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
+from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm, LayerConstraintForm, LayerAttributeFormset, LayerAttributeOptionForm
 from geonode.base.forms import CategoryForm
-from geonode.layers.models import Layer, Attribute, UploadSession
+from geonode.layers.models import Layer, Attribute, AttributeOption, UploadSession, Constraint, AttributeOption
 from geonode.base.enumerations import CHARSETS
 from geonode.base.models import TopicCategory
 
@@ -59,13 +60,15 @@ from geonode.utils import default_map_config
 from geonode.utils import GXPLayer
 from geonode.utils import GXPMap
 from geonode.layers.utils import file_upload, is_raster, is_vector
-from geonode.utils import resolve_object, llbbox_to_mercator
+from geonode.utils import resolve_object, llbbox_to_mercator, bbox_to_projection, forward_mercator
 from geonode.people.forms import ProfileForm, PocForm
 from geonode.security.views import _perms_info_json
 from geonode.documents.models import get_related_documents
 from geonode.utils import build_social_links
 from geonode.geoserver.helpers import cascading_delete, gs_catalog
 from geonode.geoserver.helpers import ogc_server_settings
+
+from geonode.contrib.createlayer.utils import update_gs_layer_bounds
 
 if 'geonode.geoserver' in settings.INSTALLED_APPS:
     from geonode.geoserver.helpers import _render_thumbnail
@@ -222,6 +225,23 @@ def layer_upload(request, template='upload/layer_upload.html'):
             status=status_code)
 
 
+def layer_update_bounds(request, layername):
+    layer = _resolve_layer(
+        request,
+        layername,
+        'base.view_resourcebase',
+        _PERMISSION_MSG_VIEW)
+
+    update_gs_layer_bounds(layername)
+
+    layer.save()
+
+    return HttpResponse(
+        json.dumps({'data': '{} bbox has been updated.'.format(layername)}),
+        content_type='application/json',
+        status=200)
+
+
 def layer_detail(request, layername, template='layers/layer_detail.html'):
     layer = _resolve_layer(
         request,
@@ -235,7 +255,7 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
     # Add required parameters for GXP lazy-loading
     layer_bbox = layer.bbox
     bbox = [float(coord) for coord in list(layer_bbox[0:4])]
-    config["srs"] = getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913')
+    config["srs"] = layer.srid if layer.srid else getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913')
     config["bbox"] = bbox if config["srs"] != 'EPSG:900913' \
         else llbbox_to_mercator([float(coord) for coord in bbox])
     config["title"] = layer.title
@@ -244,12 +264,18 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         config["styles"] = layer.default_style.name
 
     if layer.storeType == "remoteStore":
+        target_srid = 3857 if config["srs"] == 'EPSG:900913' else config["srs"]
+        reprojected_bbox = bbox_to_projection(bbox, source_srid=layer.srid, target_srid=target_srid)
+        bbox = reprojected_bbox[:4]
+        config['bbox'] = [float(coord) for coord in bbox]
         service = layer.service
         source_params = {
             "ptype": service.ptype,
             "remote": True,
             "url": service.base_url,
             "name": service.name}
+        if layer.alternate is not None:
+            config["layerid"] = layer.alternate
         maplayer = GXPLayer(
             name=layer.typename,
             ows_url=layer.ows_url,
@@ -317,6 +343,39 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
         u = uuid.uuid1()
         access_token = u.hex
 
+    if bbox is not None:
+        minx, miny, maxx, maxy = [float(coord) for coord in bbox]
+        x = (minx + maxx) / 2
+        y = (miny + maxy) / 2
+
+        if layer.is_remote or getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
+            center = list((x, y))
+        else:
+            center = list(forward_mercator((x, y)))
+
+        if center[1] == float('-inf'):
+            center[1] = 0
+
+        BBOX_DIFFERENCE_THRESHOLD = 1e-5
+
+        # Check if the bbox is invalid
+        valid_x = (maxx - minx) ** 2 > BBOX_DIFFERENCE_THRESHOLD
+        valid_y = (maxy - miny) ** 2 > BBOX_DIFFERENCE_THRESHOLD
+
+        if valid_x:
+            width_zoom = math.log(360 / abs(maxx - minx), 2)
+        else:
+            width_zoom = 15
+
+        if valid_y:
+            height_zoom = math.log(360 / abs(maxy - miny), 2)
+        else:
+            height_zoom = 15
+
+        map_obj.center_x = center[0]
+        map_obj.center_y = center[1]
+        map_obj.zoom = math.ceil(min(width_zoom, height_zoom))         
+        
     context_dict["viewer"] = json.dumps(
         map_obj.viewer_json(request.user, access_token, * (default_map_config(request)[1] + [maplayer])))
 
@@ -401,11 +460,26 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
         Attribute,
         extra=0,
         form=LayerAttributeForm,
+        formset=LayerAttributeFormset,
     )
     topic_category = layer.category
 
     poc = layer.poc
     metadata_author = layer.metadata_author
+
+    ConstraintInlineFormset = inlineformset_factory(
+        Attribute,
+        Constraint,
+        extra=1,
+        form=LayerConstraintForm
+    )
+
+    AttributeOptionInlineFormset = inlineformset_factory(
+        Attribute,
+        AttributeOption,
+        extra=0,
+        form=LayerAttributeOptionForm
+    )
 
     if request.method == "POST":
         if layer.metadata_uploaded_preserve:  # layer metadata cannot be edited
@@ -429,6 +503,17 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             prefix="category_choice_field",
             initial=int(
                 request.POST["category_choice_field"]) if "category_choice_field" in request.POST else None)
+        for form in attribute_form:
+            form.constraint_form = ConstraintInlineFormset(
+                request.POST,
+                instance=form.instance,
+                prefix='attribute_constraint-%s' % (form.prefix),
+            )
+            form.attribute_option_form = AttributeOptionInlineFormset(
+                request.POST,
+                instance=form.instance,
+                prefix='attribute_option-%s' % (form.prefix)
+            )
 
     else:
         layer_form = LayerForm(instance=layer, prefix="resource")
@@ -439,6 +524,15 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
         category_form = CategoryForm(
             prefix="category_choice_field",
             initial=topic_category.id if topic_category else None)
+        for form in attribute_form:
+            form.constraint_form = ConstraintInlineFormset(
+                instance=form.instance,
+                prefix='attribute_constraint-%s' % (form.prefix),
+            )
+            form.attribute_option_form = AttributeOptionInlineFormset(
+                instance=form.instance,
+                prefix='attribute_option-%s' % (form.prefix)
+            )
 
     if request.method == "POST" and layer_form.is_valid(
     ) and attribute_form.is_valid() and category_form.is_valid():
@@ -486,7 +580,23 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             la.attribute_label = form["attribute_label"]
             la.visible = form["visible"]
             la.display_order = form["display_order"]
+            la.required = form["required"]
+            la.readonly = form["readonly"]
             la.save()
+
+        for form in attribute_form:
+            for constraint_form in form.constraint_form:
+                if constraint_form and constraint_form.is_valid() and constraint_form.cleaned_data:
+                    constraint_form.save()
+            # Save attribute options.
+            attr = Attribute.objects.get(id=int(form.cleaned_data['id'].id))
+            if form.attribute_option_form.is_valid():
+                attribute_options = form.attribute_option_form.save(commit=False)
+                for ao in attribute_options:
+                    ao.layer = attr.layer
+                    ao.save()
+                for deleted_ao in form.attribute_option_form.deleted_objects:
+                    deleted_ao.delete()
 
         if new_poc is not None and new_author is not None:
             new_keywords = [x.strip() for x in layer_form.cleaned_data['keywords']]
@@ -659,7 +769,7 @@ def layer_remove(request, layername, template='layers/layer_remove.html'):
 
             messages.error(request, message)
             return render_to_response(template, RequestContext(request, {"layer": layer}))
-        return HttpResponseRedirect(reverse("layer_browse"))
+        return HttpResponseRedirect(reverse("search"))
     else:
         return HttpResponse("Not allowed", status=403)
 
@@ -761,11 +871,17 @@ def get_layer(request, layername):
         if layer_obj.is_remote:
             url = layer_obj.ows_url
 
+        permissions = { 'edit_style': False}
+
+        if request.user.has_perm('change_layer_style', obj=layer_obj):
+            permissions.update({'edit_style': True})     
+               
         response = {
             'typename': layername,
-            'name': layer_obj.name,
+            'name': slugify(layer_obj.name),
             'title': layer_obj.title,
             'ptype': layer_obj.ptype,
+            'workspace': layer_obj.workspace,
             'url': url,
             'remote': layer_obj.is_remote,
             'bbox_string': layer_obj.bbox_string,
@@ -775,6 +891,7 @@ def get_layer(request, layername):
             'bbox_y1': layer_obj.bbox_y1,
             'type': slugify(layer_obj.display_type),
             'styles': styles,
+            'permissions': permissions,
             'versioned': layer_obj.geogig_enabled,
             'attributes': attributes_as_json(layer_obj)
         }
@@ -800,11 +917,48 @@ def attributes_as_json(layer):
     return attributes
 
 def attribute_as_json(attribute):
-    return {
+    attribute_dict = {
         'attribute': attribute.attribute,
         'description': attribute.description,
         'attribute_label': attribute.attribute_label,
         'attribute_type': attribute.attribute_type,
         'visible': attribute.visible,
-        'display_order': attribute.display_order
+        'display_order': attribute.display_order,
+        'required': attribute.required,
+        'readonly': attribute.readonly,
+        'options': attribute_options_as_json(attribute),
     }
+    if hasattr(attribute, 'constraints'):
+        attribute_dict['constraints'] = constraints_as_json(attribute)
+    return attribute_dict
+
+def attribute_options_as_json(attribute):
+     options = []
+     for option in attribute.options.all():
+         options.append({
+             'value': option.value,
+             'label': option.label,
+             })
+     return options
+
+def constraints_as_json(attribute):
+    if hasattr(attribute, 'constraints'):
+        constraints_dict = {
+            'control_type': attribute.constraints.control_type,
+            'initial_value': attribute.constraints.initial_value,
+            'is_integer': attribute.constraints.is_integer,
+            'minimum': attribute.constraints.minimum,
+            'maximum': attribute.constraints.maximum,
+            'minimum_length': attribute.constraints.minimum_length,
+            'maximum_length': attribute.constraints.maximum_length,
+            'regex': attribute.constraints.regex,
+        }
+
+        # Add attribute options.
+        if attribute.options.all().exists():
+            constraints_dict['options'] = attribute_options_as_json(attribute)
+
+        # Strip out null values
+        return dict((k, v) for k, v in constraints_dict.iteritems() if v is not None)
+    else:
+        return {}

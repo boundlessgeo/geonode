@@ -97,6 +97,9 @@ def document_detail(request, docid):
         )
 
     else:
+        # double check that all post save triggers
+        # have been fired for document
+        document.save()
         try:
             related = document.content_type.get_object_for_this_type(
                 id=document.object_id)
@@ -477,6 +480,9 @@ def document_metadata_detail(request, docid, template='documents/document_metada
         docid,
         'view_resourcebase',
         _PERMISSION_MSG_METADATA)
+    # make sure that the document has been saved
+    # for category not updating in elastic issue
+    document.save()
     return render_to_response(template, RequestContext(request, {
         "resource": document,
         'SITEURL': settings.SITEURL[:-1]

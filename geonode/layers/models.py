@@ -277,164 +277,6 @@ class Layer(ResourceBase):
             return getattr(self.link_set.filter(name__icontains='clone in geogig').first(), 'url', None)
         return None
 
-    # elasticsearch_dsl indexing
-    def indexing(self):
-        if settings.ES_SEARCH:
-            from elasticsearch_app.search import LayerIndex
-            obj = LayerIndex(
-                meta={'id': self.id},
-                id=self.id,
-                abstract=self.abstract,
-                category__gn_description=self.prepare_category_gn_description(),
-                csw_type=self.csw_type,
-                csw_wkt_geometry=self.csw_wkt_geometry,
-                detail_url=self.get_absolute_url(),
-                owner__username=self.prepare_owner(),
-                owner__first_name=self.prepare_owner_first(),
-                owner__last_name=self.prepare_owner_last(),
-                is_published=self.is_published,
-                featured=self.featured,
-                popular_count=self.popular_count,
-                share_count=self.share_count,
-                rating=self.prepare_rating(),
-                srid=self.srid,
-                supplemental_information=self.prepare_supplemental_information(),
-                thumbnail_url=self.thumbnail_url,
-                uuid=self.uuid,
-                title=self.prepare_title(),
-                date=self.date,
-                type=self.prepare_type(),
-                subtype=self.prepare_subtype(),
-                typename=self.service_typename,
-                title_sortable=self.prepare_title_sortable(),
-                category=self.prepare_category(),
-                bbox_left=self.bbox_x0,
-                bbox_right=self.bbox_x1,
-                bbox_bottom=self.bbox_y0,
-                bbox_top=self.bbox_y1,
-                temporal_extent_start=self.temporal_extent_start,
-                temporal_extent_end=self.temporal_extent_end,
-                keywords=self.keyword_slug_list(),
-                regions=self.region_name_list(),
-                num_ratings=self.prepare_num_ratings(),
-                num_comments=self.prepare_num_comments(),
-                geogig_link=self.geogig_link,
-                has_time=self.prepare_has_time(),
-                references=self.prepare_references(),
-                source_host=self.prepare_source_host()
-            )
-            obj.save()
-            return obj.to_dict(include_meta=True)
-
-    # elasticsearch_dsl indexing helper functions
-    def prepare_type(self):
-        return "layer"
-
-    def prepare_source_host(self):
-        if self.service is not None and self.service.method == INDEXED:
-            return urlparse(self.service.base_url).netloc
-        else:
-            return None
-
-    def prepare_title(self):
-        if self.service is not None:
-            return '{} {}'.format(self.service.title.strip(), self.title)
-        else:
-            return self.title
-
-    def prepare_references(self):
-        return [{'name': link.name, 'scheme':link.link_type, 'url': link.url} for link in self.link_set.ows()]
-
-    def prepare_subtype(self):
-        if self.storeType == "dataStore":
-            return "vector"
-        elif self.storeType == "coverageStore":
-            return "raster"
-        elif self.storeType == "remoteStore":
-            return "remote"
-        else:
-            return None
-
-    def prepare_rating(self):
-        ct = ContentType.objects.get_for_model(self)
-        try:
-            rating = OverallRating.objects.filter(
-                object_id=self.pk,
-                content_type=ct
-            ).aggregate(r=Avg("rating"))["r"]
-            return float(str(rating or "0"))
-        except OverallRating.DoesNotExist:
-            return 0.0
-
-    def prepare_num_ratings(self):
-        ct = ContentType.objects.get_for_model(self)
-        try:
-            return OverallRating.objects.filter(
-                object_id=self.pk,
-                content_type=ct
-            ).all().count()
-        except OverallRating.DoesNotExist:
-            return 0
-
-    def prepare_num_comments(self):
-        ct = ContentType.objects.get_for_model(self)
-        try:
-            return Comment.objects.filter(
-                object_id=self.pk,
-                content_type=ct
-            ).all().count()
-        except:
-            return 0
-
-    def prepare_title_sortable(self):
-        return self.prepare_title().lower()
-
-    # Check to see if either time extent is set on the object,
-    # if so, then it is time enabled.
-    def prepare_has_time(self):
-        try:
-            # if either time field is set to a value then time is enabled.
-            if (self.temporal_extent_start is not None or
-                    self.temporal_extent_end is not None):
-                return True
-        except:
-            # when in doubt, it's false.
-            return False
-
-    def prepare_category(self):
-        if self.category:
-            return self.category.identifier
-        else:
-            return None
-
-    def prepare_category_gn_description(self):
-        if self.category:
-            return self.category.gn_description
-        else:
-            return None
-
-    def prepare_supplemental_information(self):
-        # For some reason this isn't a string
-        return str(self.supplemental_information)
-
-    def prepare_owner(self):
-        if self.owner:
-            return self.owner.username
-        else:
-            return None
-
-    def prepare_owner_first(self):
-        if self.owner.first_name:
-            return self.owner.first_name
-        else:
-            return None
-
-    def prepare_owner_last(self):
-        if self.owner.last_name:
-            return self.owner.last_name
-        else:
-            return None
-
 
 class UploadSession(models.Model):
 
@@ -523,6 +365,14 @@ class Attribute(models.Model):
         _('display order'),
         help_text=_('specifies the order in which attribute should be displayed in identify results'),
         default=1)
+    required = models.BooleanField(
+        _('required?'),
+        help_text = _('specifies if the attribute should be required in editing views'),
+        default = False)
+    readonly = models.BooleanField(
+        _('readonly?'),
+        help_text = _('specifies if the attribute should be readonly in editing views'),
+        default = False)
 
     # statistical derivations
     count = models.IntegerField(
@@ -596,6 +446,84 @@ class Attribute(models.Model):
     def unique_values_as_list(self):
         return self.unique_values.split(',')
 
+class AttributeOptionManager(models.Manager):
+
+     def __init__(self):
+         models.Manager.__init__(self)
+
+class AttributeOption(models.Model):
+    layer = models.ForeignKey(
+        Layer,
+        blank=False,
+        null=False,
+        unique=False,)
+    attribute = models.ForeignKey(
+        Attribute,
+        blank=False,
+        null=False,
+        unique=False,
+        related_name='options')
+    value = models.TextField(
+        _('value'),
+        help_text=_('the option value that will be stored in the db when selected by the user'),
+        null=False,
+        blank=False)
+    label = models.TextField(
+        _('label'),
+        help_text=_('the option label that is shown to the user in the dropdown'),
+        null=False,
+        blank=False)
+
+    objects = AttributeOptionManager()
+
+    def __str__(self):
+        return "%s - %s" % (self.value.encode(
+            "utf-8"), self.label.encode("utf-8"))
+
+class Constraint(models.Model):
+    CONTROL_TYPE_CHOICES = (
+        ('string', 'string'),
+        ('number', 'number'),
+        ('date', 'date'),
+        ('boolean', 'boolean'),
+        ('select', 'select'),
+        ('slider', 'slider'),
+        ('counter', 'counter'),
+        ('photo', 'photo')
+    )
+    attribute = models.OneToOneField(
+        Attribute,
+        blank=False,
+        null=False,
+        related_name='constraints'
+    )
+    initial_value = models.CharField(
+        default='',
+        max_length=255,
+        blank=True)
+    is_integer = models.BooleanField(default=False)
+    minimum = models.BigIntegerField(
+        null=True,
+        blank=True)
+    maximum = models.BigIntegerField(
+        null=True,
+        blank=True)
+    minimum_length = models.BigIntegerField(
+        null=True,
+        blank=True)
+    maximum_length = models.BigIntegerField(
+        null=True,
+        blank=True)
+    regex = models.CharField(
+        max_length=1024,
+        blank=True
+    )
+    control_type = models.CharField(
+        choices=CONTROL_TYPE_CHOICES,
+        blank=True,
+        null=True,
+        max_length=128
+    )
 
 def pre_save_layer(instance, sender, **kwargs):
     if kwargs.get('raw', False):

@@ -55,6 +55,11 @@ class LoginRequiredMiddleware(object):
             ()))
     redirect_to = reverse('account_login')
 
+    if settings.ENABLE_SOCIAL_LOGIN and hasattr(settings,
+                                                'DEFAULT_SOCIAL_PROVIDER'):
+        redirect_to = reverse('social:begin',
+                              args=[settings.DEFAULT_SOCIAL_PROVIDER])
+
     def process_request(self, request):
         if not request.user.is_authenticated(
         ) or request.user == get_anonymous_user():
@@ -62,4 +67,4 @@ class LoginRequiredMiddleware(object):
                 return HttpResponseRedirect(
                     '{login_path}?next={request_path}'.format(
                         login_path=self.redirect_to,
-                        request_path=request.path))
+                        request_path=request.get_full_path()))

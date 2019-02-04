@@ -23,6 +23,7 @@ import logging
 import base64
 import httplib2
 import os
+from geonode.security.models import http_request
 
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseRedirect
@@ -36,6 +37,7 @@ from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.translation import ugettext as _
+from django.views.decorators.csrf import csrf_exempt
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -323,7 +325,7 @@ def style_change_check(request, path):
                     'There is not a style with such a name: %s.' % style_name)
     return authorized
 
-
+@csrf_exempt
 def geoserver_rest_proxy(request, proxy_path, downstream_path):
 
     if not request.user.is_authenticated():
@@ -339,17 +341,13 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
     path = strip_prefix(request.get_full_path(), proxy_path)
     url = str("".join([ogc_server_settings.LOCATION, downstream_path, path]))
 
-    http = httplib2.Http()
     username, password = ogc_server_settings.credentials
-    auth = base64.encodestring(username + ':' + password)
-    # http.add_credentials(*(ogc_server_settings.credentials))
     headers = dict()
 
     affected_layers = None
 
-    if request.method in ("POST", "PUT") and "CONTENT_TYPE" in request.META:
+    if request.method in ("POST", "GET", "PUT") and "CONTENT_TYPE" in request.META:
         headers["Content-Type"] = request.META["CONTENT_TYPE"]
-        headers["Authorization"] = "Basic " + auth
         # if user is not authorized, we must stop him
         # we need to sync django here and check if some object (styles) can
         # be edited by the user
@@ -364,10 +362,10 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
             if downstream_path == 'rest/styles':
                 affected_layers = style_update(request, url)
 
-    response, content = http.request(
-        url, request.method,
-        body=request.body or None,
-        headers=headers)
+    response = http_request(url,
+    method=request.method,
+    headers=headers,
+    data=request.body or None)
 
     # update thumbnails
     if affected_layers:
@@ -376,9 +374,9 @@ def geoserver_rest_proxy(request, proxy_path, downstream_path):
             create_gs_thumbnail(layer, True)
 
     return HttpResponse(
-        content=content,
-        status=response.status,
-        content_type=response.get("content-type", "text/plain"))
+        content=response.content,
+        status=response.status_code,
+        content_type=response.headers.get("content-type", "text/plain"))
 
 
 def layer_batch_download(request):

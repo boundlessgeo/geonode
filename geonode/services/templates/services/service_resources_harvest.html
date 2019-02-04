@@ -58,7 +58,7 @@
         {% else %}
             <p>{% trans "All resources have already been imported" %}</p>
             <script type="application/javascript">
-                setTimeout(function(){ window.location = "/services/{{ service.id }}" }, 1000);
+                setTimeout(function(){ window.location = "/services/{{ service.id }}" }, 10000);
             </script>
         {% endif %}
         <div class="modal fade" data-backdrop="static" data-keyboard="false" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel">

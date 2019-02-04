@@ -26,6 +26,7 @@ import math
 import os
 import re
 import uuid
+import traceback
 
 from osgeo import ogr
 from slugify import Slugify
@@ -42,6 +43,7 @@ from django.db import models
 import httplib2
 import urlparse
 import urllib
+from django.contrib.gis.geos import GEOSGeometry
 
 import gc
 import weakref
@@ -104,6 +106,24 @@ def batch_delete(request):
     pass
 
 
+def get_basemaps():
+    """
+    Helper method to centralize the retrieval of Basemap configs
+    It will default to local settings is no maps are available in
+    the database.
+
+    """
+    default = settings.MAP_BASELAYERS
+    if 'geonode.contrib.api_basemaps' in settings.INSTALLED_APPS:
+        from geonode.contrib.api_basemaps.models import MapBaseLayer
+        config_list = []
+        for obj in MapBaseLayer.objects.filter(enabled=True):
+            config_list.append(obj.layer_config())
+        return config_list or default
+    else:
+        return default
+    
+    
 def _split_query(query):
     """
     split and strip keywords, preserve space
@@ -170,6 +190,52 @@ def forward_mercator(lonlat):
         y = math.log(n) / math.pi * 20037508.34
     return (x, y)
 
+def bbox_to_projection(native_bbox, source_srid=4326, target_srid=4326):
+    """
+        native_bbox
+            ('-81.3962935', '-81.3490249', '13.3202891', '13.3859614')
+    """
+    box = native_bbox[:4]
+    proj = source_srid
+    minx, miny, maxx, maxy = [float(a) for a in box]
+    try:
+        if isinstance(proj, str):
+            if ':' in proj:
+                source_srid = int(proj.split(":")[1])
+        else:
+            source_srid = int(proj)
+    except BaseException:
+        source_srid = target_srid
+
+
+    def _v(coord, x, source_srid=4326, target_srid=3857):
+        if source_srid == 4326 and target_srid != 4326:
+            if x and coord >= 180.0:
+                return 179.0
+            elif x and coord <= -180.0:
+                return -179.0
+
+            if not x and coord >= 90.0:
+                return 89.0
+            elif not x and coord <= -90.0:
+                return -89.0
+        return coord
+
+    if source_srid != target_srid:
+        try:
+            wkt = bbox_to_wkt(_v(minx, x=True, source_srid=source_srid, target_srid=target_srid),
+                              _v(maxx, x=True, source_srid=source_srid, target_srid=target_srid),
+                              _v(miny, x=False, source_srid=source_srid, target_srid=target_srid),
+                              _v(maxy, x=False, source_srid=source_srid, target_srid=target_srid),
+                              srid=source_srid)
+            poly = GEOSGeometry(wkt, srid=source_srid)
+            poly.transform(target_srid)
+            return tuple([str(x) for x in poly.extent]) + ("EPSG:%s" % poly.srid,)
+        except BaseException:
+            tb = traceback.format_exc()
+            logger.error(tb)
+
+    return native_bbox
 
 def inverse_mercator(xy):
     """
@@ -286,14 +352,6 @@ class GXPMapBase(object):
         source_urls = [source['url']
                        for source in sources.values() if 'url' in source]
 
-        if 'geonode.geoserver' in settings.INSTALLED_APPS:
-            if len(sources.keys()) > 0 and not settings.MAP_BASELAYERS[0]['source']['url'] in source_urls:
-                keys = sorted(sources.keys())
-                settings.MAP_BASELAYERS[0]['source'][
-                    'title'] = 'Local Geoserver'
-                sources[
-                    str(int(keys[-1]) + 1)] = settings.MAP_BASELAYERS[0]['source']
-
         def _base_source(source):
             base_source = copy.deepcopy(source)
             for key in ["id", "baseParams", "title"]:
@@ -301,7 +359,7 @@ class GXPMapBase(object):
                     del base_source[key]
             return base_source
 
-        for idx, lyr in enumerate(settings.MAP_BASELAYERS):
+        for idx, lyr in enumerate(get_basemaps()):
             if _base_source(
                     lyr["source"]) not in map(
                     _base_source,
@@ -310,11 +368,26 @@ class GXPMapBase(object):
                     sources[
                         str(int(max(sources.keys(), key=int)) + 1)] = lyr["source"]
 
+        if 'geonode.geoserver' in settings.INSTALLED_APPS:
+           next_id = len(sources.keys())
+           gs_public_url = settings.OGC_SERVER['default']['PUBLIC_LOCATION']
+           url = '%swms?access_token=%s' % (gs_public_url, access_token)
+           default_source = {'url': url,
+                       'restUrl': '/gs/rest',
+                       'ptype': 'gxp_wmscsource',
+                       'title': 'Local Geoserver'}
+           sources.update({str(next_id) : default_source})
+
+        refresh_interval = 60000
+        if hasattr(self, 'refresh_interval'):
+            refresh_interval = self.refresh_interval
+        
         config = {
             'id': self.id,
             'about': {
                 'title': self.title,
-                'abstract': self.abstract
+                'abstract': self.abstract,
+                'refresh_interval': refresh_interval
             },
             'aboutUrl': '../about',
             'defaultSourceType': "gxp_wmscsource",
@@ -326,6 +399,9 @@ class GXPMapBase(object):
                 'zoom': self.zoom
             }
         }
+
+        if access_token:
+            config['access_token'] = access_token
 
         if any(layers):
             # Mark the last added layer as selected - important for data page
@@ -374,7 +450,8 @@ class GXPLayerBase(object):
         try:
             cfg = json.loads(self.source_params)
         except Exception:
-            cfg = dict(ptype="gxp_wmscsource", restUrl="/gs/rest")
+            cfg = dict(ptype="gxp_wmscsource", restUrl="/gs/rest", 
+                       title='Local Geoserver')
 
         if self.ows_url:
             '''
@@ -484,7 +561,7 @@ def default_map_config(request):
     DEFAULT_BASE_LAYERS = [
         _baselayer(
             lyr, idx) for idx, lyr in enumerate(
-            settings.MAP_BASELAYERS)]
+            get_basemaps())]
     user = None
     access_token = None
     if request:
@@ -856,7 +933,7 @@ def designals():
             # first tuple element:
             # - case (id(instance), id(method))
             if not isinstance(signal[0], tuple):
-                raise "Malformed signal"
+                raise Exception("Malformed signal")
 
             lookup = signal[0]
 

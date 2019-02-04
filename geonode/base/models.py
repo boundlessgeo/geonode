@@ -28,7 +28,7 @@ import urllib2
 import cookielib
 
 from pyproj import transform, Proj
-from urlparse import urljoin, urlsplit
+from urlparse import urljoin, urlsplit, parse_qs
 
 from django.db import models
 from django.core import serializers
@@ -532,6 +532,7 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     thumbnail_url = models.TextField(null=True, blank=True)
     detail_url = models.CharField(max_length=255, null=True, blank=True)
     rating = models.IntegerField(default=0, null=True, blank=True)
+    refresh_interval = models.IntegerField(default=60000, null=True, blank=True)
 
     def __unicode__(self):
         return self.title
@@ -743,7 +744,12 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
 
         remote_thumbnails = self.link_set.filter(name='Remote Thumbnail')
         if remote_thumbnails.count() > 0:
-            return remote_thumbnails[0].url
+            url_parts = urlsplit(remote_thumbnails[0].url)
+            qargs = parse_qs(url_parts.query)
+            if url_parts.path == '/geoserver/wms/reflect' and not 'layers' in qargs:
+                pass
+            else:
+                return remote_thumbnails[0].url
 
         return staticfiles.static(settings.MISSING_THUMBNAIL)
 
@@ -968,18 +974,32 @@ def do_login(sender, user, request, **kwargs):
     """
     if user and user.is_authenticated():
         token = None
+        ttl = 86400
+
         try:
             Application = get_application_model()
             app = Application.objects.get(name="GeoServer")
 
-            # Lets create a new one
-            token = generate_token()
-
+            if hasattr(user, 'social_user'):
+                logging.debug("Using token from social authentication.")
+                social_user = user.social_user
+                token = social_user.extra_data.get('access_token')
+                expires = social_user.extra_data.get('expires')
+                if len(token) > 255:
+                    token = generate_token()
+                if expires:
+                    ttl = int(expires)
+            else:
+                logging.debug("Generating a local access token.")
+                token = generate_token()
+            expires = datetime.datetime.now() + datetime.timedelta(seconds=ttl)
             AccessToken.objects.get_or_create(user=user,
                                               application=app,
-                                              expires=datetime.datetime.now() + datetime.timedelta(days=3),
+                                              expires=expires,
                                               token=token)
-        except:
+        except Exception as e:
+            logging.error(e)
+            logging.debug("Unable to get_or_create token so defautling to uuid")
             u = uuid.uuid1()
             token = u.hex
 

@@ -210,10 +210,22 @@ class PermissionLevelMixin(object):
         if settings.DEFAULT_ANONYMOUS_VIEW_PERMISSION:
             assign_perm('view_resourcebase', anonymous_group, self.get_self_resource())
             set_geofence_permissions = True
+        elif settings.DEFAULT_ANONYMOUS_VIEW_PERMISSION_REMOTE and \
+                hasattr(self, 'service'):
+            if self.service:
+                assign_perm('view_resourcebase', anonymous_group,
+                            self.get_self_resource())
+                set_geofence_permissions = True
 
         if settings.DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION:
             assign_perm('download_resourcebase', anonymous_group, self.get_self_resource())
             set_geofence_permissions = True
+        elif settings.DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION_REMOTE and \
+                hasattr(self, 'service'):
+            if self.service:
+                assign_perm('download_resourcebase', anonymous_group,
+                            self.get_self_resource())
+                set_geofence_permissions = True
 
         # Give public access to all Geoserver layers
         if set_geofence_permissions:
@@ -277,10 +289,7 @@ class PermissionLevelMixin(object):
                 # Set the GeoFence Owner Rules
                 has_view_perms = ('view_resourcebase' in perms)
                 has_edit_perms = ('change_layer_data' in perms)
-                if user.username.lower() != 'anonymoususer':
-                    set_data_acl(self, str(user), view_perms=has_view_perms, edit_perms=has_edit_perms)
-                else:
-                    set_data_acl(self, '*', view_perms=has_view_perms, edit_perms=has_edit_perms)
+                set_data_acl(self, user.username, view_perms=has_view_perms, edit_perms=has_edit_perms)
 
         if 'groups' in perm_spec:
             for group, perms in perm_spec['groups'].items():
@@ -343,10 +352,12 @@ def set_data_acl(instance, name, view_perms=False, edit_perms=False, type='user'
 
     if hasattr(resource, "layer"):
         if internal_geofence:
+            payload = "<Rule>"
             if type == 'user':
-                payload = "<Rule><userName>{}</userName>".format(name)
+                if name.lower() != 'anonymoususer':
+                    payload += "<userName>{}</userName>".format(name)
             elif type == 'group':
-                payload = "<Rule><roleName>ROLE_{}</roleName>".format(name.upper())
+                payload += "<roleName>ROLE_{}</roleName>".format(name.upper())
             payload += "<workspace>{}</workspace>".format(resource.layer.workspace)
             payload += "<layer>{}</layer><access>ALLOW</access>".format(resource.layer.name)
             rule_end = "</Rule>"
@@ -356,7 +367,8 @@ def set_data_acl(instance, name, view_perms=False, edit_perms=False, type='user'
             payload += "<layer>{}</layer>".format(resource.layer.name)
 
             if type == 'user':
-                payload += "<username>{}</username>".format(name)
+                if name.lower() != 'anonymoususer':
+                    payload += "<username>{}</username>".format(name)
             elif type == 'group':
                 payload += "<rolename>ROLE_{}</rolename>".format(name.upper())
             rule_end = "</rule>"
@@ -443,17 +455,17 @@ def remove_object_permissions(instance):
         except:
             logger.debug(traceback.format_exc())
 
-        try:
-            UserObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
+    try:
+        UserObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
                                                 object_pk=instance.id).delete()
-        except:
-            logger.debug(traceback.format_exc())
+    except:
+        logger.debug(traceback.format_exc())
 
-        try:
-            GroupObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
+    try:
+        GroupObjectPermission.objects.filter(content_type=ContentType.objects.get_for_model(resource),
                                                  object_pk=instance.id).delete()
-        except:
-            logger.debug(traceback.format_exc())
+    except:
+        logger.debug(traceback.format_exc())
 
 
 # Logic to login a user automatically when it has successfully

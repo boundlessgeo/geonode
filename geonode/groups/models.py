@@ -204,41 +204,6 @@ class GroupProfile(models.Model):
     def class_name(self):
         return self.__class__.__name__
 
-    # elasticsearch_dsl indexing
-    def indexing(self):
-        if settings.ES_SEARCH:
-            from elasticsearch_app.search import GroupIndex
-            obj = GroupIndex(
-                meta={'id': self.id},
-                id=self.id,
-                title=self.title,
-                title_sortable=self.prepare_title_sortable(),
-                description=self.description,
-                json=self.prepare_json(),
-                type=self.prepare_type(),
-            )
-            obj.save()
-            return obj.to_dict(include_meta=True)
-
-    # elasticsearch_dsl indexing helper functions
-    def prepare_type(self):
-        return "group"
-
-    def prepare_title_sortable(self):
-        return self.title.lower()
-
-    def prepare_json(self):
-        data = {
-            "_type": self.prepare_type(),
-            "title": self.title,
-            "description": self.description,
-            "keywords": [keyword.name for keyword in self.keywords.all()] if self.keywords else [],
-            "thumb": settings.STATIC_URL + "static/img/contact.png",
-            "detail": None,
-        }
-
-        return json.dumps(data)
-
 
 class GroupMember(models.Model):
 

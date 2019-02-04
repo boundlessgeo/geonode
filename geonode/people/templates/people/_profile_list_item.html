@@ -26,21 +26,21 @@
         <div class="col-xs-12 profile-items">
           <ul class="list-inline">
             <li>
-              <a href="{{ profile.profile_detail_url }}?content=layers">
+              <a href="{{ profile.profile_detail_url }}?type__in=layer">
                 <i class="fa fa-square-o rotate-45"></i>
                 {{ profile.layers_count }}
                 <!-- <ng-pluralize count="profile.layers_count" when="{'1': 'Layer', 'other': 'Layers'}"></ng-pluralize> -->
               </a>
             </li>
             <li>
-              <a href="{{ profile.profile_detail_url }}?content=maps">
+              <a href="{{ profile.profile_detail_url }}?type__in=map">
                 <i class="fa fa-map-marker"></i>
                 {{ profile.maps_count }}
                 <!-- <ng-pluralize count="profile.maps_count" when="{'1': 'Map', 'other': 'Maps'}"></ng-pluralize> -->
               </a>
             </li>
             <li>
-              <a href="{{ profile.profile_detail_url }}?content=documents">
+              <a href="{{ profile.profile_detail_url }}?type__in=document">
                 <i class="fa fa-file-text-o"></i>
                 {{ profile.documents_count }}
                 <!-- <ng-pluralize count="profile.documents_count" when="{'1': 'Doc', 'other': 'Docs'}"></ng-pluralize> -->

@@ -31,6 +31,7 @@ from geonode.layers.models import Layer
 from geonode.layers.utils import create_thumbnail
 from geonode.utils import set_attributes
 from arcrest.ags import MapService as ArcMapService
+from osgeo import osr
 from .. import enumerations
 from ..enumerations import CASCADED
 from ..enumerations import INDEXED
@@ -57,6 +58,32 @@ _esri_types = {
     "esriFieldTypeSingle": "xsd:float"
 }
 
+def epsg_string(bbox):
+    logging.debug('bbox: %s', bbox)
+    if 'spatialReference' in bbox:
+        sr = bbox['spatialReference']
+        if 'latestWkid' in sr:
+            return "EPSG:%s" % sr['latestWkid']
+        if 'wkt' in sr:
+            wkt = sr['wkt']
+            logging.debug('wkt: %s', wkt)
+            ref = osr.SpatialReference()
+            ref.ImportFromWkt(wkt)
+            ref.MorphFromESRI()
+            matches = ref.FindMatches()
+            if len(matches) > 0:
+                match = matches[0][0]
+                code = match.GetAuthorityCode('PROJCS')
+                if code:
+                    return "EPSG:%s" % code
+                code = match.GetAuthorityCode('GEOGCS')
+                if code:
+                    return "EPSG:%s" % code
+                code = match.GetAuthorityCode(None)
+                if code:
+                    return "EPSG:%s" % code
+                
+    return None
 
 class MapserverServiceHandler(base.ServiceHandlerBase,
                         base.CascadableServiceHandlerMixin):
@@ -123,7 +150,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
 
         """
 
-        return list( self.parsed_service.layers)
+        return [] if self.parsed_service.layers is None else \
+            list(self.parsed_service.layers)
 
     def harvest_resource(self, resource_id, geonode_service):
         """Harvest a single resource from the service
@@ -258,6 +286,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                 elif supported_extension == 'WFSServer':
                     url = url.replace('rest/services', 'services')
                     url += '/WFSServer?request=GetCapabilities&amp;service=WFS';
+                else:
+                    continue
 
                 link, created = Link.objects.get_or_create(
                     resource=geonode_layer.resourcebase_ptr,
@@ -309,6 +339,7 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
             "bbox_x1": bbox['xmax'],
             "bbox_y0": bbox['ymin'],
             "bbox_y1": bbox['ymax'],
+            "srid": epsg_string(bbox),
             "keywords": self.get_keywords(),
         }
 

@@ -33,11 +33,13 @@ from treebeard.forms import movenodeform_factory
 
 from modeltranslation.admin import TranslationAdmin
 
+from guardian.admin import GuardedModelAdmin
+
 from geonode.base.models import (TopicCategory, SpatialRepresentationType, Region, RestrictionCodeType,
                                  ContactRole, Link, Backup, License, HierarchicalKeyword)
 
 
-class MediaTranslationAdmin(TranslationAdmin):
+class MediaTranslationAdmin(TranslationAdmin, GuardedModelAdmin):
     class Media:
         js = (
             'modeltranslation/js/tabbed_translation_fields.js',

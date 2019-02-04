@@ -46,7 +46,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from geonode.layers.models import Layer
 from geonode.maps.models import Map, MapLayer, MapSnapshot
 from geonode.layers.views import _resolve_layer
-from geonode.utils import forward_mercator, llbbox_to_mercator
+from geonode.utils import forward_mercator, llbbox_to_mercator, bbox_to_projection
 from geonode.utils import DEFAULT_TITLE
 from geonode.utils import DEFAULT_ABSTRACT
 from geonode.utils import default_map_config
@@ -551,6 +551,7 @@ def new_map_config(request):
 
         map_obj.abstract = DEFAULT_ABSTRACT
         map_obj.title = DEFAULT_TITLE
+        map_obj.refresh_interval = 60000
         if request.user.is_authenticated():
             map_obj.owner = request.user
 
@@ -590,6 +591,7 @@ def new_map_config(request):
                 if bbox is None:
                     bbox = list(layer_bbox[0:4])
                 else:
+                    bbox = list(bbox)
                     bbox[0] = min(bbox[0], layer_bbox[0])
                     bbox[1] = max(bbox[1], layer_bbox[1])
                     bbox[2] = min(bbox[2], layer_bbox[2])
@@ -612,14 +614,22 @@ def new_map_config(request):
                     ogc_server_url = urlparse.urlsplit(ogc_server_settings.PUBLIC_LOCATION).netloc
                     service_url = urlparse.urlsplit(service.base_url).netloc
 
+                    target_srid = 3857 if config["srs"] == 'EPSG:900913' else config["srs"]
+                    reprojected_bbox = bbox_to_projection(bbox, source_srid=layer.srid, target_srid=target_srid)
+                    bbox = reprojected_bbox[:4]
+                    config['bbox'] = [float(coord) for coord in bbox]
+                    
                     if access_token and ogc_server_url == service_url and 'access_token' not in service.base_url:
                         url = service.base_url+'?access_token='+access_token
                     else:
                         url = service.base_url
+
+                    if layer.alternate is not None:
+                        config["layerid"] = layer.alternate
                     maplayer = MapLayer(map=map_obj,
                                         name=layer.typename,
                                         ows_url=layer.ows_url,
-                                        layer_params=json.dumps(config),
+                                        layer_params=json.dumps(config, cls=DjangoJSONEncoder),
                                         visibility=True,
                                         source_params=json.dumps({
                                             "ptype": service.ptype,
@@ -650,7 +660,7 @@ def new_map_config(request):
                 x = (minx + maxx) / 2
                 y = (miny + maxy) / 2
 
-                if getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
+                if layer.is_remote or getattr(settings, 'DEFAULT_MAP_CRS', 'EPSG:900913') == "EPSG:4326":
                     center = list((x, y))
                 else:
                     center = list(forward_mercator((x, y)))

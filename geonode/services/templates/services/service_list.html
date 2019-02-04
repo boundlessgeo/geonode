@@ -21,7 +21,7 @@
   {% for service in services %}
   <tr>
       <td><a href='{% url "service_detail" service.id %}'>{{ service.title }}</a></td>
-      <td><a href='{{ service.base_url }}' target="_blank" rel="noopener noreferrer">{{ service.base_url }}</a></td>
+      <td><a href='{{ service.base_url }}' target="_blank" rel="noopener noreferrer">{{ service.base_url|truncatechars:60 }}</a></td>
       <td>{{ service.type }}</td>
       <td><a href='{% url "service_detail" service.id %}'>{{ service.owner.username }}</a></td>
       <td><span class="badge">{{ service.layer_set.count }}</span></td>

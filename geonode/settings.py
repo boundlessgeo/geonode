@@ -275,7 +275,8 @@ GEONODE_CONTRIB_APPS = (
     'geonode.contrib.geosites',
     'geonode.contrib.nlp',
     'geonode.contrib.slack',
-    'geonode.contrib.metadataxsl'
+    'geonode.contrib.metadataxsl',
+    'geonode.contrib.createlayer',
 )
 
 # Uncomment the following line to enable contrib apps
@@ -480,6 +481,15 @@ DEFAULT_ANONYMOUS_VIEW_PERMISSION = strtobool(
 )
 DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION = strtobool(
     os.getenv('DEFAULT_ANONYMOUS_VIEW_PERMISSION', 'True')
+)
+
+# Whether the remote resources should be public and downloadable by default
+# or not
+DEFAULT_ANONYMOUS_VIEW_PERMISSION_REMOTE = strtobool(
+    os.getenv('DEFAULT_ANONYMOUS_VIEW_PERMISSION_REMOTE', 'True')
+)
+DEFAULT_ANONYMOUS_DOWNLOAD_PERMISSION_REMOTE = strtobool(
+    os.getenv('DEFAULT_ANONYMOUS_VIEW_PERMISSION_REMOTE', 'True')
 )
 
 #
@@ -798,39 +808,6 @@ PROXY_ALLOWED_HOSTS = tuple(
 
 # The proxy to use when making cross origin requests.
 PROXY_URL = '/proxy/?url=' if DEBUG else None
-
-# Elasticsearch-dsl Backend Configuration. To enable,
-# Set ES_SEARCH to True
-# Run "python manage.py clear_haystack" (if upgrading from haystack)
-# Run "python manage.py rebuild_index"
-ES_SEARCH = strtobool(os.getenv('ES_SEARCH', 'False'))
-
-if ES_SEARCH:
-    INSTALLED_APPS = (
-        'elasticsearch_app',
-    ) + INSTALLED_APPS
-
-# Haystack Search Backend Configuration. To enable,
-# first install the following:
-# - pip install django-haystack
-# - pip install pyelasticsearch
-# Set HAYSTACK_SEARCH to True
-# Run "python manage.py rebuild_index"
-HAYSTACK_SEARCH = False
-# Avoid permissions prefiltering
-SKIP_PERMS_FILTER = False
-# Update facet counts from Haystack
-HAYSTACK_FACET_COUNTS = False
-# HAYSTACK_CONNECTIONS = {
-#    'default': {
-#        'ENGINE': 'haystack.backends.elasticsearch_backend.'
-#        'ElasticsearchSearchEngine',
-#        'URL': 'http://127.0.0.1:9200/',
-#        'INDEX_NAME': 'geonode',
-#        },
-#    }
-# HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
-# HAYSTACK_SEARCH_RESULTS_PER_PAGE = 20
 
 # Available download formats
 DOWNLOAD_FORMATS_METADATA = [

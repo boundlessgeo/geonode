@@ -90,6 +90,7 @@ class DocumentForm(ResourceBaseForm):
             'object_id',
             'doc_file',
             'extension',
+            'tkeywords',
             'doc_type',
             'doc_url')
 

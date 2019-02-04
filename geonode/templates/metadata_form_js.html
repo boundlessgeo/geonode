@@ -86,5 +86,37 @@
         $('#update-metadata-top').prop('disabled', false);
         $('#update-metadata-bot').prop('disabled', false);
     });
+
+    function addAttributeOption(link, selector, prefix) {
+      // Update the "TOTAL_FORMS" value.
+      var totalFormsField = $('#id_' + prefix + '-TOTAL_FORMS');
+      var totalForms = parseInt($(totalFormsField).val());
+      totalFormsField.val(totalForms + 1);
+
+      // Copy the template and substitute "__id__" with the correct index.
+      var template = $(link).closest('.attribute-options').find(selector).html().replace(/__id__/g, totalForms);
+      $(link).closest('fieldset').append(template);
+    }
+
+    function deleteAttributeOption(link, prefix) {
+      // Determine if this is an existing field with an ID and, if so, mark it for deletion and hide the row.
+      var indexRegExp = new RegExp('id_' + prefix + '-(\\d+)-id');
+      var match = $(link).closest('.attribute-option-form').find('input').attr('id').match(indexRegExp);
+      if (match) {
+        var index = match[1];
+
+        // Create the "<form>-x-DELETE" object that Django will use to delete the object.
+        var deleteElem = $('<input>')
+          .attr('type', 'hidden')
+          .attr('name', prefix + '-' + index + '-DELETE')
+          .val('on');
+        $(link).after(deleteElem);
+
+        $(link).closest('.row').hide();
+      } else {
+        // This is a new option so remove the row instead.
+        $(link).closest('.row').remove();
+      }
+    }
 {% endautoescape %}
 </script>
