@@ -29,8 +29,12 @@ import logging
 import traceback
 import requests
 import models
-
 from requests.auth import HTTPBasicAuth
+from urlparse import urlparse, parse_qsl
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+from urllib import urlencode
+
 from django.conf import settings
 from django.db.models import Q
 from django.contrib.auth import get_user_model
@@ -43,7 +47,63 @@ from guardian.shortcuts import assign_perm
 from geonode.groups.models import GroupProfile
 from ..services.enumerations import CASCADED
 
+try:
+    geofence_url = settings.GEOFENCE['url'].strip('/')
+except AttributeError:
+    geofence_url = "{}/geofence".format(settings.OGC_SERVER['default']['LOCATION'].strip('/'))
+
+try:
+    geofence_username = settings.GEOFENCE['username']
+except AttributeError:
+    geofence_username = settings.OGC_SERVER['default']['USER']
+
+try:
+    geofence_password = settings.GEOFENCE['password']
+except AttributeError:
+    geofence_password = settings.OGC_SERVER['default']['PASSWORD']
+
+internal_geofence = settings.OGC_SERVER['default']['LOCATION'] in geofence_url
 logger = logging.getLogger("geonode.security.utils")
+
+
+http_client = requests.session()
+http_client.verify = True
+parsed_url = urlparse(geofence_url)
+retry = Retry(
+    total=4,
+    status=4,
+    backoff_factor=0.9,
+    status_forcelist=[502, 503, 504],
+    method_whitelist=set(['HEAD', 'TRACE', 'GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'])
+)
+
+http_client.mount("{}://".format(parsed_url.scheme), HTTPAdapter(max_retries=retry))
+
+
+def http_request(url, data=None, method='get', headers={}, access_token=None):
+    req_method = getattr(http_client, method.lower())
+    resp = None
+
+    if access_token:
+        headers['Authorization'] = "Bearer {}".format(access_token)
+        parsed_url = urlparse(url)
+        params = parse_qsl(parsed_url.query.strip())
+        params.append(('access_token', access_token))
+        params = urlencode(params)
+        url = "{proto}://{address}{path}?{params}".format(proto=parsed_url.scheme, address=parsed_url.netloc,
+                                                          path=parsed_url.path, params=params)
+
+        try:
+            resp = req_method(url, headers=headers, data=data)
+        except:
+            logger.debug(traceback.format_exc())
+    else:
+        try:
+            resp = req_method(url, headers=headers, data=data, auth=(geofence_username, geofence_password))
+        except:
+            logger.debug(traceback.format_exc())
+
+    return resp
 
 
 def get_visible_resources(queryset,
@@ -163,24 +223,19 @@ def get_users_with_perms(obj):
 def get_geofence_rules_count():
     """Get the number of available GeoFence Cache Rules"""
     try:
-        url = settings.OGC_SERVER['default']['LOCATION']
-        user = settings.OGC_SERVER['default']['USER']
-        passwd = settings.OGC_SERVER['default']['PASSWORD']
         # Check first that the rules does not exist already
         """
         curl -X GET -u admin:geoserver \
               http://<host>:<port>/geoserver/geofence/rest/rules/count.json
         """
-        headers = {'Content-type': 'application/json'}
-        r = requests.get(url + 'geofence/rest/rules/count.json',
-                         headers=headers,
-                         auth=HTTPBasicAuth(user, passwd))
-        if (r.status_code < 200 or r.status_code > 201):
-            logger.warning("Could not retrieve GeoFence Rules count.")
-
-        rules_objs = json.loads(r.text)
-        rules_count = rules_objs['count']
-        return int(rules_count)
+        resp = http_request("{}/rules/count.json".format(geofence_url))
+        if resp.status_code == 200:
+            rules_objs = resp.json()
+            rules_count = rules_objs['count']
+            return int(rules_count)
+        else:
+            logger.error("Failed to retrieve GeoFence rule count")
+            return -1
     except BaseException:
         tb = traceback.format_exc()
         logger.debug(tb)
@@ -191,29 +246,23 @@ def get_geofence_rules_count():
 def get_highest_priority():
     """Get the highest Rules priority"""
     try:
-        rules_count = get_geofence_rules_count()
-
-        url = settings.OGC_SERVER['default']['LOCATION']
-        user = settings.OGC_SERVER['default']['USER']
-        passwd = settings.OGC_SERVER['default']['PASSWORD']
         # Check first that the rules does not exist already
         """
         curl -X GET -u admin:geoserver \
               http://<host>:<port>/geoserver/geofence/rest/rules.json?page=(count-1)&entries=1
         """
-        headers = {'Content-type': 'application/json'}
-        r = requests.get(url + 'geofence/rest/rules.json?page=' + str(rules_count-1) + '&entries=1',
-                         headers=headers,
-                         auth=HTTPBasicAuth(user, passwd))
-        if (r.status_code < 200 or r.status_code > 201):
-            logger.warning("Could not retrieve GeoFence Rules count.")
-
-        rules_objs = json.loads(r.text)
-        if len(rules_objs['rules']) > 0:
-            highest_priority = rules_objs['rules'][0]['priority']
+        rules_count = get_geofence_rules_count()
+        resp = http_request("{}/rules.json?page={}&entries=1".format(geofence_url, rules_count))
+        if resp.status_code == 200:
+            rules_objs = resp.json()
+            if len(rules_objs['rules']) > 0:
+                highest_priority = rules_objs['rules'][0]['priority']
+            else:
+                highest_priority = 0
+            return int(highest_priority)
         else:
-            highest_priority = 0
-        return int(highest_priority)
+            logger.error("Failed to retrieve GeoFence rule count")
+            return -1
     except BaseException:
         tb = traceback.format_exc()
         logger.debug(tb)
@@ -225,38 +274,36 @@ def purge_geofence_all():
     """purge all existing GeoFence Cache Rules"""
     if settings.OGC_SERVER['default']['GEOFENCE_SECURITY_ENABLED']:
         try:
-            url = settings.OGC_SERVER['default']['LOCATION']
-            user = settings.OGC_SERVER['default']['USER']
-            passwd = settings.OGC_SERVER['default']['PASSWORD']
             """
             curl -X GET -u admin:geoserver -H "Content-Type: application/json" \
                   http://<host>:<port>/geoserver/geofence/rest/rules.json
             """
             headers = {'Content-type': 'application/json'}
-            r = requests.get(url + 'geofence/rest/rules.json',
-                             headers=headers,
-                             auth=HTTPBasicAuth(user, passwd))
-            if (r.status_code < 200 or r.status_code > 201):
-                logger.warning("Could not Retrieve GeoFence Rules")
-            else:
+            resp = http_request("{}/rules.json".format(geofence_url))
+            if resp.status_code == 200:
                 try:
-                    rules_objs = json.loads(r.text)
+                    rules_objs = resp.json()
                     rules_count = rules_objs['count']
                     rules = rules_objs['rules']
                     if rules_count > 0:
                         # Delete GeoFence Rules associated to the Layer
                         # curl -X DELETE -u admin:geoserver http://<host>:<port>/geoserver/geofence/rest/rules/id/{r_id}
                         for i, rule in enumerate(rules):
-                            r = requests.delete(url + 'geofence/rest/rules/id/' + str(rule['id']),
-                                                headers=headers,
-                                                auth=HTTPBasicAuth(user, passwd))
-                            if (r.status_code < 200 or r.status_code > 201):
-                                msg = "Could not DELETE GeoServer Rule id[%s]" % rule['id']
-                                e = Exception(msg)
-                                logger.debug("Response [{}] : {}".format(r.status_code, r.text))
-                                raise e
+                            rule_url = "{}/rules/id/{}".format(geofence_url, rule['id'])
+                            resp = http_request(
+                                rule_url,
+                                method='delete',
+                                headers=headers
+                            )
+                            if resp.status_code != 200:
+                                msg = "Could not DELETE GeoServer Rule id[%s]".format(rule['id'])
+                                logger.error(msg)
+                                logger.debug("Response [{}] : {}".format(resp.status_code, resp.text))
+                                raise Exception(msg)
                 except Exception:
-                    logger.debug("Response [{}] : {}".format(r.status_code, r.text))
+                    logger.debug("Response [{}] : {}".format(resp.status_code, resp.text))
+            else:
+                logger.warning("Could not Retrieve GeoFence Rules")
         except Exception:
             tb = traceback.format_exc()
             logger.debug(tb)
@@ -270,19 +317,13 @@ def purge_geofence_layer_rules(resource):
     curl -u admin:geoserver
     http://<host>:<port>/geoserver/geofence/rest/rules.json?workspace=geonode&layer={layer}
     """
-    url = settings.OGC_SERVER['default']['LOCATION']
-    user = settings.OGC_SERVER['default']['USER']
-    passwd = settings.OGC_SERVER['default']['PASSWORD']
     headers = {'Content-type': 'application/json'}
     workspace = _get_layer_workspace(resource.layer)
-    r = requests.get(
-        "{}geofence/rest/rules.json?workspace={}&layer={}".format(
-            url, workspace, resource.layer.name),
-        headers=headers,
-        auth=HTTPBasicAuth(user, passwd)
-    )
-    if (r.status_code >= 200 and r.status_code < 300):
-        gs_rules = r.json()
+    resp = http_request("{}/rules.json?workspace={}&layer={}".format(
+            geofence_url, workspace, resource.layer.name))
+
+    if resp.status_code == 200:
+        gs_rules = resp.json()
         r_ids = []
         if gs_rules and gs_rules['rules']:
             for r in gs_rules['rules']:
@@ -292,15 +333,17 @@ def purge_geofence_layer_rules(resource):
         # Delete GeoFence Rules associated to the Layer
         # curl -X DELETE -u admin:geoserver http://<host>:<port>/geoserver/geofence/rest/rules/id/{r_id}
         for i, r_id in enumerate(r_ids):
-            r = requests.delete(url + 'geofence/rest/rules/id/' + str(r_id),
-                                headers=headers,
-                                auth=HTTPBasicAuth(user, passwd))
-            if (r.status_code < 200 or r.status_code > 201):
-                msg = "Could not DELETE GeoServer Rule for Layer "
-                msg = msg + str(resource.layer.name)
-                e = Exception(msg)
-                logger.debug("Response [{}] : {}".format(r.status_code, r.text))
-                raise e
+            rule_url = "{}/rules/id/{}".format(geofence_url, r_id)
+            resp = http_request(
+                rule_url,
+                method='delete',
+                headers=headers
+            )
+            if resp.status_code != 200:
+                msg = "Could not DELETE GeoServer Rule for Layer {}".format(resource.layer.name)
+                logger.error(msg)
+                logger.debug("Response [{}] : {}".format(resp.status_code, resp.text))
+                raise Exception(msg)
 
 
 @on_ogc_backend(geoserver.BACKEND_PACKAGE)
@@ -308,19 +351,18 @@ def set_geofence_invalidate_cache():
     """invalidate GeoFence Cache Rules"""
     if settings.OGC_SERVER['default']['GEOFENCE_SECURITY_ENABLED']:
         try:
-            url = settings.OGC_SERVER['default']['LOCATION']
-            user = settings.OGC_SERVER['default']['USER']
-            passwd = settings.OGC_SERVER['default']['PASSWORD']
+            url = "{}/rest/ruleCache/invalidate".format(settings.OGC_SERVER['default']['LOCATION'].strip('/'))
             # Check first that the rules does not exist already
             """
             curl -X GET -u admin:geoserver \
                   http://<host>:<port>/geoserver/rest/ruleCache/invalidate
             """
-            r = requests.put(url + 'rest/ruleCache/invalidate',
-                             auth=HTTPBasicAuth(user, passwd))
-
-            if (r.status_code < 200 or r.status_code > 201):
-                logger.warning("Could not Invalidate GeoFence Rules.")
+            resp = http_request(
+                url,
+                method='put'
+            )
+            if resp.status_code not in (200, 201):
+                logger.error("Could not Invalidate GeoFence Rules.")
         except Exception:
             tb = traceback.format_exc()
             logger.debug(tb)
@@ -377,10 +419,6 @@ def set_geofence_all(instance):
         # RuntimeError) so we have nothing to do
         return
     try:
-        url = settings.OGC_SERVER['default']['LOCATION']
-        user = settings.OGC_SERVER['default']['USER']
-        passwd = settings.OGC_SERVER['default']['PASSWORD']
-
         # Create GeoFence Rules for ANONYMOUS to the Layer
         """
         curl -X POST -u admin:geoserver -H "Content-Type: text/xml" -d \
@@ -388,20 +426,25 @@ def set_geofence_all(instance):
         http://<host>:<port>/geoserver/geofence/rest/rules
         """
         headers = {'Content-type': 'application/xml'}
-        payload = _get_geofence_payload(
+        rule = _get_geofence_payload(
             layer=resource.layer.name,
             workspace=workspace,
             access="ALLOW"
         )
-        response = requests.post(
-            url + 'geofence/rest/rules',
+
+        rules_url = "{}/rules".format(geofence_url)
+        resp = http_request(
+            rules_url,
+            method='post',
             headers=headers,
-            data=payload,
-            auth=HTTPBasicAuth(user, passwd)
+            data=rule
         )
-        if response.status_code not in (200, 201):
+
+        if resp.status_code not in (200, 201):
+            logger.error("Could not ADD GeoServer ANONYMOUS Rule "
+                         "for Layer {}".format(resource.layer.name))
             logger.debug(
-                "Response {!r} : {}".format(response.status_code, response.text))
+                "Response {!r} : {}".format(resp.status_code, resp.text))
             raise RuntimeError("Could not ADD GeoServer ANONYMOUS Rule "
                                "for Layer {}".format(resource.layer.name))
     except Exception:
@@ -554,7 +597,7 @@ def _get_geofence_payload(layer, workspace, access, user=None, group=None,
 
 
 def _update_geofence_rule(layer, workspace, service, user=None, group=None):
-    payload = _get_geofence_payload(
+    rule = _get_geofence_payload(
         layer=layer,
         workspace=workspace,
         access="ALLOW",
@@ -562,24 +605,23 @@ def _update_geofence_rule(layer, workspace, service, user=None, group=None):
         group=group,
         service=service
     )
-    logger.debug("request data: {}".format(payload))
-    response = requests.post(
-        "{base_url}geofence/rest/rules".format(
-            base_url=settings.OGC_SERVER['default']['LOCATION']),
-        data=payload,
-        headers={
-            'Content-type': 'application/xml'
-        },
-        auth=HTTPBasicAuth(
-            username=settings.OGC_SERVER['default']['USER'],
-            password=settings.OGC_SERVER['default']['PASSWORD']
-        )
+
+    logger.debug("request data: {}".format(rule))
+    headers = {'Content-type': 'application/xml'}
+    rules_url = "{}/rules".format(geofence_url)
+    resp = http_request(
+        rules_url,
+        method='post',
+        headers=headers,
+        data=rule
     )
-    logger.debug("response status_code: {}".format(response.status_code))
-    if response.status_code not in (200, 201):
+
+    logger.debug("response status_code: {}".format(resp.status_code))
+    if resp.status_code not in (200, 201):
         msg = ("Could not ADD GeoServer User {!r} Rule for "
-               "Layer {!r}: '{!r}'".format(user, layer, response.text))
-        if 'Duplicate Rule' in response.text:
+               "Layer {!r}: '{!r}'".format(user, layer, resp.text))
+        if 'Duplicate Rule' in resp.text:
             logger.warning(msg)
         else:
+            logger.error(msg)
             raise RuntimeError(msg)
