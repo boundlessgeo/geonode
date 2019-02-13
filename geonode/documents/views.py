@@ -441,9 +441,13 @@ def document_metadata(
                 the_document.regions.add(*new_regions)
             the_document.save()
             document_form.save_many2many()
-            Document.objects.filter(
-                id=the_document.id).update(
-                category=new_category)
+            # NOTE: the following does not call post_save
+            # Document.objects.filter(id=the_document.id).update(
+            #                 category=new_category)
+            # but the following one do:
+            if new_category:
+                the_document.category = new_category
+                the_document.save()
 
             if getattr(settings, 'SLACK_ENABLED', False):
                 try:

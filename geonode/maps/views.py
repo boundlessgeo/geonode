@@ -243,8 +243,9 @@ def map_metadata(
         if new_regions:
             the_map.regions.clear()
             the_map.regions.add(*new_regions)
-        the_map.category = new_category
-        the_map.save()
+        if new_category:
+            the_map.category = new_category
+            the_map.save()
 
         if getattr(settings, 'SLACK_ENABLED', False):
             try:

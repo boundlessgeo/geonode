@@ -1036,10 +1036,14 @@ def layer_metadata(
         if up_sessions.count() > 0 and up_sessions[0].user != the_layer.owner:
             up_sessions.update(user=the_layer.owner)
 
-        if new_category is not None:
-            Layer.objects.filter(id=the_layer.id).update(
-                category=new_category
-            )
+        if new_category:
+            # NOTE: the following does not call post_save
+            # Layer.objects.filter(id=the_layer.id).update(
+            #     category=new_category
+            # )
+            # but the following one do:
+            the_layer.category = new_category
+            the_layer.save()
 
         if getattr(settings, 'SLACK_ENABLED', False):
             try:
