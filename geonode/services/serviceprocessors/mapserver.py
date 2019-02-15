@@ -327,7 +327,8 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
                 str(layer_meta.id))
 
         return {
-            "name": "{}_{}".format(iteminfo_name, layer_meta.name),
+            "name": "{}_{}".format(iteminfo_name.encode(errors='ignore'), 
+                                   layer_meta.name.encode(errors='ignore')),
             "store": self.name,
             "storeType": "remoteStore",
             "workspace": "remoteWorkspace",
