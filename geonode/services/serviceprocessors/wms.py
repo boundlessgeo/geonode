@@ -20,7 +20,7 @@
 """Utilities for enabling OGC WMS remote services in geonode."""
 
 import logging
-from urlparse import urlsplit
+from urlparse import urlsplit, parse_qs, urlparse
 from uuid import uuid4
 
 from django.conf import settings
@@ -39,6 +39,17 @@ from .. import models
 from . import base
 
 logger = logging.getLogger(__name__)
+
+
+def is_wfs_url(url):
+    if 'WFSServer' in urlsplit(url).path:
+        return True
+    elif 'geoserver' in urlsplit(url).path:
+        query = parse_qs(urlsplit(url).query)
+        if 'service' in query:
+            if query['service'] is 'wfs':
+                return True
+    return False
 
 
 class WmsServiceHandler(base.ServiceHandlerBase,
@@ -64,27 +75,46 @@ class WmsServiceHandler(base.ServiceHandlerBase,
         return store
 
     def create_geonode_service(self, owner, parent=None):
-        """Create a new geonode.service.models.Service instance
+        """Create a new geonode.service.models.Service instance or update
 
         :arg owner: The user who will own the service instance
         :type owner: geonode.people.models.Profile
 
+        If the passed url matches the previous one, but is of a different
+        type (WMS or WFS), update the existing Service instance. Otherwise,
+        create a new Service instance with the url.
         """
 
-        instance = models.Service(
-            uuid=str(uuid4()),
-            base_url=self.url,
-            type=self.service_type,
-            method=self.indexing_method,
-            owner=owner,
-            parent=parent,
-            version=self.parsed_service.identification.version,
-            name=self.name,
-            title=self.parsed_service.identification.title or self.name,
-            abstract=self.parsed_service.identification.abstract or _(
-                "Not provided"),
-            online_resource=self.parsed_service.provider.url,
+        parsed_url = urlparse(self.url.replace('WFSServer', ''))
+        stripped_url = \
+            parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path
+        service = models.Service.objects.filter(
+            base_url__icontains=stripped_url)
+        if service.exists():
+            instance = service.first()
+        else:
+            instance = models.Service(
+                uuid=str(uuid4()),
+                base_url=self.url,
+                type=self.service_type,
+                method=self.indexing_method,
+                owner=owner,
+                parent=parent,
+                version=self.parsed_service.identification.version,
+                name=self.name,
+                title=self.parsed_service.identification.title or self.name,
+                abstract=self.parsed_service.identification.abstract or _(
+                    "Not provided"),
+                online_resource=self.parsed_service.provider.url,
         )
+
+        if is_wfs_url(self.url):
+            instance.wfs_url = self.url
+        else:
+            instance.wms_url = self.url
+            # We assume the base_url "should" be a wms_url
+            instance.base_url = self.url
+
         return instance
 
     def has_basic_capabilities(self):

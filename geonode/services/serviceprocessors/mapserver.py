@@ -20,7 +20,7 @@
 """Utilities for enabling ESRI REST Mapserver remote services in geonode."""
 
 import logging
-from urlparse import urlsplit
+from urlparse import urlsplit, urlparse
 from uuid import uuid4
 
 from django.conf import settings
@@ -85,6 +85,13 @@ def epsg_string(bbox):
                 
     return None
 
+
+def is_featureserver_url(url):
+    if 'FeatureServer' in urlsplit(url).path:
+        return True
+    return False
+
+
 class MapserverServiceHandler(base.ServiceHandlerBase,
                         base.CascadableServiceHandlerMixin):
     """Remote service handler for OGC WMS services"""
@@ -107,27 +114,46 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         return store
 
     def create_geonode_service(self, owner, parent=None):
-        """Create a new geonode.service.models.Service instance
+        """Create a new geonode.service.models.Service instance or update
 
         :arg owner: The user who will own the service instance
         :type owner: geonode.people.models.Profile
 
+        If the passed url matches the previous one, but is of a different
+        type (WMS or WFS), update the existing Service instance. Otherwise,
+        create a new Service instance with the url.
         """
 
-        instance = models.Service(
-            uuid=str(uuid4()),
-            base_url=self.url,
-            type=self.service_type,
-            method=self.indexing_method,
-            owner=owner,
-            parent=parent,
-            version=self.parsed_service.currentVersion,
-            name=self.name,
-            title=self.title,
-            abstract=self.parsed_service.serviceDescription or _(
-                "Not provided"),
-            online_resource=self.url,
-        )
+        parsed_url = urlparse(self.url.replace('FeatureServer', ''))
+        stripped_url = \
+            parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path
+        service = models.Service.objects.filter(
+            base_url__icontains=stripped_url)
+        if service.exists():
+            instance = service.first()
+        else:
+            instance = models.Service(
+                uuid=str(uuid4()),
+                base_url=self.url,
+                type=self.service_type,
+                method=self.indexing_method,
+                owner=owner,
+                parent=parent,
+                version=self.parsed_service.currentVersion,
+                name=self.name,
+                title=self.title,
+                abstract=self.parsed_service.serviceDescription or _(
+                    "Not provided"),
+                online_resource=self.url,
+            )
+
+        if is_featureserver_url(self.url):
+            instance.wfs_url = self.url
+        else:
+            instance.wms_url = self.url
+            # We assume the base_url "should" be a wms_url
+            instance.base_url = self.url
+
         return instance
 
     def get_keywords(self):
