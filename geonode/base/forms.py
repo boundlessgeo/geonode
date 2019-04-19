@@ -133,13 +133,6 @@ class ResourceBaseForm(TranslationModelForm):
         queryset=Profile.objects.exclude(
             username='AnonymousUser'))
 
-    # TODO: How to replace this?
-    #keywords = TaggitField(
-    #    label=_("Keywords"),
-    #    required=False,
-    #    help_text=_("A space or comma-separated list of keywords"),
-    #    widget=TaggitWidget('HierarchicalKeywordAutocomplete'))
-
     regions = TreeNodeMultipleChoiceField(
         label=_("Regions"),
         required=False,
