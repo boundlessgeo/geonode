@@ -236,11 +236,4 @@ admin.site.register(HierarchicalKeyword, HierarchicalKeywordAdmin)
 
 
 class ResourceBaseAdminForm(forms.ModelForm):
-    # We need to specify autocomplete='TagAutocomplete' or admin views like
-    # /admin/maps/map/2/ raise exceptions during form rendering.
-    # But if we specify it up front, TaggitField.__init__ throws an exception
-    # which prevents app startup. Therefore, we defer setting the widget until
-    # after that's done.
-    # TODO: How do you replace these?
-    #keywords = TaggitField(required=False)
-    #keywords.widget = TaggitWidget(autocomplete='HierarchicalKeywordAutocomplete')
+    list_display_links = ('id',)
