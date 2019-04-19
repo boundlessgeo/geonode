@@ -99,7 +99,7 @@ setup(name='GeoNode',
 
         # GeoNode org maintained apps.
         "django-geoexplorer==4.0.25",
-        "geonode-user-messages==0.1.6",  # (0.1.3 in ppa) FIXME
+        "geonode-user-messages==0.1.14",  # (0.1.3 in ppa) FIXME
         "geonode-avatar==2.1.6",  # (2.1.5 in ppa) FIXME
         "geonode-announcements==1.0.9",
         "geonode-agon-ratings==0.3.5",  # (0.3.1 in ppa) FIXME
