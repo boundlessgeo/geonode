@@ -18,11 +18,10 @@
 #
 #########################################################################
 
-import autocomplete_light
-
 from geonode.maps.models import Map, MapLayer, MapSnapshot
 from geonode.base.admin import MediaTranslationAdmin, ResourceBaseAdminForm
 from django.contrib import admin
+from django import forms
 
 
 class MapLayerInline(admin.TabularInline):
@@ -45,11 +44,18 @@ class MapAdmin(MediaTranslationAdmin):
     form = MapAdminForm
 
 
+class MapLayerAdminForm(forms.ModelForm):
+
+    class Meta:
+        model = MapLayer
+        fields = '__all__'
+
+
 class MapLayerAdmin(admin.ModelAdmin):
     list_display = ('id', 'map', 'name')
     list_filter = ('map',)
     search_fields = ('map__title', 'name',)
-    form = autocomplete_light.modelform_factory(MapLayer, fields='__all__')
+    form = MapLayerAdminForm
 
 
 admin.site.register(Map, MapAdmin)

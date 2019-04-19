@@ -95,7 +95,6 @@ setup(name='GeoNode',
         "django-friendly-tag-loader==1.2.1",
         "django-activity-stream==0.6.4",
         "django-leaflet==0.22.0",
-        "django-autocomplete-light==2.3.3",
         "django-modeltranslation==0.12.1",  # python-django-modeltranslation (0.11 Debian)
 
         # GeoNode org maintained apps.

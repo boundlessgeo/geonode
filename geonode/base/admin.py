@@ -23,10 +23,9 @@ from django.contrib.admin import helpers
 from django.conf import settings
 from django.core.management import call_command
 from django.template.response import TemplateResponse
+from django import forms
 
-import autocomplete_light
 import StringIO
-from autocomplete_light.contrib.taggit_field import TaggitField, TaggitWidget
 
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
@@ -49,7 +48,7 @@ class MediaTranslationAdmin(TranslationAdmin, GuardedModelAdmin):
         }
 
 
-class BackupAdminForm(autocomplete_light.ModelForm):
+class BackupAdminForm(forms.ModelForm):
 
     class Meta:
         model = Backup
@@ -190,12 +189,26 @@ class RestrictionCodeTypeAdmin(MediaTranslationAdmin):
         return False
 
 
+class ContactRoleAdminForm(forms.ModelForm):
+
+    class Meta:
+        model = ContactRole
+        fields = '__all__'
+
+
+class LinkAdminForm(forms.ModelForm):
+
+    class Meta:
+        model = Link
+        fields = '__all__'
+
+
 class ContactRoleAdmin(admin.ModelAdmin):
     model = ContactRole
     list_display_links = ('id',)
     list_display = ('id', 'contact', 'resource', 'role')
     list_editable = ('contact', 'resource', 'role')
-    form = autocomplete_light.modelform_factory(ContactRole, fields='__all__')
+    form = ContactRoleAdminForm
 
 
 class LinkAdmin(admin.ModelAdmin):
@@ -204,7 +217,7 @@ class LinkAdmin(admin.ModelAdmin):
     list_display = ('id', 'resource', 'extension', 'link_type', 'name', 'mime')
     list_filter = ('resource', 'extension', 'link_type', 'mime')
     search_fields = ('name', 'resource__title',)
-    form = autocomplete_light.modelform_factory(Link, fields='__all__')
+    form = LinkAdminForm
 
 
 class HierarchicalKeywordAdmin(TreeAdmin):
@@ -222,11 +235,12 @@ admin.site.register(License, LicenseAdmin)
 admin.site.register(HierarchicalKeyword, HierarchicalKeywordAdmin)
 
 
-class ResourceBaseAdminForm(autocomplete_light.ModelForm):
+class ResourceBaseAdminForm(forms.ModelForm):
     # We need to specify autocomplete='TagAutocomplete' or admin views like
     # /admin/maps/map/2/ raise exceptions during form rendering.
     # But if we specify it up front, TaggitField.__init__ throws an exception
     # which prevents app startup. Therefore, we defer setting the widget until
     # after that's done.
-    keywords = TaggitField(required=False)
-    keywords.widget = TaggitWidget(autocomplete='HierarchicalKeywordAutocomplete')
+    # TODO: How do you replace these?
+    #keywords = TaggitField(required=False)
+    #keywords.widget = TaggitWidget(autocomplete='HierarchicalKeywordAutocomplete')
