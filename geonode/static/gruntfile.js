@@ -75,7 +75,7 @@ module.exports = function(grunt) {
           dest: 'lib/css',
           src: [
             'datatables/media/css/jquery.dataTables.css',
-            'select2/select2.css',
+            'select2/dist/css/select2.css',
             'multi-select/css/multi-select.css',
             'jquery-ui/themes/smoothness/jquery-ui.css',
             'bootstrap/dist/css/bootstrap.min.css',
@@ -93,7 +93,6 @@ module.exports = function(grunt) {
           dest: 'lib/img',
           src: [
             'bootstrap/img/*.png',
-            'select2/*.png', 'select2/spinner.gif',
             'raty/lib/img/*.png',
             'multi-select/img/switch.png',
             'datatables/media/images/*.png',
@@ -117,7 +116,7 @@ module.exports = function(grunt) {
             'jquery.ajaxQueue/dist/jquery.ajaxQueue.js',
             'multi-select/js/jquery.multi-select.js',
             'json2/json2.js',
-            'select2/select2.js',
+            'select2/dist/js/select2.js',
             'requirejs/require.js',
             'requirejs-text/text.js',
             'underscore/underscore.js',
