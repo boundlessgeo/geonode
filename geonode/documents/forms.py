@@ -154,7 +154,7 @@ class DocumentCreateForm(TranslationModelForm):
     resource = forms.CharField(
         required=False,
         label=_("Link to"),
-        widget=TextInput(
+        widget=forms.Select(
             attrs={
                 'name': 'title__contains',
                 'id': 'resource'}))
