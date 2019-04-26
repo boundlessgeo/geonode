@@ -524,6 +524,7 @@ define(function (require, exports) {
 
     LayerInfo.prototype.setupGeogigDropdown = function(selector){
         function format(item){return item.name;};
+        // TODO: This needs to be updated for select2 v4.0+
         $(selector).select2({
            data: {results:geogig_stores, text:'name'},
            formatSelection: format,
