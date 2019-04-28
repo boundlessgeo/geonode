@@ -209,93 +209,51 @@
     });
     
     function addSelectUsers(){
-      $("input.user-select").select2({
+      $(".user-select").select2({
         placeholder: '{% trans "Choose users..." %}',
         minimumInputLength: 1,
-        multiple: true,
         width: 'copy',
+        multiple: true,
         ajax: {
-          url: "{% url "account_ajax_lookup" %}",
-          dataType: "json",
-          type: "POST",
-          data: function (term, page) {
-            return {
-              query: term,
-            };
+          url: '{% url "autocomplete_people" %}',
+          dataType: 'json',
+          data: function (params) {
+            var query = {
+              q: params.term,
+            }
+            return query;
           },
-          results: function (data, page) {
-            return {results: data.users};
+          processResults: function (data) {
+            return {
+              results: data.objects
+            }
           }
-        },
-        id: userID,
-        formatResult: userFormatResult,
-        formatSelection: userFormatSelection,
-        initSelection: function(element, callback) {
-          var data = [];
-          var val = element.val().split(",");
-          $(element.val().split(",")).each(function (index,value) {
-              data.push({username: value});
-          });
-          callback(data);
         }
       });
     }
 
     function addSelectGroups(){
-      $("input.group-select").select2({
+      $(".group-select").select2({
         placeholder: '{% trans "Choose groups..." %}',
         minimumInputLength: 1,
-        multiple: true,
         width: 'copy',
+        multiple: true,
         ajax: {
-          url: "{% url "account_ajax_lookup" %}",
-          dataType: "json",
-          type: "POST",
-          data: function (term, page) {
-            return {
-              query: term,
-            };
+          url: '{% url "autocomplete_group" %}',
+          dataType: 'json',
+          data: function (params) {
+            var query = {
+              q: params.term,
+            }
+            return query;
           },
-          results: function (data, page) {
-            return {results: data.groups};
+          processResults: function (data) {
+            return {
+              results: data.objects
+            }
           }
-        },
-        id: groupID,
-        formatResult: groupFormatResult,
-        formatSelection: groupFormatSelection,
-        initSelection: function(element, callback) {
-          var data = [];
-          var val = element.val().split(",");
-          $(element.val().split(",")).each(function (index,value) {
-              data.push({name: value});
-          });
-          callback(data);
         }
       });
-    }
-    
-    function userID(user) {
-      return user.username;
-    }
-
-    function groupID(group) {
-      return group.name;
-    }
-
-    function userFormatResult(user) {
-      return user.username;
-    }
-
-    function userFormatSelection(user) {
-        return user.username;
-    }
-
-    function groupFormatResult(group) {
-      return group.title;
-    }
-
-    function groupFormatSelection(group) {
-        return group.name;
     }
 
 
