@@ -7024,6 +7024,24 @@ article.tab-pane {
 .home .jumbotron .btn-default:hover {
   background: rgba(0, 0, 0, 0.4);
 }
+.home .jumbotron #search_input {
+  text-indent: 64px;
+  width: 100%;
+  height: 56px;
+  border: 1px solid #333;
+  border-radius: 5px;
+  outline-width: 0;
+  font-size: 1.5em;
+}
+.home .jumbotron .select2-container .select2-selection--single {
+  text-indent: 64px;
+  text-shadow: None;
+  padding-top: 15px;
+  height: 56px;
+}
+.home .jumbotron .select2-selection__placeholder {
+  font-size: 1.5em;
+}
 .home .big-search {
   background: #333333;
   color: white;
@@ -7943,4 +7961,12 @@ footer form {
 }
 .table-user-profile-attribute {
   font-weight: bold;
+}
+#header_search {
+  width: 120px;
+  height: 32px;
+  border: 1px solid #333333;
+  border-radius: 5px;
+  outline-width: 0;
+  text-indent: 32px;
 }
