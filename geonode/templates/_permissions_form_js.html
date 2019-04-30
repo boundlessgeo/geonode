@@ -246,6 +246,8 @@
           data: function (params) {
             var query = {
               q: params.term,
+              limit: 10,
+              offset: 0
             }
             return query;
           },
@@ -265,11 +267,13 @@
         width: 'copy',
         multiple: true,
         ajax: {
-          url: '{% url "autocomplete_group" %}',
+          url: '{% url "autocomplete_groups" %}',
           dataType: 'json',
           data: function (params) {
             var query = {
               q: params.term,
+              limit: 10,
+              offset: 0
             }
             return query;
           },
