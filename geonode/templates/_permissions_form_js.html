@@ -9,7 +9,8 @@
     if (typeof form === 'string'){
       form = $(form);
     }
-    var data = form.serializeObject();   
+
+    var data = form.serializeObject();
 
     /*
     * If there's the anonymous user then set it's view permission and pop it
@@ -32,42 +33,67 @@
     * Cycle through permissions to map the form structure perm = ['user1',',user2'] to
     * the geonode user = ['perm1','perm2'], the same for groups
     */
-    
     for(var perm in data){
-      if(data[perm][0] !== ''){
-        var perms_to_assign = [perm];
-        if(perm=='manage_resourcebase'){
-          perms_to_assign = ['change_resourcebase', 'delete_resourcebase', 'change_resourcebase_permissions', 'publish_resourcebase'];
-        }
-        for (var i=0;i<data[perm][0].split(',').length;i++){
-          var user = data[perm][0].split(',')[i];
-          for(var j=0;j< perms_to_assign.length;j++){
-            if(permissions['users'].hasOwnProperty(user)){
-              permissions['users'][user].push(perms_to_assign[j]);
-            }else{
-              permissions['users'][user] = [perms_to_assign[j]];
+      var perms_to_assign = [perm.split('_users')[0].split('_groups')[0]];
+
+      if (perm.indexOf('manage_resourcebase') > -1) {
+        perms_to_assign = ['change_resourcebase', 'delete_resourcebase', 'change_resourcebase_permissions', 'publish_resourcebase'];
+      }
+
+      if (perm.indexOf('users') > -1) {
+        if (Array.isArray(data[perm])) {
+          for (var i = 0; i < data[perm].length; i++) {
+            var user = data[perm][i];
+            for (var j = 0; j < perms_to_assign.length; j++) {
+              var new_permission = perms_to_assign[j];
+              if (permissions['users'].hasOwnProperty(user)) {
+                permissions['users'][user].push(new_permission);
+              } else {
+                permissions['users'][user] = [new_permission];
+              }
+            }
+          }
+        // in the case of a single result, it will be a string not an array
+        } else {
+          var user = data[perm];
+          for (var j = 0; j < perms_to_assign.length; j++) {
+            var new_permission = perms_to_assign[j];
+            if (permissions['users'].hasOwnProperty(user)) {
+              permissions['users'][user].push(new_permission);
+            } else {
+              permissions['users'][user] = [new_permission];
             }
           }
         }
       }
-      if(data[perm][1] !== ''){
-        var perms_to_assign = [perm];
-        if(perm=='manage_resourcebase'){
-          perms_to_assign = ['change_resourcebase', 'delete_resourcebase', 'change_resourcebase_permissions', 'publish_resourcebase'];
-        }
-        for (var i=0;i<data[perm][1].split(',').length;i++){
-          var group = data[perm][1].split(',')[i];
-          for(var j=0;j< perms_to_assign.length;j++){
-            if(permissions['groups'].hasOwnProperty(group)){
-              permissions['groups'][group].push(perms_to_assign[j]);
-            }else{
-              permissions['groups'][group] = [perms_to_assign[j]];
+      if (perm.indexOf('groups') > -1) {
+        if (Array.isArray(data[perm])) {
+          for (var i = 0; i < data[perm].length; i++) {
+            var group = data[perm][i];
+            for (var j = 0; j < perms_to_assign.length; j++) {
+              var new_permission = perms_to_assign[j];
+              if (permissions['groups'].hasOwnProperty(group)) {
+                permissions['groups'][group].push(new_permission);
+              } else {
+                permissions['groups'][group] = [new_permission];
+              }
+            }
+          }
+        // in the case of a single result, it will be a string not an array
+        } else {
+          var group = data[perm];
+          for (var j = 0; j < perms_to_assign.length; j++) {
+            var new_permission = perms_to_assign[j];
+            if (permissions['groups'].hasOwnProperty(group)) {
+              permissions['groups'][group].push(new_permission);
+            } else {
+              permissions['groups'][group] = [new_permission];
             }
           }
         }
       }
     }
-    return permissions
+    return permissions;
   };
 
   $(function() {
@@ -209,93 +235,55 @@
     });
     
     function addSelectUsers(){
-      $("input.user-select").select2({
+      $(".user-select").select2({
         placeholder: '{% trans "Choose users..." %}',
         minimumInputLength: 1,
-        multiple: true,
         width: 'copy',
+        multiple: true,
         ajax: {
-          url: "{% url "account_ajax_lookup" %}",
-          dataType: "json",
-          type: "POST",
-          data: function (term, page) {
-            return {
-              query: term,
-            };
+          url: '{% url "autocomplete_people" %}',
+          dataType: 'json',
+          data: function (params) {
+            var query = {
+              q: params.term,
+              limit: 10,
+              offset: 0
+            }
+            return query;
           },
-          results: function (data, page) {
-            return {results: data.users};
+          processResults: function (data) {
+            return {
+              results: data.objects
+            }
           }
-        },
-        id: userID,
-        formatResult: userFormatResult,
-        formatSelection: userFormatSelection,
-        initSelection: function(element, callback) {
-          var data = [];
-          var val = element.val().split(",");
-          $(element.val().split(",")).each(function (index,value) {
-              data.push({username: value});
-          });
-          callback(data);
         }
       });
     }
 
     function addSelectGroups(){
-      $("input.group-select").select2({
+      $(".group-select").select2({
         placeholder: '{% trans "Choose groups..." %}',
         minimumInputLength: 1,
-        multiple: true,
         width: 'copy',
+        multiple: true,
         ajax: {
-          url: "{% url "account_ajax_lookup" %}",
-          dataType: "json",
-          type: "POST",
-          data: function (term, page) {
-            return {
-              query: term,
-            };
+          url: '{% url "autocomplete_groups" %}',
+          dataType: 'json',
+          data: function (params) {
+            var query = {
+              q: params.term,
+              limit: 10,
+              offset: 0
+            }
+            return query;
           },
-          results: function (data, page) {
-            return {results: data.groups};
+          processResults: function (data) {
+            return {
+              results: data.objects
+            }
           }
-        },
-        id: groupID,
-        formatResult: groupFormatResult,
-        formatSelection: groupFormatSelection,
-        initSelection: function(element, callback) {
-          var data = [];
-          var val = element.val().split(",");
-          $(element.val().split(",")).each(function (index,value) {
-              data.push({name: value});
-          });
-          callback(data);
         }
       });
-    }
-    
-    function userID(user) {
-      return user.username;
-    }
-
-    function groupID(group) {
-      return group.name;
-    }
-
-    function userFormatResult(user) {
-      return user.username;
-    }
-
-    function userFormatSelection(user) {
-        return user.username;
-    }
-
-    function groupFormatResult(group) {
-      return group.title;
-    }
-
-    function groupFormatSelection(group) {
-        return group.name;
     }
 
 

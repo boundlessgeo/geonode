@@ -21,7 +21,6 @@
 import json
 import os
 import re
-import autocomplete_light
 
 from django import forms
 from django.utils.translation import ugettext_lazy as _
@@ -34,7 +33,6 @@ from geonode.documents.models import Document
 from geonode.maps.models import Map
 from geonode.layers.models import Layer
 
-autocomplete_light.autodiscover() # flake8: noqa
 
 from geonode.base.forms import ResourceBaseForm
 
@@ -156,7 +154,7 @@ class DocumentCreateForm(TranslationModelForm):
     resource = forms.CharField(
         required=False,
         label=_("Link to"),
-        widget=TextInput(
+        widget=forms.Select(
             attrs={
                 'name': 'title__contains',
                 'id': 'resource'}))

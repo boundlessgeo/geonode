@@ -37,8 +37,6 @@ from django.core.exceptions import PermissionDenied
 from .models import Profile
 from .forms import ProfileCreationForm, ProfileChangeForm
 
-import autocomplete_light
-
 csrf_protect_m = method_decorator(csrf_protect)
 sensitive_post_parameters_m = method_decorator(sensitive_post_parameters())
 
@@ -46,7 +44,6 @@ sensitive_post_parameters_m = method_decorator(sensitive_post_parameters())
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'username', 'organization',)
     search_fields = ('username', 'organization', 'profile', )
-    autocomplete_light.modelform_factory(Profile, fields='__all__')
     add_form_template = 'admin/auth/user/add_form.html'
     change_user_password_template = None
     fieldsets = (
