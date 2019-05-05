@@ -8,7 +8,7 @@ from urlparse import urlsplit, parse_qs
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('services', '0031_auto_20180809_1500'),
+        ('services', '0030_auto_20171212_0518'),
     ]
 
     def determine_base_url(apps, schema_editor):
