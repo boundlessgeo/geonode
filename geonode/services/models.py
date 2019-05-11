@@ -61,6 +61,19 @@ class Service(ResourceBase):
         unique=True,
         db_index=True
     )
+    # allow a Service to have both a mapserver and featureserver endpoint
+    wms_url = models.URLField(
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=True
+    )
+    wfs_url = models.URLField(
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=True
+    )
     version = models.CharField(
         max_length=10,
         null=True,

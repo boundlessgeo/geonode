@@ -32,6 +32,7 @@ from .serviceprocessors import get_service_handler
 from geonode.base.models import TopicCategory, License
 from geonode.base.enumerations import UPDATE_FREQUENCIES
 from django.conf import settings
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,9 @@ class CreateServiceForm(forms.Form):
 
     def clean_url(self):
         proposed_url = self.cleaned_data["url"]
-        existing = Service.objects.filter(base_url=proposed_url).exists()
+        existing = Service.objects.filter(
+            Q(base_url=proposed_url) | Q(wms_url=proposed_url) |
+            Q(wfs_url=proposed_url)).exists()
         if existing:
             raise ValidationError(
                 _("Service %(url)s is already registered"),

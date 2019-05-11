@@ -42,7 +42,12 @@ Ext.onReady(function() {
   <h3>{{service.title|default:service.name}}</h3>
       <p><strong>{% trans "Name:" %}</strong> {{service.name}}</p>
       <p><strong>{% trans "Type:" %}</strong> {{service.type}}</p>
-      <p><strong>{% trans "URL:" %}</strong> {{service.base_url}}</p>
+      {% if service.wms_url and service.wfs_url %}
+        <p><strong>{% trans "WMS_URL:" %}</strong> {{service.wms_url}}</p>
+        <p><strong>{% trans "WFS_URL:" %}</strong> {{service.wfs_url}}</p>
+      {% else %}
+        <p><strong>{% trans "URL:" %}</strong> {{service.base_url}}</p>
+      {% endif %}
       <p><strong>{% trans "Abstract:" %}</strong> {{service.abstract}}</p>
       <p><strong>{% trans "Keywords:" %}</strong> {{ service.keywords.all|join:", " }}</p>
       <p><strong>{% trans "Contact:" %}</strong> <a href="{% url "profile_detail" service.owner.username %}">{{ service.owner }}</a></p>
