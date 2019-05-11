@@ -28,14 +28,7 @@
   	<div class="container">
   		<h1>{% trans "Search for Data." %}</h1>
   		<div class="search">
-  			<form id="search" action="{% url "search" %}" >
-  				<span class="fa fa-search fa-2x"></span>
-  				{% if HAYSTACK_SEARCH %}
-  				<input id="search_input" type="text" placeholder="Search" class="form-control" name="q">
-  				{% else %}
-  				<input id="search_input" type="text" placeholder="Search" class="form-control" name="title__icontains">
-  				{% endif %}
-  			</form>
+  			<select id="search_input"><option></option></select>
   		</div>
   		<p><a class="btn btn-default btn-lg" href="/search/">Advanced Search</a></p>
   	</div>
@@ -205,5 +198,47 @@
 </script>
 <script>
 	$('[data-toggle="tooltip"]').tooltip();
+</script>
+<script type="text/javascript">
+  $('#search_input').select2({
+    ajax: {
+      url: '{% url "autocomplete" %}',
+      dataType: 'json',
+      data: function (params) {
+        var query = {
+          q: params.term,
+        }
+        return query;
+      },
+      processResults: function (data) {
+        return {
+          results: data.objects
+        }
+      }
+    },
+    // TODO: How to get font-awesome search icon back in search bar?
+    placeholder: 'Search',
+    minimumInputLength: 1,
+    tags: true
+  });
+  $('#search_input').on('select2:select', function(e) {
+    var url = '';
+
+    if ('type' in e.params.data) {
+      if (e.params.data.type == 'document') {
+        url = '/documents/?limit=100&offset=0';
+      } else {
+        url = '/search/?limit=100&offset=0&type=' + e.params.data.type;
+      }
+    } else {
+      // Assuming layer type?
+      url = '/search/?limit=100&offset=0&type=layer';
+    }
+
+    url += '&q=' + e.params.data.text;
+
+    // TODO: Is this the correct way to redirect?
+    window.location.replace(url);
+  });
 </script>
 {% endblock extra_script %}

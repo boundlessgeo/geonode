@@ -13,7 +13,6 @@ celery==3.1.18
 dj-database-url==0.4.2
 django-activity-stream==0.6.1
 django-appconf==0.5
-django-autocomplete-light==2.3.3
 django-bootstrap3-datetimepicker==2.2.3
 django-braces==1.10.0
 django-celery==3.1.16
@@ -44,7 +43,7 @@ geonode-avatar==2.1.6
 geonode-dialogos==0.7
 geonode-notification==1.1.1
 geonode-user-accounts==1.0.13
-geonode-user-messages==0.1.5
+geonode-user-messages==0.1.14
 gisdata==0.5.4
 gsconfig==1.0.6
 gsimporter==1.0.0
