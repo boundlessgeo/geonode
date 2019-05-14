@@ -234,6 +234,10 @@ def bbox_to_projection(native_bbox, source_srid=4326, target_srid=4326):
         except BaseException:
             tb = traceback.format_exc()
             logger.error(tb)
+            # Including error message here to communicate outside of util func
+            # Retaining expected return result to avoid breaking maps
+            return tuple([str(x) for x in native_bbox]) + \
+                   ("Error during reprojection: {0}".format(tb),)
 
     return native_bbox
 
