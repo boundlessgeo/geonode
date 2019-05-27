@@ -32,7 +32,7 @@ from geonode.groups.models import GroupProfile
 
 from account.models import EmailAddress
 
-from .utils import format_address
+from geonode.utils import format_address
 
 if 'notification' in settings.INSTALLED_APPS:
     from notification import models as notification

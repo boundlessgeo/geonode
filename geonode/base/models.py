@@ -65,6 +65,9 @@ from geonode.people.enumerations import ROLE_VALUES
 
 from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken, get_application_model
+from geonode.utils import format_address
+from geonode.base.enumerations import COUNTRIES
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,33 +77,96 @@ class ContactRole(models.Model):
     ContactRole is an intermediate model to bind Profiles as Contacts to Resources and apply roles.
     """
     resource = models.ForeignKey('ResourceBase', blank=True, null=True)
-    contact = models.ForeignKey(settings.AUTH_USER_MODEL)
-    role = models.CharField(choices=ROLE_VALUES, max_length=255, help_text=_('function performed by the responsible '
-                                                                             'party'))
+    contact = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True,
+                                null=True)
+    role = models.CharField(choices=ROLE_VALUES, max_length=255,
+                            help_text=_('function performed by the '
+                                        'responsible party'))
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    email = models.EmailField(_('email address'), blank=True)
+    organization = models.CharField(
+        _('Organization Name'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('name of the responsible organization'))
+    position = models.CharField(
+        _('Position Name'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('role or position of the responsible person'))
+    voice = models.CharField(_('Voice'), max_length=255, blank=True, null=True,
+                             help_text=_('telephone number by which '
+                                         'individuals can speak to the '
+                                         'responsible organization or '
+                                         'individual'))
+    fax = models.CharField(_('Facsimile'), max_length=255, blank=True,
+                           null=True,
+                           help_text=_('telephone number of a facsimile '
+                                       'machine for the responsible '
+                                       'organization or individual'))
+    delivery = models.CharField(
+        _('Delivery Point'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('physical and email address at which the organization or '
+                    'individual may be contacted'))
+    city = models.CharField(
+        _('City'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('city of the location'))
+    area = models.CharField(
+        _('Administrative Area'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('state, province of the location'))
+    zipcode = models.CharField(
+        _('Postal Code'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('ZIP or other postal code'))
+    country = models.CharField(
+        choices=COUNTRIES,
+        max_length=3,
+        blank=True,
+        null=True,
+        help_text=_('country of the physical address'))
+    keywords = TaggableManager(_('keywords'), blank=True, help_text=_(
+        'commonly used word(s) or formalised word(s) or phrase(s) used to '
+        'describe the subject (space or comma-separated'))
 
-    def clean(self):
+    def keyword_list(self):
         """
-        Make sure there is only one poc and author per resource
+        Returns a list of the Profile's keywords.
         """
-        if (self.role == self.resource.poc_role) or (self.role == self.resource.metadata_author_role):
-            contacts = self.resource.contacts.filter(contactrole__role=self.role)
-            if contacts.count() == 1:
-                # only allow this if we are updating the same contact
-                if self.contact != contacts.get():
-                    raise ValidationError('There can be only one %s for a given resource' % self.role)
-        if self.contact.user is None:
-            # verify that any unbound contact is only associated to one resource
-            bounds = ContactRole.objects.filter(contact=self.contact).count()
-            if bounds > 1:
-                raise ValidationError('There can be one and only one resource linked to an unbound contact' % self.role)
-            elif bounds == 1:
-                # verify that if there was one already, it corresponds to this instance
-                if ContactRole.objects.filter(contact=self.contact).get().id != self.id:
-                    raise ValidationError('There can be one and only one resource linked to an unbound contact'
-                                          % self.role)
+        return [kw.name for kw in self.keywords.all()]
+
+    @property
+    def name_long(self):
+        if self.first_name and self.last_name:
+            return '%s %s (%s)' % (self.first_name, self.last_name,
+                                   self.username)
+        elif (not self.first_name) and self.last_name:
+            return '%s (%s)' % (self.last_name, self.username)
+        elif self.first_name and (not self.last_name):
+            return '%s (%s)' % (self.first_name, self.username)
+        else:
+            return self.username
+
+    @property
+    def location(self):
+        return format_address(self.delivery, self.zipcode, self.city,
+                              self.area, self.country)
 
     class Meta:
-        unique_together = (("contact", "resource", "role"),)
+        unique_together = (("resource", "role"),)
 
 
 class TopicCategory(models.Model):
@@ -432,7 +498,7 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     uuid = models.CharField(max_length=36)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, related_name='owned_resource',
                               verbose_name=_("Owner"))
-    contacts = models.ManyToManyField(settings.AUTH_USER_MODEL, through='ContactRole')
+    contacts = models.ManyToManyField(ContactRole, blank=True, null=True)
     title = models.CharField(_('title'), max_length=255, help_text=_('name by which the cited resource is known'))
     alternate = models.CharField(max_length=128, null=True, blank=True)
     date = models.DateTimeField(_('date'), default=datetime.datetime.now, help_text=date_help_text)
@@ -833,11 +899,29 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
         # reset any poc assignation to this resource
         ContactRole.objects.filter(role='pointOfContact', resource=self).delete()
         # create the new assignation
-        ContactRole.objects.create(role='pointOfContact', resource=self, contact=poc)
+        # Best we can do to test if poc = Profile
+        if hasattr(poc, 'username'):
+            ContactRole.objects.create(role='pointOfContact', resource=self,
+                                       contact=poc)
+        # if poc = ContactRole, update it
+        elif isinstance(poc, ContactRole):
+            contact_obj = ContactRole.objects.get(pk=poc.id)
+            contact_obj.role = 'pointOfContact'
+            contact_obj.resource = self
+            contact_obj.save()
+        # poc was an unrecognized type
+        else:
+            raise ValidationError('Unrecognized data type for poc: {0}'
+                                  .format(type(poc)))
 
     def _get_poc(self):
         try:
-            the_poc = ContactRole.objects.get(role='pointOfContact', resource=self).contact
+            contact_obj = ContactRole.objects.get(role='pointOfContact',
+                                                  resource=self)
+            if contact_obj.contact is not None:
+                the_poc = contact_obj.contact
+            else:
+                the_poc = contact_obj
         except ContactRole.DoesNotExist:
             the_poc = None
         return the_poc
@@ -845,14 +929,31 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     poc = property(_get_poc, _set_poc)
 
     def _set_metadata_author(self, metadata_author):
-        # reset any metadata_author assignation to this resource
+        # reset any author assignation to this resource
         ContactRole.objects.filter(role='author', resource=self).delete()
         # create the new assignation
-        ContactRole.objects.create(role='author', resource=self, contact=metadata_author)
+        # Best we can do to test if metadata_author = Profile
+        if hasattr(metadata_author, 'username'):
+            ContactRole.objects.create(role='author', resource=self,
+                                       contact=metadata_author)
+        # if metadata_author = ContactRole, update it
+        elif isinstance(metadata_author, ContactRole):
+            contact_obj = ContactRole.objects.get(pk=metadata_author.id)
+            contact_obj.role = 'author'
+            contact_obj.resource = self
+            contact_obj.save()
+        # metadata_author was an unrecognized type
+        else:
+            raise ValidationError('Unrecognized data type for poc: {0}'
+                                  .format(type(metadata_author)))
 
     def _get_metadata_author(self):
         try:
-            the_ma = ContactRole.objects.get(role='author', resource=self).contact
+            contact_obj = ContactRole.objects.get(role='author', resource=self)
+            if contact_obj.contact is not None:
+                the_ma = contact_obj.contact
+            else:
+                the_ma = contact_obj
         except ContactRole.DoesNotExist:
             the_ma = None
         return the_ma
