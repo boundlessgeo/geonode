@@ -228,16 +228,36 @@
               {% endfor %}
             </table>
 
-            <fieldset class="form-controls modal-forms modal hide fade" id="poc_form" >
-              <h2>{% trans "Point of Contact" %}</h2>
-              {{ poc_form|as_bootstrap }}
-              <button type='button' class="modal-cloose-btn btn btn-primary">Done</button>
-            </fieldset>
-            <fieldset class="form-controls modal-forms modal hide fade" id="metadata_form">
-              <h2>{% trans "Metadata Provider" %}</h2>
-                {{ author_form|as_bootstrap }}
-              <button type='button' class="modal-cloose-btn btn btn-primary">Done</button>
-            </fieldset>
+            <div class="form-controls modal-forms modal fade" id="poc_form" >
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h2 class="modal-title">{% trans "Point of Contact" %}</h2>
+                  </div>
+                  <div class="modal-body">
+                    {{ poc_form|as_bootstrap }}
+                  </div>
+                  <div class="modal-footer">
+                    <button type='button' class="modal-cloose-btn btn btn-primary">Done</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-controls modal-forms modal fade" id="metadata_form" >
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h2 class="modal-title">{% trans "Metadata Provider" %}</h2>
+                  </div>
+                  <div class="modal-body">
+                    {{ author_form|as_bootstrap }}
+                  </div>
+                  <div class="modal-footer">
+                    <button type='button' class="modal-cloose-btn btn btn-primary">Done</button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {% if not layer.metadata_uploaded_preserve %}
             <div class="form-actions">
