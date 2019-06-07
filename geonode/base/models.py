@@ -432,7 +432,6 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     uuid = models.CharField(max_length=36)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, related_name='owned_resource',
                               verbose_name=_("Owner"))
-    contacts = models.ManyToManyField(settings.AUTH_USER_MODEL, through='ContactRole')
     title = models.CharField(_('title'), max_length=255, help_text=_('name by which the cited resource is known'))
     alternate = models.CharField(max_length=128, null=True, blank=True)
     date = models.DateTimeField(_('date'), default=datetime.datetime.now, help_text=date_help_text)

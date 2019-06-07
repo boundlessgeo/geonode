@@ -156,7 +156,6 @@ class ResourceBaseForm(TranslationModelForm):
 
     class Meta:
         exclude = (
-            'contacts',
             'name',
             'uuid',
             'bbox_x0',
