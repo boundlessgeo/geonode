@@ -984,3 +984,51 @@ def resignals():
         for signal in signals:
             signaltype.connect(signal['receiv_call'], sender=signal['sender_ista'],
                                weak=signal['is_weak'], dispatch_uid=signal['uid'])
+
+
+def format_address(street=None, zipcode=None, city=None, area=None, country=None):
+
+    if country is not None and country == "USA":
+        address = ""
+        if city and area:
+            if street:
+                address += street+", "
+            address += city+", "+area
+            if zipcode:
+                address += " "+zipcode
+        elif (not city) and area:
+            if street:
+                address += street+", "
+            address += area
+            if zipcode:
+                address += " "+zipcode
+        elif city and (not area):
+            if street:
+                address += street+", "
+            address += city
+            if zipcode:
+                address += " "+zipcode
+        else:
+            if street:
+                address += ", "+street
+            if zipcode:
+                address += " "+zipcode
+
+        if address:
+            address += ", United States"
+        else:
+            address += "United States"
+
+        return address
+    else:
+        address = []
+        if street:
+            address.append(street)
+        if zipcode:
+            address.append(zipcode)
+        if city:
+            address.append(city)
+        if area:
+            address.append(area)
+        address.append(country)
+        return " ".join(address)

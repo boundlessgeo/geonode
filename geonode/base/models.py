@@ -65,6 +65,8 @@ from geonode.people.enumerations import ROLE_VALUES
 
 from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken, get_application_model
+from geonode.utils import format_address
+from geonode.base.enumerations import COUNTRIES
 
 logger = logging.getLogger(__name__)
 
@@ -74,33 +76,96 @@ class ContactRole(models.Model):
     ContactRole is an intermediate model to bind Profiles as Contacts to Resources and apply roles.
     """
     resource = models.ForeignKey('ResourceBase', blank=True, null=True)
-    contact = models.ForeignKey(settings.AUTH_USER_MODEL)
-    role = models.CharField(choices=ROLE_VALUES, max_length=255, help_text=_('function performed by the responsible '
-                                                                             'party'))
+    contact = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True,
+                                null=True)
+    role = models.CharField(choices=ROLE_VALUES, max_length=255,
+                            help_text=_('function performed by the '
+                                        'responsible party'))
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    email = models.EmailField(_('email address'), blank=True)
+    organization = models.CharField(
+        _('Organization Name'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('name of the responsible organization'))
+    position = models.CharField(
+        _('Position Name'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('role or position of the responsible person'))
+    voice = models.CharField(_('Voice'), max_length=255, blank=True, null=True,
+                             help_text=_('telephone number by which '
+                                         'individuals can speak to the '
+                                         'responsible organization or '
+                                         'individual'))
+    fax = models.CharField(_('Facsimile'), max_length=255, blank=True,
+                           null=True,
+                           help_text=_('telephone number of a facsimile '
+                                       'machine for the responsible '
+                                       'organization or individual'))
+    delivery = models.CharField(
+        _('Delivery Point'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('physical and email address at which the organization or '
+                    'individual may be contacted'))
+    city = models.CharField(
+        _('City'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('city of the location'))
+    area = models.CharField(
+        _('Administrative Area'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('state, province of the location'))
+    zipcode = models.CharField(
+        _('Postal Code'),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('ZIP or other postal code'))
+    country = models.CharField(
+        choices=COUNTRIES,
+        max_length=3,
+        blank=True,
+        null=True,
+        help_text=_('country of the physical address'))
+    keywords = TaggableManager(_('keywords'), blank=True, help_text=_(
+        'commonly used word(s) or formalised word(s) or phrase(s) used to '
+        'describe the subject (space or comma-separated'))
 
-    def clean(self):
+    def keyword_list(self):
         """
-        Make sure there is only one poc and author per resource
+        Returns a list of the Profile's keywords.
         """
-        if (self.role == self.resource.poc_role) or (self.role == self.resource.metadata_author_role):
-            contacts = self.resource.contacts.filter(contactrole__role=self.role)
-            if contacts.count() == 1:
-                # only allow this if we are updating the same contact
-                if self.contact != contacts.get():
-                    raise ValidationError('There can be only one %s for a given resource' % self.role)
-        if self.contact.user is None:
-            # verify that any unbound contact is only associated to one resource
-            bounds = ContactRole.objects.filter(contact=self.contact).count()
-            if bounds > 1:
-                raise ValidationError('There can be one and only one resource linked to an unbound contact' % self.role)
-            elif bounds == 1:
-                # verify that if there was one already, it corresponds to this instance
-                if ContactRole.objects.filter(contact=self.contact).get().id != self.id:
-                    raise ValidationError('There can be one and only one resource linked to an unbound contact'
-                                          % self.role)
+        return [kw.name for kw in self.keywords.all()]
+
+    @property
+    def name_long(self):
+        if self.first_name and self.last_name:
+            return '%s %s (%s)' % (self.first_name, self.last_name,
+                                   self.username)
+        elif (not self.first_name) and self.last_name:
+            return '%s (%s)' % (self.last_name, self.username)
+        elif self.first_name and (not self.last_name):
+            return '%s (%s)' % (self.first_name, self.username)
+        else:
+            return self.username
+
+    @property
+    def location(self):
+        return format_address(self.delivery, self.zipcode, self.city,
+                              self.area, self.country)
 
     class Meta:
-        unique_together = (("contact", "resource", "role"),)
+        unique_together = (("resource", "role"),)
 
 
 class TopicCategory(models.Model):
