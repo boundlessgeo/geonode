@@ -1,13 +1,30 @@
 {% load friendly_loader %}
 {% friendly_load avatar_tags %}
 {% load i18n %}
+<!-- TODO: Refactor organization of page which will render a lot of the
+     distinctions between profile and contactrole irrelevant -->
   <div class="pull-left">
   {% with 48 as avatar_size %}
     <a href="{% url "profile_detail" profile.username %}" class="avatar">{% avatar profile avatar_size %}</a>
   {% endwith %}
   </div>
   <div>
-    <p><a href="{{ profile.get_absolute_url }}">{{ profile.username }}</a>
+    <p>
+      {% if profile.get_absolute_url %}
+      <a href="{{ profile.get_absolute_url }}">
+        {% if profile.username %}
+          {{ profile.username }}
+        {% else %}
+          {{ profile.name_long }}
+        {% endif %}
+      </a>
+      {% else %}
+        {% if profile.username %}
+          {{ profile.username }}
+        {% else %}
+          {{ profile.name_long }}
+        {% endif %}
+      {% endif %}
       {{ username }}
       <br />{% if profile.organization %}{{ profile.organization }}
       {% else %}{% trans "No Group" %}

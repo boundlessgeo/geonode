@@ -12,12 +12,24 @@
       {% include "people/_profile_about_item.html" %}
     {% endwith %}
   <p>{% trans "Point of Contact" %}</p>
-    {% with resource.poc as profile %}
-      {% include "people/_profile_about_item.html" %}
-    {% endwith %}
+    {% if resource.poc.contact %}
+      {% with resource.poc.contact as profile %}
+        {% include "people/_profile_about_item.html" %}
+      {% endwith %}
+    {% else %}
+      {% with resource.poc as profile %}
+        {% include "people/_profile_about_item.html" %}
+      {% endwith %}
+    {% endif %}
   <p>{% trans "Metadata Author" %}</p>
-    {% with resource.metadata_author as profile %}
-      {% include "people/_profile_about_item.html" %}
-    {% endwith %}
+    {% if resource.metadata_author.contact %}
+      {% with resource.metadata_author.contact as profile %}
+        {% include "people/_profile_about_item.html" %}
+      {% endwith %}
+    {% else %}
+      {% with resource.metadata_author as profile %}
+        {% include "people/_profile_about_item.html" %}
+      {% endwith %}
+    {% endif %}
   {% endif %}
 </li>
