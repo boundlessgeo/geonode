@@ -149,15 +149,23 @@ class ContactRole(models.Model):
 
     @property
     def name_long(self):
-        if self.first_name and self.last_name:
-            return '%s %s (%s)' % (self.first_name, self.last_name,
-                                   self.username)
+        if self.contact:
+            if self.first_name and self.last_name:
+                return '{0} {1} ({2})'.format(self.first_name, self.last_name,
+                                       self.contact.username)
+            elif (not self.first_name) and self.last_name:
+                return '{0} ({1})'.format(self.last_name, self.contact.username)
+            elif self.first_name and (not self.last_name):
+                return '{0} ({1})'.format(self.first_name, self.contact.username)
+        elif self.first_name and self.last_name:
+            return '{0} {1}'.format(self.first_name, self.last_name)
         elif (not self.first_name) and self.last_name:
-            return '%s (%s)' % (self.last_name, self.username)
+            return '{0}'.format(self.last_name)
         elif self.first_name and (not self.last_name):
-            return '%s (%s)' % (self.first_name, self.username)
+            return '{0}'.format(self.first_name)
+        # TODO: What should we return if no name is available?
         else:
-            return self.username
+            return 'Anonymous'
 
     @property
     def location(self):
