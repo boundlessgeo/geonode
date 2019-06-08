@@ -136,9 +136,13 @@ def geoserver_pre_save(instance, sender, **kwargs):
                                 'href': None,
                                 'url': None,
                                 'type': None}
-        profile = Profile.objects.get(username=instance.poc.username)
-        gs_layer.attribution_link = settings.SITEURL[
-            :-1] + profile.get_absolute_url()
+        # Best we can do to test if poc = Profile
+        if hasattr(instance.poc, 'username'):
+            profile = Profile.objects.get(username=instance.poc.username)
+            gs_layer.attribution_link = settings.SITEURL[
+                                        :-1] + profile.get_absolute_url()
+        else:
+            gs_layer.attribution_link = settings.SITEURL
         # gs_layer should only be called if
         # ogc_server_settings.BACKEND_WRITE_ENABLED == True
         if getattr(ogc_server_settings, "BACKEND_WRITE_ENABLED", True):

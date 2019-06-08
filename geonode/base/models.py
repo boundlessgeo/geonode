@@ -497,6 +497,7 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     uuid = models.CharField(max_length=36)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, related_name='owned_resource',
                               verbose_name=_("Owner"))
+    contacts = models.ManyToManyField(ContactRole, blank=True, null=True)
     title = models.CharField(_('title'), max_length=255, help_text=_('name by which the cited resource is known'))
     alternate = models.CharField(max_length=128, null=True, blank=True)
     date = models.DateTimeField(_('date'), default=datetime.datetime.now, help_text=date_help_text)
@@ -897,11 +898,29 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
         # reset any poc assignation to this resource
         ContactRole.objects.filter(role='pointOfContact', resource=self).delete()
         # create the new assignation
-        ContactRole.objects.create(role='pointOfContact', resource=self, contact=poc)
+        # Best we can do to test if poc = Profile
+        if hasattr(poc, 'username'):
+            ContactRole.objects.create(role='pointOfContact', resource=self,
+                                       contact=poc)
+        # if poc = ContactRole, update it
+        elif isinstance(poc, ContactRole):
+            contact_obj = ContactRole.objects.get(pk=poc.id)
+            contact_obj.role = 'pointOfContact'
+            contact_obj.resource = self
+            contact_obj.save()
+        # poc was an unrecognized type
+        else:
+            raise ValidationError('Unrecognized data type for poc: {0}'
+                                  .format(type(poc)))
 
     def _get_poc(self):
         try:
-            the_poc = ContactRole.objects.get(role='pointOfContact', resource=self).contact
+            contact_obj = ContactRole.objects.get(role='pointOfContact',
+                                                  resource=self)
+            if contact_obj.contact is not None:
+                the_poc = contact_obj.contact
+            else:
+                the_poc = contact_obj
         except ContactRole.DoesNotExist:
             the_poc = None
         return the_poc
@@ -911,12 +930,28 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
     def _set_metadata_author(self, metadata_author):
         # reset any metadata_author assignation to this resource
         ContactRole.objects.filter(role='author', resource=self).delete()
-        # create the new assignation
-        ContactRole.objects.create(role='author', resource=self, contact=metadata_author)
+        # Best we can do to test if metadata_author = Profile
+        if hasattr(metadata_author, 'username'):
+            ContactRole.objects.create(role='author', resource=self,
+                                       contact=metadata_author)
+        # if metadata_author = ContactRole, update it
+        elif isinstance(metadata_author, ContactRole):
+            contact_obj = ContactRole.objects.get(pk=metadata_author.id)
+            contact_obj.role = 'author'
+            contact_obj.resource = self
+            contact_obj.save()
+        # metadata_author was an unrecognized type
+        else:
+            raise ValidationError('Unrecognized data type for poc: {0}'
+                                  .format(type(metadata_author)))
 
     def _get_metadata_author(self):
         try:
-            the_ma = ContactRole.objects.get(role='author', resource=self).contact
+            contact_obj = ContactRole.objects.get(role='author', resource=self)
+            if contact_obj.contact is not None:
+                the_ma = contact_obj.contact
+            else:
+                the_ma = contact_obj
         except ContactRole.DoesNotExist:
             the_ma = None
         return the_ma

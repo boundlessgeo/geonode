@@ -61,7 +61,7 @@ from geonode.utils import GXPLayer
 from geonode.utils import GXPMap
 from geonode.layers.utils import file_upload, is_raster, is_vector
 from geonode.utils import resolve_object, llbbox_to_mercator, bbox_to_projection, forward_mercator
-from geonode.people.forms import ProfileForm, PocForm
+from geonode.people.forms import ProfileForm, PocForm, RoleForm
 from geonode.security.views import _perms_info_json
 from geonode.documents.models import get_related_documents
 from geonode.utils import build_social_links
@@ -541,33 +541,21 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
 
         if new_poc is None:
             if poc is None:
-                poc_form = ProfileForm(
+                poc_form = RoleForm(
                     request.POST,
                     prefix="poc",
                     instance=poc)
             else:
-                poc_form = ProfileForm(request.POST, prefix="poc")
-            if poc_form.is_valid():
-                if len(poc_form.cleaned_data['profile']) == 0:
-                    # FIXME use form.add_error in django > 1.7
-                    errors = poc_form._errors.setdefault('profile', ErrorList())
-                    errors.append(_('You must set a point of contact for this resource'))
-                    poc = None
+                poc_form = RoleForm(request.POST, prefix="poc")
             if poc_form.has_changed and poc_form.is_valid():
                 new_poc = poc_form.save()
 
         if new_author is None:
             if metadata_author is None:
-                author_form = ProfileForm(request.POST, prefix="author",
+                author_form = RoleForm(request.POST, prefix="author",
                                           instance=metadata_author)
             else:
-                author_form = ProfileForm(request.POST, prefix="author")
-            if author_form.is_valid():
-                if len(author_form.cleaned_data['profile']) == 0:
-                    # FIXME use form.add_error in django > 1.7
-                    errors = author_form._errors.setdefault('profile', ErrorList())
-                    errors.append(_('You must set an author for this resource'))
-                    metadata_author = None
+                author_form = RoleForm(request.POST, prefix="author")
             if author_form.has_changed and author_form.is_valid():
                 new_author = author_form.save()
 
@@ -628,18 +616,18 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
 
     if poc is not None:
         layer_form.fields['poc'].initial = poc.id
-        poc_form = ProfileForm(prefix="poc")
+        poc_form = RoleForm(prefix="poc")
         poc_form.hidden = True
     else:
-        poc_form = ProfileForm(prefix="poc")
+        poc_form = RoleForm(prefix="poc")
         poc_form.hidden = False
 
     if metadata_author is not None:
         layer_form.fields['metadata_author'].initial = metadata_author.id
-        author_form = ProfileForm(prefix="author")
+        author_form = RoleForm(prefix="author")
         author_form.hidden = True
     else:
-        author_form = ProfileForm(prefix="author")
+        author_form = RoleForm(prefix="author")
         author_form.hidden = False
 
     return render_to_response(template, RequestContext(request, {

@@ -104,6 +104,7 @@ class LayerAdmin(MediaTranslationAdmin):
                    'restriction_code_type__identifier', 'date', 'date_type',
                    DefaultStyleListFilter)
     search_fields = ('typename', 'title', 'abstract', 'purpose',)
+    filter_horizontal = ('contacts',)
     date_hierarchy = 'date'
     readonly_fields = ('uuid', 'typename', 'workspace')
     inlines = [AttributeInline]
