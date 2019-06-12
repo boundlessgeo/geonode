@@ -1,5 +1,8 @@
 {% verbatim %}
 <div class="row">
+  <div class="ng-hide" ng-show="results.length == 0">
+    <div><h3>No content created yet.</h3></div>
+  </div>
   <article ng-repeat="group in results" resource_id="{{ group.id }}" ng-cloak class="ng-cloak">
     <div class="col-xs-12 item-container">
         <div class="col-xs-8 item-details">
