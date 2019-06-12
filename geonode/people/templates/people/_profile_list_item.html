@@ -1,6 +1,9 @@
 {% load i18n %}
 
 {% verbatim %}
+  <div class="ng-hide" ng-show="results.length == 0">
+    <div><h3>No content created yet.</h3></div>
+  </div>
   <article ng-repeat="profile in results" ng-cloak class="ng-cloak">
     <div class="col-xs-12 col-sm-6 profile-container">
       <div class="col-xs-12 profile-avatar">
