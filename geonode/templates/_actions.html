@@ -1,6 +1,6 @@
 {% load i18n %}
 <ul class="nav nav-tabs">
-  <li class="active"><a href="#info" data-toggle="tab"><i class="fa fa-info-circle"></i>{% trans "Info" %}</a></li>
+  <li class="active pull-left"><a href="#info" data-toggle="tab"><i class="fa fa-info-circle"></i>{% trans "Information" %}</a></li>
   {% if resource.polymorphic_ctype.name == 'layer' %}
   <li><a href="#edit_layer" data-toggle="tab"><i class="fa fa-pencil"></i>{% trans "Edit Layer" %}</a></li>
   {% endif %}
