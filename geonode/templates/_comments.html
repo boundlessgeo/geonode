@@ -8,22 +8,18 @@
 
 {% load i18n %}
 <div id="comments_section" class="comments paginate paginate-manual">
-  <header>
-    <h4>{% trans 'Comments' %} <span class="total">({% comment_count resource %})</span></h4>
-  </header>
 
-  {% if user.is_authenticated %}
   <div class="clearfix">
+    <h4 class="pull-left">{% trans 'Comments' %} ({% comment_count resource %})</h4>
+    {% if user.is_authenticated %}
     <a href="#form_post_comment_div" role="button" class="btn pull-right btn-default" data-toggle="modal">{% trans 'Add Comment' %}</a>
-  </div>
-  {% else %}
-  <div class="clearfix">
+    {% else %}
     <p>{% trans 'Log in to add a comment' %}</p>
+    {% endif %}
   </div>
-  {% endif %}
-  <div class="paginate-contents">
+  <br/>
+  <div class="long-details">
   {% comments resource as comment_list %}
-  {% autopaginate comment_list 5 %}
     <ul class="list-unstyled">
       {% for comment in comment_list %}
       <li class="comment">
@@ -40,7 +36,6 @@
       {% endfor %}
     </ul>
   </div>
-  {% paginate %}
 </div>
 
 <!-- Modal -->
