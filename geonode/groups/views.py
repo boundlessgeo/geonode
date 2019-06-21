@@ -97,7 +97,10 @@ class GroupDetailView(ListView):
 
     def get(self, request, *args, **kwargs):
         self.group = get_object_or_404(GroupProfile, slug=kwargs.get('slug'))
-        return super(GroupDetailView, self).get(request, *args, **kwargs)
+        if self.group.can_view(request.user):
+            return super(GroupDetailView, self).get(request, *args, **kwargs)
+        else:
+            raise Http404()
 
     def get_context_data(self, **kwargs):
         context = super(GroupDetailView, self).get_context_data(**kwargs)
