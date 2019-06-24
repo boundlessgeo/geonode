@@ -353,7 +353,7 @@
         }
     },
      {
-        "pk": 1, 
+        "pk": 8,
         "model": "base.restrictioncodetype", 
         "fields": {
             "is_choice": true, 
@@ -383,7 +383,7 @@
         }
     }, 
     {
-        "pk": 8, 
+        "pk": 1,
         "model": "base.restrictioncodetype", 
         "fields": {
             "is_choice": true, 

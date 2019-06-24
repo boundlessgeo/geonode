@@ -21,7 +21,7 @@
 from geonode.maps.models import Map
 
 from geonode.base.forms import ResourceBaseForm
-
+from django.conf import settings
 
 class MapForm(ResourceBaseForm):
 
@@ -34,3 +34,5 @@ class MapForm(ResourceBaseForm):
             'center_y',
             'tkeywords',
         )
+        if settings.MAPLOOM_ENABLED is False:
+            exclude = exclude + ('refresh_interval',)
