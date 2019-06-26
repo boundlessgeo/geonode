@@ -163,14 +163,6 @@ class ServiceForm(forms.ModelForm):
             }
         )
     )
-    description = forms.CharField(
-        label=_('Description'),
-        widget=forms.Textarea(
-            attrs={
-                'cols': 60
-            }
-        )
-    )
     abstract = forms.CharField(
         label=_("Abstract"),
         widget=forms.Textarea(
@@ -258,7 +250,6 @@ class ServiceForm(forms.ModelForm):
             'caveat',
             'title',
             'category',
-            'description',
             'abstract',
             'keywords',
             'license',
