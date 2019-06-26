@@ -87,11 +87,6 @@ class Service(ResourceBase):
         unique=True,
         db_index=True
     )
-    description = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True
-    )
     classification = models.CharField(
         max_length=255,
         null=True,
