@@ -180,4 +180,6 @@ class ResourceBaseForm(TranslationModelForm):
             'rating',
             'detail_url',
             'thumbnail_url',
+            'group',
+            'metadata_uploaded_preserve'
             )

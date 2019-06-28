@@ -46,6 +46,8 @@ resourcebaseform_meta_exclude = tuple(x for x in ResourceBaseForm.Meta.exclude i
 class DocumentForm(ResourceBaseForm):
 
     resource = forms.ChoiceField(label='Link to')
+    alternate = forms.CharField(label=_("Alternate Title"),
+                                required=False)
 
     def __init__(self, *args, **kwargs):
         super(DocumentForm, self).__init__(*args, **kwargs)
@@ -90,7 +92,8 @@ class DocumentForm(ResourceBaseForm):
             'extension',
             'tkeywords',
             'doc_type',
-            'doc_url')
+            'doc_url',
+            'refresh_interval')
 
 
 class DocumentDescriptionForm(forms.Form):

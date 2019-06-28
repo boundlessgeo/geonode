@@ -59,7 +59,10 @@ class LayerForm(ResourceBaseForm):
             'default_style',
             'styles',
             'upload_session',
+            'service'
             )
+        if settings.MAPLOOM_ENABLED is False:
+            exclude = exclude + ('refresh_interval',)
 
 
 class LayerUploadForm(forms.Form):
