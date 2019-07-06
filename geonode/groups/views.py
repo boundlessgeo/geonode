@@ -31,6 +31,8 @@ from actstream.models import Action
 
 from geonode.groups.forms import GroupInviteForm, GroupForm, GroupUpdateForm, GroupMemberForm
 from geonode.groups.models import GroupProfile, GroupInvitation, GroupMember
+from geonode.base.models import ResourceBase
+from guardian.shortcuts import get_objects_for_group
 
 
 @login_required
@@ -109,6 +111,25 @@ class GroupDetailView(ListView):
             self.request.user,
             "manager")
         context['can_view'] = self.group.can_view(self.request.user)
+
+        # Get ids of resourcebase objects this group can access
+        # Used for displaying group's resourcebase objects on details page
+        perm_group = self.group.group
+        # TODO: Are these the correct perms we want to require?
+        perms = ['publish_resourcebase', 'download_resourcebase',
+                 'change_resourcebase_metadata', 'delete_resourcebase',
+                 'view_resourcebase', 'change_resourcebase',
+                 'change_resourcebase_permissions']
+        rbs = get_objects_for_group(perm_group, perms, ResourceBase)
+        ids_list = ''
+        if rbs:
+            for rb in rbs:
+                ids_list = '{0},{1}'.format(rb.id, ids_list)
+            ids_list = ids_list[:-1]
+        context['ids_list'] = ids_list
+        # TODO: This is just for testing, remove later
+        context['ids_list'] = '1,2,3'
+
         return context
 
 
@@ -118,13 +139,6 @@ def group_members(request, slug):
 
     if not group.can_view(request.user):
         raise Http404()
-
-    if group.access in [
-            "public-invite",
-            "private"] and group.user_is_role(
-            request.user,
-            "manager"):
-        ctx["invite_form"] = GroupInviteForm()
 
     if group.user_is_role(request.user, "manager"):
         ctx["member_form"] = GroupMemberForm()
@@ -151,8 +165,8 @@ def group_members_add(request, slug):
 
     if form.is_valid():
         role = form.cleaned_data["role"]
-        for user in form.cleaned_data["user_identifiers"]:
-            group.join(user, role=role)
+        user = form.cleaned_data["user"]
+        group.join(user, role=role)
 
     return redirect("group_detail", slug=group.slug)
 

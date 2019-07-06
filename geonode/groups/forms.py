@@ -26,6 +26,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import get_user_model
 
 from geonode.groups.models import GroupProfile
+from geonode.people.models import Profile
 
 
 class GroupForm(forms.ModelForm):
@@ -87,40 +88,10 @@ class GroupMemberForm(forms.Form):
         ("member", "Member"),
         ("manager", "Manager"),
     ])
-    user_identifiers = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                'class': 'user-select'}))
-
-    def clean_user_identifiers(self):
-        value = self.cleaned_data["user_identifiers"]
-        new_members, errors = [], []
-
-        for ui in value.split(","):
-            ui = ui.strip()
-
-            try:
-                validate_email(ui)
-                try:
-                    new_members.append(get_user_model().objects.get(email=ui))
-                except get_user_model().DoesNotExist:
-                    new_members.append(ui)
-            except ValidationError:
-                try:
-                    new_members.append(
-                        get_user_model().objects.get(
-                            username=ui))
-                except get_user_model().DoesNotExist:
-                    errors.append(ui)
-
-        if errors:
-            message = (
-                "The following are not valid email addresses or "
-                "usernames: %s; not added to the group" %
-                ", ".join(errors))
-            raise forms.ValidationError(message)
-
-        return new_members
+    user = forms.ModelChoiceField(
+        required=True,
+        queryset=Profile.objects.exclude(
+            username='AnonymousUser'))
 
 
 class GroupInviteForm(forms.Form):
