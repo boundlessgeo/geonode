@@ -95,15 +95,6 @@
             <input type="submit" value="Add Group Members" class="btn btn-success"/>
           </form>
         {% endif %}
-
-        {% if invite_form %}
-          <h2>{% trans "Invite people" %}</h2>
-          <form class="uniForm" method="POST" action="{% url "group_invite" group.slug %}">
-            {% csrf_token %}
-            {{ invite_form|as_bootstrap }}
-            <input type="submit" value="invite" />
-          </form>
-        {% endif %}
       </div>
     </div>
   </div>
