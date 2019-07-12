@@ -114,6 +114,7 @@ class Layer(ResourceBase):
     has_elevation = models.BooleanField(default=False)
     time_regex = models.CharField(max_length=128, null=True, blank=True, choices=TIME_REGEX)
     elevation_regex = models.CharField(max_length=128, null=True, blank=True)
+    visibility = models.BooleanField(default=True)
 
     default_style = models.ForeignKey(
         Style,
