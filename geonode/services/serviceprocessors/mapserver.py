@@ -216,10 +216,15 @@ class MapserverServiceHandler(base.ServiceHandlerBase,
         # ``pre_save`` signal for the Layer model. This handler does a check
         # for common fields (such as abstract and title) and adds
         # sensible default values
+        if layer_meta['defaultVisiblity']:
+            visibility = layer_meta['defaultVisiblity']
+        else:
+            visibility = True
         geonode_layer = Layer(
             owner=geonode_service.owner,
             service=geonode_service,
             uuid=str(uuid4()),
+            visibility=visibility,
             **resource_fields
         )
         geonode_layer.full_clean()
