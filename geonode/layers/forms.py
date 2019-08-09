@@ -258,11 +258,8 @@ class LayerAttributeFormset(BaseInlineFormSet):
 
         return result
 
-# TODO: Is this one okay as is? Where even is it and do we need a clean for sld
-# or otherwise? layerid looks weird being in form like that
-# So apparently this is just some weird REST endpoint too
+# TODO: Is this one okay as is? Not sure how this form is used
 # Do we maybe want a task to add this to a front end UI?
-# gs/<layername>/style/upload
 class LayerStyleUploadForm(forms.Form):
     layerid = forms.IntegerField()
     name = forms.CharField(required=False)
