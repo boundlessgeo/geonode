@@ -41,6 +41,7 @@ class CategoryChoiceField(forms.ModelChoiceField):
                '&nbsp;' + obj.gn_description + '</span>'
 
 
+# TODO: This does not seem to be used anywhere?
 class TreeWidget(forms.TextInput):
         input_type = 'text'
 
@@ -81,9 +82,7 @@ class ResourceBaseForm(TranslationModelForm):
     """Base form for metadata, should be inherited by childres classes of ResourceBase"""
 
     owner = forms.ModelChoiceField(
-        empty_label="Owner",
-        label=_("Owner"),
-        required=False,
+        required=True,
         queryset=Profile.objects.exclude(
             username='AnonymousUser'))
 
@@ -171,6 +170,8 @@ class ResourceBaseForm(TranslationModelForm):
             'csw_type',
             'csw_wkt_geometry',
             'metadata_uploaded',
+            # TODO: Should we exclude this? Admin panel only?
+            'metadata_uploaded_preserve',
             'metadata_xml',
             'csw_anytext',
             'popular_count',
@@ -180,6 +181,4 @@ class ResourceBaseForm(TranslationModelForm):
             'rating',
             'detail_url',
             'thumbnail_url',
-            'group',
-            'metadata_uploaded_preserve'
             )

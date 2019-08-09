@@ -79,14 +79,19 @@ class Map(ResourceBase, GXPMapBase):
     last_modified = models.DateTimeField(auto_now_add=True)
     # The last time the map was modified.
 
-    urlsuffix = models.CharField(_('Site URL'), max_length=255, blank=True)
+    urlsuffix = models.CharField(
+        _('Site URL'), max_length=255, blank=True,
+        help_text=_('Alphanumeric alternative to referencing maps by id, '
+                    'allowing you to access the map as maps/urlsuffix'))
     # Alphanumeric alternative to referencing maps by id, appended to end of
     # URL instead of id, ie http://domain/maps/someview
 
     featuredurl = models.CharField(
         _('Featured Map URL'),
         max_length=255,
-        blank=True)
+        blank=True,
+        help_text=_('Featured url name for a full map view or detail view, '
+                    'i.e. featured/featuredurl'))
     # Full URL for featured map view, ie http://domain/someview
 
     def __unicode__(self):

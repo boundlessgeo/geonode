@@ -109,12 +109,25 @@ class Layer(ResourceBase):
     name = models.CharField(max_length=128)
     typename = models.CharField(max_length=128, null=True, blank=True)
 
-    is_mosaic = models.BooleanField(default=False)
-    has_time = models.BooleanField(default=False)
-    has_elevation = models.BooleanField(default=False)
-    time_regex = models.CharField(max_length=128, null=True, blank=True, choices=TIME_REGEX)
-    elevation_regex = models.CharField(max_length=128, null=True, blank=True)
+    # metadata fields
+    mosaic_help_text = _('indicates mosaic data layer')
+    has_time_help_text = _('indicates time enabled layer')
+    has_elevation_help_text = _('indicates elevation data layer')
+    time_help_text = _('the time regex applied to the layer data')
+    elevation_help_text = _('the elevation regex applied to the layer data')
 
+    is_mosaic = models.BooleanField(default=False, help_text=mosaic_help_text)
+    has_time = models.BooleanField(default=False, help_text=has_time_help_text)
+    has_elevation = models.BooleanField(default=False,
+                                        help_text=has_elevation_help_text)
+    time_regex = models.CharField(max_length=128, null=True, blank=True,
+                                  choices=TIME_REGEX, help_text=time_help_text)
+    # TODO: Can there be choices for elevation as with time?
+    # Is there any way to verify a regex is valid?
+    elevation_regex = models.CharField(max_length=128, null=True, blank=True,
+                                       help_text=elevation_help_text)
+
+    # related data fields
     default_style = models.ForeignKey(
         Style,
         on_delete=models.SET_NULL,

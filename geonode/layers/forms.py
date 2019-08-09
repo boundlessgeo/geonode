@@ -25,6 +25,7 @@ import zipfile
 from django.conf import settings
 from django import forms
 from django.forms.models import BaseInlineFormSet
+from django.utils.translation import ugettext_lazy as _
 try:
     import json
 except ImportError:
@@ -33,6 +34,7 @@ from geonode.layers.utils import unzip_file
 from geonode.layers.models import Layer, Attribute, Constraint, AttributeOption
 
 from geonode.base.forms import ResourceBaseForm
+
 
 
 class JSONField(forms.CharField):
@@ -46,6 +48,22 @@ class JSONField(forms.CharField):
 
 
 class LayerForm(ResourceBaseForm):
+
+    def clean(self):
+        cleaned_data = super(LayerForm, self).clean()
+
+        # TODO: Should we force these to be set simultaneously?
+        if cleaned_data['has_time'] is True:
+            if cleaned_data['time_regex'] is None \
+                    or cleaned_data['time_regex'] is '---------':
+                self.add_error('time_regex', _(
+                    'Layer indicated time enabled data, '
+                    'but no time regex was specified'))
+        if cleaned_data['has_elevation'] is True:
+            if cleaned_data['elevation_regex'] is None:
+                self.add_error('elevation_regex', _(
+                    'Layer indicated to have elevation data, '
+                    'but no elevation regex was specified'))
 
     class Meta(ResourceBaseForm.Meta):
         model = Layer
@@ -198,6 +216,7 @@ class NewLayerUploadForm(LayerUploadForm):
     spatial_files = tuple(spatial_files)
 
 
+# TODO: This does not seem to be used anywhere?
 class LayerDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
@@ -239,6 +258,11 @@ class LayerAttributeFormset(BaseInlineFormSet):
 
         return result
 
+# TODO: Is this one okay as is? Where even is it and do we need a clean for sld
+# or otherwise? layerid looks weird being in form like that
+# So apparently this is just some weird REST endpoint too
+# Do we maybe want a task to add this to a front end UI?
+# gs/<layername>/style/upload
 class LayerStyleUploadForm(forms.Form):
     layerid = forms.IntegerField()
     name = forms.CharField(required=False)

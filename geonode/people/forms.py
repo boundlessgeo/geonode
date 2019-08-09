@@ -51,6 +51,7 @@ class ForgotUsernameForm(forms.Form):
                              label=_(u'Email Address'))
 
 
+# TODO: This does not seem to be used anywhere?
 class RoleForm(forms.ModelForm):
 
     class Meta:
@@ -59,8 +60,9 @@ class RoleForm(forms.ModelForm):
 
 
 class PocForm(forms.Form):
-    contact = forms.ModelChoiceField(label="New point of contact",
-                                     queryset=Profile.objects.all())
+    contact = forms.ModelChoiceField(
+        label="New point of contact",
+        queryset=Profile.objects.all().exclude(username='AnonymousUser'))
 
 
 class ProfileForm(forms.ModelForm):

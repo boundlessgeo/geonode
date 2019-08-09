@@ -96,6 +96,7 @@ class DocumentForm(ResourceBaseForm):
             'refresh_interval')
 
 
+# TODO: This does not seem to be used anywhere?
 class DocumentDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)

@@ -36,6 +36,7 @@ class UploadFileForm(forms.ModelForm):
         fields = '__all__'
 
 
+# TODO: This is confusing with the fact that layers also has LayerUploadForm
 class LayerUploadForm(forms.Form):
     base_file = forms.FileField()
     dbf_file = forms.FileField(required=False)

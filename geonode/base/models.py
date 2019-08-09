@@ -485,6 +485,7 @@ class ResourceBase(PolymorphicModel, PermissionLevelMixin, ItemBase):
                                               help_text=data_quality_statement_help_text)
 
 
+    # TODO: What are the implications of changing this model field?
     group = models.ForeignKey(Group, null=True, blank=True)
     # Section 9
     # see metadata_author property definition below
