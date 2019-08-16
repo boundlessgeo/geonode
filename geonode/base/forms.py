@@ -83,7 +83,7 @@ class ResourceBaseForm(TranslationModelForm):
     owner = forms.ModelChoiceField(
         empty_label="Owner",
         label=_("Owner"),
-        required=False,
+        required=True,
         queryset=Profile.objects.exclude(
             username='AnonymousUser'))
 
