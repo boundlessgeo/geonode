@@ -59,7 +59,8 @@ class LayerForm(ResourceBaseForm):
                     'Layer indicated time enabled data, '
                     'but no time regex was specified'))
         if cleaned_data['has_elevation'] is True:
-            if cleaned_data['elevation_regex'] is None:
+            if cleaned_data['elevation_regex'] is None \
+                    or cleaned_data['elevation_regex'] is u'':
                 self.add_error('elevation_regex', _(
                     'Layer indicated to have elevation data, '
                     'but no elevation regex was specified'))
