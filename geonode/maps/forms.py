@@ -22,8 +22,20 @@ from geonode.maps.models import Map
 
 from geonode.base.forms import ResourceBaseForm
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
+
 
 class MapForm(ResourceBaseForm):
+
+    def clean(self):
+        cleaned_data = super(MapForm, self).clean()
+
+        if not cleaned_data['featuredurl'].isalnum():
+            self.add_error('featuredurl',
+                           _('Featured url should be an alphanumeric string'))
+        if not cleaned_data['urlsuffix'].isalnum():
+            self.add_error('urlsuffix',
+                           _('Url suffix should be an alphanumeric string'))
 
     class Meta(ResourceBaseForm.Meta):
         model = Map
