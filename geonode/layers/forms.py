@@ -25,6 +25,7 @@ import zipfile
 from django.conf import settings
 from django import forms
 from django.forms.models import BaseInlineFormSet
+from django.utils.translation import ugettext_lazy as _
 try:
     import json
 except ImportError:
@@ -46,6 +47,23 @@ class JSONField(forms.CharField):
 
 
 class LayerForm(ResourceBaseForm):
+
+    def clean(self):
+        cleaned_data = super(LayerForm, self).clean()
+
+        # TODO: Should we force these to be set simultaneously?
+        if cleaned_data['has_time'] is True:
+            if cleaned_data['time_regex'] is None \
+                    or cleaned_data['time_regex'] is '---------':
+                self.add_error('time_regex', _(
+                    'Layer indicated time enabled data, '
+                    'but no time regex was specified'))
+        if cleaned_data['has_elevation'] is True:
+            if cleaned_data['elevation_regex'] is None \
+                    or cleaned_data['elevation_regex'] is u'':
+                self.add_error('elevation_regex', _(
+                    'Layer indicated to have elevation data, '
+                    'but no elevation regex was specified'))
 
     class Meta(ResourceBaseForm.Meta):
         model = Layer
