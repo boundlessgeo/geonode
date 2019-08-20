@@ -26,15 +26,14 @@
                 |
                 {% if member.role == 'manager' %}
                   <span class="btn btn-primary btn-xs">{% trans 'Manager' %}</span>
-                  |
                 {% else %}
                   <span class="btn btn-xs">{% trans 'Member' %}</span>
                   |
+                  <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
+                  </form>
                 {% endif %}
-                <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
-                </form>
               <h4>
               <hr>
             {% endfor %}
@@ -51,11 +50,6 @@
                 {% endif %}
                 |
                 <span class="btn btn-primary btn-xs">{% trans 'Manager' %}</span>
-                |
-                <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
-                </form>
               <h4>
               <hr>
               {% endif %}
