@@ -187,7 +187,14 @@ def group_member_remove(request, slug, username):
     else:
         GroupMember.objects.get(group=group, user=user).delete()
         user.groups.remove(group.group)
-        return redirect("group_detail", slug=group.slug)
+        # TODO: This is hacky, but intends to refresh the page after a member
+        # is removed from the group
+        # Users can leave the group (remove themselves) on the group detail
+        # page; otherwise, normal removals occur on the group members page
+        if request.user.username == username:
+            return redirect("group_detail", slug=group.slug)
+        else:
+            return redirect("group_members", slug=group.slug)
 
 
 @require_POST
