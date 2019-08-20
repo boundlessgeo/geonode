@@ -100,4 +100,32 @@
 {% with "none" as layer %}
 {% include "_permissions_form_js.html" %}
 {% endwith %}
+
+<script type="text/javascript">
+  // make the user add field select2
+  $("#id_users").select2({
+    placeholder: '{% trans "Choose users..." %}',
+    minimumInputLength: 1,
+    width: '100%',
+    multiple: true,
+    ajax: {
+      url: '{% url "autocomplete_people" %}',
+      dataType: 'json',
+      data: function (params) {
+        var query = {
+          q: params.term,
+          limit: 10,
+          offset: 0
+        }
+        return query;
+      },
+      processResults: function (data) {
+        return {
+          results: data.objects
+        }
+      }
+    }
+  });
+</script>
+
 {% endblock extra_script %}

@@ -88,10 +88,21 @@ class GroupMemberForm(forms.Form):
         ("member", "Member"),
         ("manager", "Manager"),
     ])
-    user = forms.ModelChoiceField(
-        required=True,
-        queryset=Profile.objects.exclude(
-            username='AnonymousUser'))
+
+    all_usernames = Profile.objects.exclude(
+        username='AnonymousUser').values('username')
+    all_choices = [("{}".format(u['username']), "{}".format(u['username']))
+                   for u in all_usernames]
+    users = forms.MultipleChoiceField(choices=all_choices)
+
+    def clean(self):
+        cleaned_data = super(GroupMemberForm, self).clean()
+
+        usernames = cleaned_data['users']
+        users = []
+        for username in usernames:
+            users.append(Profile.objects.get(username=username))
+        cleaned_data['users'] = users
 
 
 class GroupInviteForm(forms.Form):

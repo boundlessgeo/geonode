@@ -166,8 +166,9 @@ def group_members_add(request, slug):
 
     if form.is_valid():
         role = form.cleaned_data["role"]
-        user = form.cleaned_data["user"]
-        group.join(user, role=role)
+        users = form.cleaned_data["users"]
+        for user in users:
+            group.join(user, role=role)
 
     return redirect("group_detail", slug=group.slug)
 
