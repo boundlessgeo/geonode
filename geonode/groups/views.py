@@ -114,6 +114,9 @@ class GroupDetailView(ListView):
             self.request.user,
             "manager")
         context['can_view'] = self.group.can_view(self.request.user)
+        context['last_manager'] = self.group.user_is_role(
+            self.request.user, "manager") \
+            and self.group.get_managers().count() == 1
 
         # Get ids of resourcebase objects this group can access
         # Used for displaying group's resourcebase objects on details page
@@ -178,7 +181,8 @@ def group_member_remove(request, slug, username):
     group = get_object_or_404(GroupProfile, slug=slug)
     user = get_object_or_404(get_user_model(), username=username)
 
-    if not group.user_is_role(request.user, role="manager"):
+    if not group.user_is_role(request.user, role="manager") \
+            and not request.user.username == username:
         return HttpResponseForbidden()
     else:
         GroupMember.objects.get(group=group, user=user).delete()
