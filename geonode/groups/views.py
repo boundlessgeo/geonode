@@ -114,6 +114,9 @@ class GroupDetailView(ListView):
             self.request.user,
             "manager")
         context['can_view'] = self.group.can_view(self.request.user)
+        context['last_manager'] = self.group.user_is_role(
+            self.request.user, "manager") \
+            and self.group.get_managers().count() == 1
 
         # Get ids of resourcebase objects this group can access
         # Used for displaying group's resourcebase objects on details page
@@ -166,8 +169,9 @@ def group_members_add(request, slug):
 
     if form.is_valid():
         role = form.cleaned_data["role"]
-        user = form.cleaned_data["user"]
-        group.join(user, role=role)
+        users = form.cleaned_data["users"]
+        for user in users:
+            group.join(user, role=role)
 
     return redirect("group_detail", slug=group.slug)
 
@@ -177,12 +181,20 @@ def group_member_remove(request, slug, username):
     group = get_object_or_404(GroupProfile, slug=slug)
     user = get_object_or_404(get_user_model(), username=username)
 
-    if not group.user_is_role(request.user, role="manager"):
+    if not group.user_is_role(request.user, role="manager") \
+            and not request.user.username == username:
         return HttpResponseForbidden()
     else:
         GroupMember.objects.get(group=group, user=user).delete()
         user.groups.remove(group.group)
-        return redirect("group_detail", slug=group.slug)
+        # TODO: This is hacky, but intends to refresh the page after a member
+        # is removed from the group
+        # Users can leave the group (remove themselves) on the group detail
+        # page; otherwise, normal removals occur on the group members page
+        if request.user.username == username:
+            return redirect("group_detail", slug=group.slug)
+        else:
+            return redirect("group_members", slug=group.slug)
 
 
 @require_POST
