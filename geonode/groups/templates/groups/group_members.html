@@ -28,11 +28,13 @@
                   <span class="btn btn-primary btn-xs">{% trans 'Manager' %}</span>
                 {% else %}
                   <span class="btn btn-xs">{% trans 'Member' %}</span>
-                  |
-                  <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
-                  </form>
+                  {% if is_manager %}
+                    |
+                    <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
+                    </form>
+                  {% endif %}
                 {% endif %}
               <h4>
               <hr>
@@ -67,11 +69,13 @@
                 {% endif %}
                 |
                 <span class="btn btn-xs">{% trans 'Member' %}</span>
-                |
-                <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
-                </form>
+                {% if is_manager %}
+                  |
+                  <form style="display: inline;" method="POST" action="{% url "group_member_remove" group.slug member.user.username %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-xs">{% trans 'Remove' %}</button>
+                  </form>
+                {% endif %}
               <h4>
               <hr>
               {% endif %}
@@ -102,6 +106,12 @@
 {% endwith %}
 
 <script type="text/javascript">
+  // collect list of member names
+  var users_in_group = [];
+  {% for member in members %}
+  users_in_group.push('{{ member.user.username }}');
+  {% endfor %}
+
   // make the user add field select2
   $("#id_users").select2({
     placeholder: '{% trans "Choose users..." %}',
@@ -120,8 +130,15 @@
         return query;
       },
       processResults: function (data) {
+        // filter out members already in the group
+        var users_to_add = [];
+        for (var i = 0; i < data.objects.length; i++) {
+          if (!users_in_group.includes(data.objects[i].text)) {
+            users_to_add.push(data.objects[i]);
+          }
+        }
         return {
-          results: data.objects
+          results: users_to_add
         }
       }
     }
