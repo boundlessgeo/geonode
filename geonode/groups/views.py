@@ -99,7 +99,7 @@ class GroupDetailView(ListView):
 
     def get(self, request, *args, **kwargs):
         self.group = get_object_or_404(GroupProfile, slug=kwargs.get('slug'))
-        if self.group.can_view(request.user):
+        if self.group.can_view(request.user) or request.user.is_superuser:
             return super(GroupDetailView, self).get(request, *args, **kwargs)
         else:
             raise Http404()
