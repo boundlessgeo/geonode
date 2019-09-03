@@ -96,7 +96,9 @@ def activity_post_modify_object(sender, instance, created=None, **kwargs):
                                       target=getattr(instance, 'content_object', None),
                                       updated_verb=_("updated a comment"),
                                       )
+    # use title for object_name?
     action_settings['layer'].update(created_verb=_('uploaded'))
+    action_settings['document'].update(created_verb=_('uploaded'))
 
     action = action_settings[obj_type]
     if created:
@@ -148,7 +150,8 @@ if activity:
     signals.post_save.connect(activity_post_modify_object, sender=Comment)
     signals.post_save.connect(activity_post_modify_object, sender=Layer)
     signals.post_delete.connect(activity_post_modify_object, sender=Layer)
-
+    signals.post_save.connect(activity_post_modify_object, sender=Document)
+    signals.post_delete.connect(activity_post_modify_object, sender=Document)
     signals.post_save.connect(activity_post_modify_object, sender=Map)
     signals.post_delete.connect(activity_post_modify_object, sender=Map)
 
