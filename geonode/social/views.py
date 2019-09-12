@@ -62,6 +62,10 @@ class RecentActivity(ListView):
             action_object_object_id__in=self.filter_set_ids,
             public=True,
             action_object_content_type__model='comment')[:15]
+        context['action_list_documents'] = Action.objects.filter(
+            action_object_object_id__in=self.filter_set_ids,
+            public=True,
+            action_object_content_type__model='document')[:15]
         return context
 
 
@@ -87,4 +91,36 @@ class UserActivity(ListView):
     def get_context_data(self, *args, **kwargs):
         context = super(ListView, self).get_context_data(*args, **kwargs)
         context['actor'] = self.kwargs['actor']
+        action_list_layers = Action.objects.filter(
+            action_object_object_id__in=self.filter_set_ids,
+            public=True,
+            action_object_content_type__model='layer')[:15]
+        context['action_list_layers'] = [
+            x for x in action_list_layers[:15]
+            if x.actor.username == self.kwargs['actor']
+        ]
+        action_list_maps = Action.objects.filter(
+            action_object_object_id__in=self.filter_set_ids,
+            public=True,
+            action_object_content_type__model='map')[:15]
+        context['action_list_maps'] = [
+            x for x in action_list_maps[:15]
+            if x.actor.username == self.kwargs['actor']
+        ]
+        action_list_comments = Action.objects.filter(
+            action_object_object_id__in=self.filter_set_ids,
+            public=True,
+            action_object_content_type__model='comment')[:15]
+        context['action_list_comments'] = [
+            x for x in action_list_comments[:15]
+            if x.actor.username == self.kwargs['actor']
+        ]
+        action_list_documents = Action.objects.filter(
+            action_object_object_id__in=self.filter_set_ids,
+            public=True,
+            action_object_content_type__model='document')[:15]
+        context['action_list_documents'] = [
+            x for x in action_list_documents[:15]
+            if x.actor.username == self.kwargs['actor']
+        ]
         return context
