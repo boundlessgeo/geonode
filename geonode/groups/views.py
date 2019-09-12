@@ -99,7 +99,7 @@ class GroupDetailView(ListView):
 
     def get(self, request, *args, **kwargs):
         self.group = get_object_or_404(GroupProfile, slug=kwargs.get('slug'))
-        if self.group.can_view(request.user):
+        if self.group.can_view(request.user) or request.user.is_superuser:
             return super(GroupDetailView, self).get(request, *args, **kwargs)
         else:
             raise Http404()
@@ -192,7 +192,10 @@ def group_member_remove(request, slug, username):
         # Users can leave the group (remove themselves) on the group detail
         # page; otherwise, normal removals occur on the group members page
         if request.user.username == username:
-            return redirect("group_detail", slug=group.slug)
+            if group.access == "private":
+                return redirect("group_list")
+            else:
+                return redirect("group_detail", slug=group.slug)
         else:
             return redirect("group_members", slug=group.slug)
 
